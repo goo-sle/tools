@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>URL 인코딩/디코딩 도구</title>
+<style>
+  :root{
+    --bg:#f4f6f9; --card:#fff; --text:#1f2937; --muted:#6b7280;
+    --primary:#2e7d32; --primary-d:#256628;
+    --blue:#1976d2; --blue-d:#0d47a1;
+    --gray:#6b7280; --gray-d:#4b5563;
+    --radius:14px; --radius-sm:10px;
+    --gap-lg:24px; --gap-md:14px; --gap-sm:8px;
+    --shadow:0 6px 22px rgba(0,0,0,.08);
+    --border:#e5e7eb;
+  }
+
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; padding:40px 16px; display:flex; justify-content:center; align-items:flex-start;
+    background:var(--bg); color:var(--text); font-family:"Noto Sans KR",system-ui,Arial,sans-serif;
+  }
+  .container{
+    width:100%; max-width:720px; background:var(--card);
+    border-radius:var(--radius); box-shadow:var(--shadow);
+    padding:28px; 
+  }
+
+  h1{
+    margin:0 0 var(--gap-lg); text-align:center; font-size:22px; font-weight:800; color:var(--primary);
+  }
+
+  .stack{display:flex; flex-direction:column; gap:var(--gap-lg)}
+  .field{display:flex; flex-direction:column; gap:var(--gap-sm)}
+  .label{font-weight:700; font-size:14px; color:#374151}
+
+  textarea{
+    width:100%; min-height:120px;
+    padding:14px 16px; line-height:1.6; font-size:15px;
+    border-radius:var(--radius-sm); border:1px solid var(--border);
+    background:#fafafa; color:#111827; resize:vertical; transition:.2s;
+  }
+  textarea:focus{outline:none; border-color:var(--primary); background:#fff}
+
+  .btns{
+    display:flex; justify-content:center; gap:16px; flex-wrap:wrap;
+  }
+  button{
+    appearance:none; border:0; border-radius:10px; padding:10px 18px;
+    font-weight:700; font-size:14px; cursor:pointer; transition:.2s;
+    color:#fff;
+  }
+  .encode{background:var(--primary)} .encode:hover{background:var(--primary-d)}
+  .decode{background:var(--blue)}   .decode:hover{background:var(--blue-d)}
+  .clear{background:var(--gray)}    .clear:hover{background:var(--gray-d)}
+
+  /* 결과 영역 높이만 살짝 크게 */
+  #result{min-height:140px; font-family:Consolas,ui-monospace,monospace}
+
+  /* 모바일 여백 균일화 */
+  @media (max-width:480px){
+    body{padding:20px 12px}
+    .container{padding:20px}
+  }
+</style>
+</head>
+<body>
+  <main class="container">
+    <h1>URL 인코딩/디코딩 도구</h1>
+    <section class="stack">
+      <div class="field">
+        <span class="label">텍스트 입력</span>
+        <textarea id="inputText" placeholder="여기에 URL 또는 텍스트를 입력하세요."></textarea>
+      </div>
+
+      <div class="btns">
+        <button class="encode" onclick="encodeURL()">🔒 인코딩</button>
+        <button class="decode" onclick="decodeURL()">🔓 디코딩</button>
+        <button class="clear"  onclick="clearText()">🧹 지우기</button>
+      </div>
+
+      <div class="field">
+        <span class="label">결과</span>
+        <textarea id="result" readonly placeholder="결과가 여기에 표시됩니다."></textarea>
+      </div>
+    </section>
+  </main>
+
+<script>
+  const $ = (id)=>document.getElementById(id);
+
+  function encodeURL(){
+    const v = $("inputText").value;
+    $("result").value = encodeURIComponent(v);
+  }
+
+  function decodeURL(){
+    const v = $("inputText").value;
+    try{
+      $("result").value = decodeURIComponent(v);
+    }catch(e){
+      $("result").value = "⚠️ 오류: 유효하지 않은 인코딩 문자열입니다.";
+    }
+  }
+
+  function clearText(){
+    $("inputText").value = "";
+    $("result").value = "";
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>경쟁사 주소</title>
+<style>
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #f0f2f5;
+        padding: 30px;
+    }
+    h1 {
+        text-align: center;
+        color: #333;
+        margin-bottom: 20px;
+    }
+    #competitorContainer {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    .competitorWrapper {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .deleteBtn {
+        width: 25px;
+        height: 25px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #e24a4a;
+        color: #fff;
+        font-weight: bold;
+        border-radius: 6px;
+        cursor: pointer;
+        flex-shrink: 0;
+        font-size: 14px;
+    }
+    .deleteBtn:hover { background-color: #b83535; }
+    .competitor {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: #fff;
+        padding: 15px 20px;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        flex: 1;
+        cursor: grab;
+    }
+    .competitor:active { cursor: grabbing; }
+    .competitor label {
+        min-width: 180px;
+        font-weight: 600;
+        color: #555;
+        cursor: text;
+    }
+    .competitor input[type="text"] {
+        flex: 1;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .competitor button.copyBtn {
+        padding: 8px 16px;
+        border: none;
+        border-radius: 8px;
+        background: linear-gradient(135deg, #4a90e2, #357ab8);
+        color: #fff;
+        font-weight: 600;
+        cursor: pointer;
+        transition: 0.3s;
+    }
+    .competitor button.copyBtn:hover { background: linear-gradient(135deg, #357ab8, #2a5d90); }
+    #addBtn, #saveBtn {
+        margin-top: 10px;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 10px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: 0.3s;
+    }
+    #addBtn { background: linear-gradient(135deg, #50c878, #3a9e5e); color: #fff; }
+    #addBtn:hover { background: linear-gradient(135deg, #3a9e5e, #2d7a46); }
+    #saveBtn { background: linear-gradient(135deg, #ffb347, #ff7e5f); color: #fff; }
+    #saveBtn:hover { background: linear-gradient(135deg, #ff7e5f, #ff5e3a); }
+</style>
+</head>
+<body>
+<h1>경쟁사 주소</h1>
+
+<div id="competitorContainer"></div>
+
+<button id="addBtn">항목 추가</button>
+<button id="saveBtn">저장</button>
+
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<script>
+// 1. localStorage에서 불러오기
+let competitors = JSON.parse(localStorage.getItem("competitors")) || [
+    { name: "퍼플페퍼 저장 미션", url: "https://www.luckio.kr/integrations/avatye/save-nplace-url?id=1810789&token=M6TWpAkofq&payload=81ed7ee0a91041ab8474404a9d59ae13_1810789&uk=4a92d07c-7c84-4105-9226-dd11d00808c2&adFallBack=true" },
+    { name: "퍼플페퍼 트래픽 미션", url: "https://www.luckio.kr/integrations/avatye/capture-place-direction?id=1440007&token=8T5zihdnX_&payload=0aadf4ac63094eaabd269064e2b1730a_1440007&uk=4a92d07c-7c84-4105-9226-dd11d00808c2&adFallBack=true" }
+];
+
+const container = document.getElementById("competitorContainer");
+
+// 2. 렌더링 함수
+function renderCompetitors() {
+    container.innerHTML = "";
+    competitors.forEach((item, index) => {
+        const wrapper = document.createElement("div");
+        wrapper.className = "competitorWrapper";
+        wrapper.innerHTML = `
+            <div class="deleteBtn" onclick="deleteCompetitor(${index})">X</div>
+            <div class="competitor">
+                <label contenteditable="true" oninput="updateName(${index}, this.innerText)">${item.name}</label>
+                <input type="text" value="${item.url}" oninput="updateURL(${index}, this.value)">
+                <button class="copyBtn" onclick="copyAddress(this)">복사</button>
+            </div>
+        `;
+        container.appendChild(wrapper);
+    });
+}
+
+// 3. 배열 업데이트
+function updateName(index, newName) { competitors[index].name = newName; }
+function updateURL(index, newURL) { competitors[index].url = newURL; }
+function deleteCompetitor(index) { competitors.splice(index,1); renderCompetitors(); }
+
+// 4. 복사 기능
+function copyAddress(btn) {
+    const input = btn.previousElementSibling;
+    input.select();
+    input.setSelectionRange(0, 99999);
+    document.execCommand("copy");
+    alert("주소가 복사되었습니다!");
+}
+
+// 5. 항목 추가
+document.getElementById("addBtn").addEventListener("click", () => {
+    competitors.push({ name: "새 경쟁사", url: "" });
+    renderCompetitors();
+});
+
+// 6. 저장 (localStorage)
+document.getElementById("saveBtn").addEventListener("click", () => {
+    localStorage.setItem("competitors", JSON.stringify(competitors));
+    alert("저장 완료");
+});
+
+// 7. 초기 렌더링
+renderCompetitors();
+
+// 8. 드래그앤드롭 활성화
+new Sortable(container, {
+    animation: 150,
+    handle: '.competitor',
+    onEnd: function (evt) {
+        const movedItem = competitors.splice(evt.oldIndex, 1)[0];
+        competitors.splice(evt.newIndex, 0, movedItem);
+        renderCompetitors();
+    }
+});
+</script>
+</body>
+</html>

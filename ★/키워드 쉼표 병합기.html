@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>키워드 쉼표 병합기</title>
+
+<link rel="icon" href="data:image/svg+xml,
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>
+  <text y='.9em' font-size='90'>🕳️</text>
+</svg>">
+
+  <style>
+    :root{font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial;margin:0}
+    body{padding:20px;background:#f7fafc;color:#0f172a}
+    .wrap{max-width:820px;margin:0 auto;background:white;padding:20px;border-radius:12px;box-shadow:0 6px 24px rgba(15,23,42,0.08)}
+    h1{font-size:18px;margin:0 0 10px}
+    label{display:block;font-size:13px;margin:12px 0 6px;color:#334155}
+    textarea,input{width:100%;box-sizing:border-box;padding:10px;border:1px solid #e2e8f0;border-radius:8px;font-size:14px}
+    textarea{min-height:140px;resize:vertical}
+    .row{display:flex;gap:12px;align-items:center}
+    .row > *{flex:1}
+    .controls{display:flex;gap:8px;margin-top:12px}
+    button{padding:8px 12px;border-radius:10px;border:0;background:#0ea5a4;color:#fff;cursor:pointer;font-size:13px;transition:0.2s}
+    button.secondary{background:#64748b}
+    .group-box{margin-bottom:14px;padding:12px;border:1px solid #e2e8f0;border-radius:10px;background:#f8fafc}
+    .group-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+    .group-row{display:flex;gap:6px;align-items:center;margin-bottom:6px}
+    .group-row input{width:60px;padding:6px;font-size:12px}
+    .group-row span{font-size:12px;color:#475569}
+    .group-box textarea{width:100%;min-height:45px;padding:8px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>키워드 쉼표 병합기</h1>
+
+    <label>키워드를 한 줄에 하나씩 붙여넣기</label>
+    <textarea id="keywords"></textarea>
+
+    <div class="row">
+      <div>
+        <label>기본 그룹 개수</label>
+        <input id="base-count" type="number" min="1" value="4" />
+      </div>
+
+      <div>
+        <label>그룹 수</label>
+        <input id="group-count" type="number" min="1" value="4" />
+      </div>
+
+      <div style="flex:0 0 160px">
+        <label>&nbsp;</label>
+        <div class="controls">
+          <button id="convert">변환</button>
+          <button id="clear" class="secondary">초기화</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="multi-results" style="margin-top:18px"></div>
+    <div id="info" style="font-size:12px;color:#64748b;margin-top:6px"></div>
+
+    <script>
+      const keywordsEl = document.getElementById('keywords');
+      const baseCountEl = document.getElementById('base-count');
+      const groupCountEl = document.getElementById('group-count');
+      const convertBtn = document.getElementById('convert');
+      const clearBtn = document.getElementById('clear');
+      const multiResults = document.getElementById('multi-results');
+      const info = document.getElementById('info');
+
+      let globalKeywords = [];
+      let groupSizes = [];
+
+      function parseKeywords(input){
+        return input.split(/[\n\r]+/)
+          .map(s => s.trim())
+          .filter(s => s.length > 0);
+      }
+
+      function copyWithEffect(btn, text){
+        navigator.clipboard.writeText(text).then(()=>{
+          const original = btn.textContent;
+          btn.textContent = "완료";
+          btn.style.background = "#059669";
+          setTimeout(()=>{
+            btn.textContent = original;
+            btn.style.background = "#0ea5a4";
+          }, 1000);
+        });
+      }
+
+      function calculateGroupSizes(total, base, groups) {
+        let arr = Array(groups).fill(0);
+        let remain = total;
+
+        for (let i = 0; i < groups; i++) {
+          if (remain <= 0) break;
+          const take = Math.min(base, remain);
+          arr[i] = take;
+          remain -= take;
+        }
+
+        return arr;
+      }
+
+      function adjustAfterChange(index, newSize) {
+        const total = globalKeywords.length;
+        const groups = groupSizes.length;
+        const base = Number(baseCountEl.value) || 1;
+
+        let used = 0;
+        for (let i = 0; i < groups; i++) {
+          if (i < index) used += groupSizes[i];
+          if (i === index) used += newSize;
+        }
+
+        let remain = total - used;
+        if (remain < 0) remain = 0;
+
+        const newArr = [...groupSizes];
+        newArr[index] = newSize;
+
+        for (let i = index + 1; i < groups; i++) {
+          if (remain <= 0) {
+            newArr[i] = 0;
+            continue;
+          }
+          const assign = Math.min(base, remain);
+          newArr[i] = assign;
+          remain -= assign;
+        }
+
+        groupSizes = newArr;
+      }
+
+      function buildGroups(){
+        let html = '';
+        let offset = 0;
+
+        for (let i = 0; i < groupSizes.length; i++) {
+          const size = groupSizes[i];
+          let blockArr = globalKeywords.slice(offset, offset + size);
+          const block = blockArr.join(',');
+
+          html += `
+            <div class="group-box" data-index="${i}">
+              <div class="group-header">
+                <label style="font-size:12px;color:#475569">${i+1}번째 그룹</label>
+                <button class="copy-btn" data-text="${block}">복사</button>
+              </div>
+
+              <div class="group-row">
+                <span>개수:</span>
+                <input type="number" class="group-size" min="0" value="${size}" data-idx="${i}" />
+              </div>
+
+              <textarea readonly>${block}</textarea>
+            </div>
+          `;
+
+          offset += size;
+        }
+
+        multiResults.innerHTML = html;
+
+        document.querySelectorAll(".copy-btn").forEach(btn => {
+          btn.addEventListener("click", () =>
+            copyWithEffect(btn, btn.dataset.text)
+          );
+        });
+
+        document.querySelectorAll(".group-size").forEach(inp => {
+          inp.addEventListener("change", e => {
+            const idx = Number(e.target.dataset.idx);
+            const newSize = Number(e.target.value);
+            adjustAfterChange(idx, newSize);
+            buildGroups();
+          });
+        });
+      }
+
+      function convert(){
+        globalKeywords = parseKeywords(keywordsEl.value);
+        const base = Number(baseCountEl.value) || 1;
+        const groups = Number(groupCountEl.value) || 1;
+
+        groupSizes = calculateGroupSizes(globalKeywords.length, base, groups);
+        buildGroups();
+
+        info.textContent =
+          `총 키워드: ${globalKeywords.length}개 / 그룹: ${groups}개`;
+      }
+
+      convertBtn.addEventListener('click', convert);
+
+      clearBtn.addEventListener('click', () => {
+        keywordsEl.value = '';
+        multiResults.innerHTML = '';
+        baseCountEl.value = 3;
+        groupCountEl.value = 8;
+        info.textContent = '';
+      });
+    </script>
+  </div>
+</body>
+</html>

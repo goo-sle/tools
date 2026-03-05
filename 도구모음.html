@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>통합 업무 도구 모음</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚙️</text></svg>">
+  <style>
+    /* 사용자님이 주신 디자인 스타일 그대로 유지 */
+    :root {
+      --primary-color: #2e7d32;
+      --hover-color: #e9f0ff;
+      --active-bg: #d1e3ff;
+      --sidebar-bg: #f9f9f9;
+      --border-color: #ccc;
+      --text-main: #333;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Pretendard', Arial, sans-serif;
+      margin: 0; padding: 0;
+      display: flex; height: 100vh; overflow: hidden; color: var(--text-main);
+    }
+
+    /* 사이드바 스타일 */
+    #sidebar {
+      width: 260px;
+      background-color: var(--sidebar-bg);
+      border-right: 1px solid var(--border-color);
+      display: flex; flex-direction: column;
+    }
+    .sidebar-header { padding: 15px; border-bottom: 1px solid #eee; }
+    #toolSearch {
+      width: 100%; padding: 8px 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 20px; outline: none; font-size: 13px;
+    }
+
+    .scroll-area { flex-grow: 1; overflow-y: auto; padding: 15px; }
+    .section-title {
+      font-size: 12px; font-weight: bold; color: #777;
+      margin: 15px 0 8px 3px; user-select: none;
+      display: flex; justify-content: space-between;
+    }
+
+    .section { display: flex; flex-direction: column; gap: 6px; min-height: 30px; }
+    
+    .tool-button {
+      display: flex; align-items: center;
+      padding: 10px 12px; font-size: 14px;
+      cursor: grab; background-color: #fff;
+      border: 1px solid #eee; border-radius: 8px;
+      transition: all 0.2s; position: relative;
+    }
+    .tool-button:hover { background-color: var(--hover-color); transform: translateX(3px); }
+    .tool-button.active { 
+      background-color: var(--active-bg); 
+      border-color: #a0c4ff; font-weight: bold; 
+    }
+    .btn-label { flex-grow: 1; pointer-events: none; }
+    
+    .section:empty::before {
+      content: "항목을 끌어다 놓으세요";
+      display: block; font-size: 11px; color: #bbb;
+      text-align: center; padding: 15px 0;
+      border: 1px dashed #ddd; border-radius: 8px;
+    }
+
+    #content { flex-grow: 1; position: relative; background: #fff; }
+    iframe { width: 100%; height: 100%; border: none; display: none; }
+
+    #loader {
+      display: none; position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+    }
+    .spinner {
+      width: 40px; height: 40px; border: 4px solid #f3f3f3;
+      border-top: 4px solid var(--primary-color);
+      border-radius: 50%; animation: spin 1s linear infinite;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    #welcome {
+      display: flex; flex-direction: column; justify-content: center;
+      align-items: center; height: 100%; text-align: center;
+    }
+    #naverClock {
+      font-size: 42px; font-weight: bold; margin: 20px 0;
+      background: #f0f0f0; padding: 10px 30px; border-radius: 12px;
+    }
+
+    .sidebar-footer { padding: 10px; border-top: 1px solid #eee; display: flex; gap: 5px; }
+    .footer-btn { 
+      flex: 1; font-size: 11px; padding: 5px; cursor: pointer;
+      background: #fff; border: 1px solid #ddd; border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="sidebar">
+    <div class="sidebar-header">
+      <input type="text" id="toolSearch" placeholder="도구 검색 (이름, 초성)..." oninput="filterTools()">
+    </div>
+
+    <div class="scroll-area">
+      <div class="section-title">⭐ 자주 쓰는 도구</div>
+      <div id="favTools" class="section"></div>
+
+      <div class="section-title">🛠 사용 중</div>
+      <div id="activeTools" class="section"></div>
+
+      <div class="section-title">📦 미사용</div>
+      <div id="inactiveTools" class="section"></div>
+    </div>
+
+    <div class="sidebar-footer">
+      <button class="footer-btn" onclick="exportData()">💾 백업</button>
+      <button class="footer-btn" onclick="importData()">📂 복구</button>
+    </div>
+  </div>
+
+  <div id="content">
+    <div id="loader"><div class="spinner"></div></div>
+    
+    <div id="welcome">
+      <h2 style="color: var(--primary-color);">🍀 환영합니다!</h2>
+      <p id="todayDisplay"></p>
+      <div id="naverClock">00:00:00</div>
+      <p style="color: #888;">왼쪽 메뉴에서 도구를 선택하거나 드래그하여 순서를 변경하세요.</p>
+    </div>
+
+    <iframe id="toolFrame"></iframe>
+  </div>
+
+  <script>
+    const sections = ['favTools', 'activeTools', 'inactiveTools'].map(id => document.getElementById(id));
+    const frame = document.getElementById('toolFrame');
+    const loader = document.getElementById('loader');
+    const welcome = document.getElementById('welcome');
+    let dragged = null;
+
+    const defaultTools = [
+      {file: "★/퇴근시계+메모장.html", label: "⏰ 메모장"},
+      {file: "★/경쟁사 주소.html", label: "📍 경쟁사 주소"},
+      {file: "★/등급 확인.html", label: "🎖️ 등급 확인"},
+      {file: "★/URL 인코딩_디코딩.html", label: "🔗 URL 인코딩/디코딩"},
+      {file: "★/블로그 배포 금액 계산.html", label: "✍️ 블로그 배포 금액 계산"},
+      {file: "★/네이버 키워드 조합기.html", label: "🔑 네이버 키워드 조합기"},
+      {file: "★/키워드 쉼표 병합기.html", label: "⚡ 키워드 쉼표 병합기"},
+      {file: "★/플레이스 단가 계산기.html", label: "💰 플레이스 단가 계산기"},
+      {file: "★/플레이스 주소 정리.html", label: "🔧 플레이스 주소 정리"},
+      {file: "★/엑셀 시트 분리.html", label: "🗂️ 엑셀 시트 분리 도구"},
+      {file: "★/자동완성 체크.html", label: "✅ 자동완성 체크"},
+      {file: "★/10위 이내 키워드.html", label: "🔍 10위 이내 키워드"}
+    ];
+
+    window.onload = () => {
+      loadState();
+      updateClock();
+      setInterval(updateClock, 1000);
+      setupDragAndDrop();
+    };
+
+    // 초성 추출 함수 (ㄱㅈㅅ -> 경쟁사 매칭용)
+    function getChosung(str) {
+      const cho = ["ㄱ","ㄲ","ㄴ","ㄷ","ㄸ","ㄹ","ㅁ","ㅂ","ㅃ","ㅅ","ㅆ","ㅇ","ㅈ","ㅉ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
+      let result = "";
+      for(let i=0; i<str.length; i++) {
+        const code = str.charCodeAt(i) - 44032;
+        if (code > -1 && code < 11172) result += cho[Math.floor(code / 588)];
+        else result += str.charAt(i);
+      }
+      return result;
+    }
+
+    // 초성 검색이 적용된 필터 기능
+    function filterTools() {
+      const query = document.getElementById('toolSearch').value.toLowerCase().replace(/\s/g, "");
+      const queryChosung = getChosung(query);
+
+      document.querySelectorAll('.tool-button').forEach(btn => {
+        const label = btn.textContent.toLowerCase().replace(/\s/g, "");
+        const labelChosung = getChosung(label);
+
+        if (label.includes(query) || labelChosung.includes(query)) {
+          btn.style.display = "flex";
+        } else {
+          btn.style.display = "none";
+        }
+      });
+    }
+
+    function createButton(tool) {
+      const btn = document.createElement("div");
+      btn.className = "tool-button";
+      btn.draggable = true;
+      btn.dataset.file = tool.file;
+      btn.innerHTML = `<span class="btn-label">${tool.label}</span>`;
+      
+      btn.onclick = () => {
+        document.querySelectorAll('.tool-button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        welcome.style.display = "none";
+        loader.style.display = "block";
+        frame.style.display = "block";
+        frame.src = tool.file;
+        frame.onload = () => { loader.style.display = "none"; };
+      };
+
+      btn.ondragstart = (e) => {
+        dragged = btn;
+        e.dataTransfer.effectAllowed = 'move';
+      };
+
+      return btn;
+    }
+
+    function setupDragAndDrop() {
+      sections.forEach(section => {
+        section.ondragover = (e) => e.preventDefault();
+        section.ondrop = (e) => {
+          e.preventDefault();
+          if (!dragged) return;
+          const afterElement = getDragAfterElement(section, e.clientY);
+          if (afterElement == null) {
+            section.appendChild(dragged);
+          } else {
+            section.insertBefore(dragged, afterElement);
+          }
+          saveState();
+        };
+      });
+    }
+
+    function getDragAfterElement(container, y) {
+      const draggableElements = [...container.querySelectorAll('.tool-button:not(.dragging)')];
+      return draggableElements.reduce((closest, child) => {
+        const box = child.getBoundingClientRect();
+        const offset = y - box.top - box.height / 2;
+        if (offset < 0 && offset > closest.offset) {
+          return { offset: offset, element: child };
+        } else {
+          return closest;
+        }
+      }, { offset: Number.NEGATIVE_INFINITY }).element;
+    }
+
+    function saveState() {
+      const state = {
+        fav: Array.from(sections[0].children).map(b => b.dataset.file),
+        active: Array.from(sections[1].children).map(b => b.dataset.file),
+        inactive: Array.from(sections[2].children).map(b => b.dataset.file)
+      };
+      localStorage.setItem("toolDashboardState", JSON.stringify(state));
+    }
+
+    function loadState() {
+      const saved = localStorage.getItem("toolDashboardState");
+      const state = saved ? JSON.parse(saved) : { fav: [], active: defaultTools.map(t => t.file), inactive: [] };
+      const allFiles = defaultTools.map(t => t.file);
+      const combinedSaved = [...(state.fav || []), ...state.active, ...state.inactive];
+      const newFiles = allFiles.filter(f => !combinedSaved.includes(f));
+
+      const render = (files, container) => {
+        files.forEach(file => {
+          const tool = defaultTools.find(t => t.file === file);
+          if (tool) container.appendChild(createButton(tool));
+        });
+      };
+
+      sections.forEach(s => s.innerHTML = "");
+      render(state.fav || [], sections[0]);
+      render(state.active, sections[1]);
+      render(state.inactive, sections[2]);
+      
+      newFiles.forEach(file => {
+        const tool = defaultTools.find(t => t.file === file);
+        if (tool) sections[1].appendChild(createButton(tool));
+      });
+      
+      if (newFiles.length > 0) saveState();
+    }
+
+    function updateClock() {
+      const now = new Date();
+      document.getElementById('naverClock').textContent = now.toTimeString().split(' ')[0];
+      const days = ['일','월','화','수','목','금','토'];
+      document.getElementById('todayDisplay').textContent = `${now.getFullYear()}. ${now.getMonth()+1}. ${now.getDate()}(${days[now.getDay()]})`;
+    }
+
+    function exportData() {
+      const data = localStorage.getItem("toolDashboardState");
+      const blob = new Blob([data], {type: "application/json"});
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `tool_backup_${new Date().toISOString().slice(0,10)}.json`;
+      a.click();
+    }
+
+    function importData() {
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = ".json";
+      input.onchange = e => {
+        const file = e.target.files[0];
+        const reader = new FileReader();
+        reader.onload = event => {
+          localStorage.setItem("toolDashboardState", event.target.result);
+          location.reload();
+        };
+        reader.readAsText(file);
+      };
+      input.click();
+    }
+  </script>
+</body>
+</html>

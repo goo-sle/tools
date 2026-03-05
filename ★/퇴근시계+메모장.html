@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>📋업무정리</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter&family=Noto+Sans+KR&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', 'Noto Sans KR', sans-serif;
+      display: flex;
+      margin: 0;
+      height: 100vh;
+      transition: background 0.3s, color 0.3s;
+    }
+    body.dark-mode {
+      background: #1e1e1e;
+      color: #eee;
+    }
+    #sidebar {
+      width: 250px;
+      background: #f0f0f0;
+      padding: 20px;
+      border-right: 1px solid #ccc;
+      overflow-y: auto;
+    }
+    body.dark-mode #sidebar {
+      background: #2a2a2a;
+    }
+    #sidebar-header {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .date-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 5px;
+      border-radius: 4px;
+      margin-bottom: 4px;
+      cursor: pointer;
+    }
+    .date-item:hover {
+      background: #ddd;
+    }
+    body.dark-mode .date-item:hover {
+      background: #444;
+    }
+    .delete-icon {
+      color: red;
+      font-weight: bold;
+      margin-left: 10px;
+      cursor: pointer;
+    }
+    #main {
+      flex: 1;
+      padding: 40px;
+      text-align: center;
+    }
+    #countdown {
+      font-size: 2em;
+      margin-bottom: 30px;
+    }
+    #schedule {
+      width: 100%;
+      max-width: 500px;
+      height: 200px;
+      font-size: 1em;
+      padding: 10px;
+      border: 1px solid #ccc;
+      resize: none;
+      margin: 10px auto;
+      font-family: 'Inter', 'Noto Sans KR', sans-serif;
+    }
+    #saveBtn {
+      padding: 8px 20px;
+      font-size: 1em;
+      margin: 5px;
+      cursor: pointer;
+    }
+    #message {
+      margin-top: 10px;
+      color: green;
+      font-weight: bold;
+      display: none;
+    }
+    #todayDate {
+      margin: 5px 0 10px 0;
+      font-size: 0.95em;
+    }
+    #searchInput {
+      width: 100%;
+      padding: 5px;
+      margin: 10px 0;
+    }
+    #toggleDarkMode, #backupBtn, #restoreBtn {
+      font-size: 0.9em;
+      padding: 5px 10px;
+      cursor: pointer;
+      margin-right: 5px;
+    }
+    button {
+      background: #eee;
+      border: 1px solid #aaa;
+      font-family: 'Inter', 'Noto Sans KR', sans-serif;
+    }
+    body.dark-mode button {
+      background: #444;
+      color: #fff;
+      border: 1px solid #888;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="sidebar">
+    <div id="sidebar-header">
+      <div>
+        <button id="backupBtn">📤 백업</button>
+        <button id="restoreBtn">📥 복원</button>
+        <button id="toggleDarkMode">🌙</button>
+      </div>
+      <h3>📅 메모 목록</h3>
+    </div>
+    <input id="searchInput" type="text" placeholder="날짜 검색 (YYYY-MM-DD)">
+    <input type="file" id="restoreInput" accept=".json" style="display:none;">
+    <div id="dateList"></div>
+  </div>
+
+  <div id="main">
+    <h1>⏰ 퇴근까지 남은 시간</h1>
+    <div id="countdown">계산 중...</div>
+
+    <div>
+      <label for="schedule">🗓 오늘 일정 메모</label>
+      <div id="todayDate"></div>
+      <textarea id="schedule" placeholder="오늘 할 일을 적어보세요!"></textarea><br>
+      <button id="saveBtn">저장</button>
+      <div id="message">💾 저장되었습니다!</div>
+    </div>
+  </div>
+
+<script>
+  const schedule = document.getElementById("schedule");
+  const saveBtn = document.getElementById("saveBtn");
+  const message = document.getElementById("message");
+  const dateList = document.getElementById("dateList");
+  const todayDateEl = document.getElementById("todayDate");
+  const searchInput = document.getElementById("searchInput");
+  const toggleDarkModeBtn = document.getElementById("toggleDarkMode");
+
+  const backupBtn = document.getElementById("backupBtn");
+  const restoreBtn = document.getElementById("restoreBtn");
+  const restoreInput = document.getElementById("restoreInput");
+
+  const dayNames = ["일", "월", "화", "수", "목", "금", "토"];
+  const today = new Date();
+  let currentDate = formatDate(today);
+
+  function formatDate(date) {
+    return date.toISOString().slice(0, 10);
+  }
+
+  function displayDate(dateStr) {
+    const d = new Date(dateStr);
+    return `📅 ${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일 (${dayNames[d.getDay()]})`;
+  }
+
+  function updateCountdown() {
+    const now = new Date();
+    const end = new Date();
+    end.setHours(18, 30, 0, 0); // 퇴근 시간 설정 (18:30)
+    
+    if (now > end) {
+      document.getElementById("countdown").innerText = "🎉 퇴근했어요!";
+      return;
+    }
+    const diff = end - now;
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+    document.getElementById("countdown").innerText =
+      `${hours}시간 ${minutes}분 ${seconds}초 남음`;
+  }
+
+  function loadMemo(dateKey) {
+    currentDate = dateKey;
+    schedule.value = localStorage.getItem("memo_" + dateKey) || "";
+    todayDateEl.textContent = displayDate(dateKey);
+  }
+
+  function saveMemo() {
+    localStorage.setItem("memo_" + currentDate, schedule.value);
+    showMessage("💾 저장되었습니다!");
+    updateDateList();
+  }
+
+  function deleteMemo(dateKey) {
+    if (confirm(`${dateKey} 메모를 삭제할까요?`)) {
+      localStorage.removeItem("memo_" + dateKey);
+      if (currentDate === dateKey) {
+        schedule.value = "";
+      }
+      updateDateList();
+    }
+  }
+
+  function showMessage(text) {
+    message.innerText = text;
+    message.style.display = "block";
+    setTimeout(() => {
+      message.style.display = "none";
+    }, 2000);
+  }
+
+  function updateDateList() {
+    dateList.innerHTML = "";
+    const keys = Object.keys(localStorage).filter(k => k.startsWith("memo_"));
+    const query = searchInput.value.trim();
+    const dates = keys
+      .map(k => k.replace("memo_", ""))
+      .filter(d => d.includes(query))
+      .sort().reverse();
+
+    dates.forEach(date => {
+      const container = document.createElement("div");
+      container.className = "date-item";
+
+      const span = document.createElement("span");
+      const dayName = dayNames[new Date(date).getDay()];
+      span.innerText = `${date} (${dayName})`;
+      span.onclick = () => loadMemo(date);
+
+      const del = document.createElement("span");
+      del.className = "delete-icon";
+      del.innerText = "🗑";
+      del.title = "삭제";
+      del.onclick = (e) => {
+        e.stopPropagation();
+        deleteMemo(date);
+      };
+
+      container.appendChild(span);
+      container.appendChild(del);
+      dateList.appendChild(container);
+    });
+  }
+
+  // 저장 버튼
+  saveBtn.addEventListener("click", saveMemo);
+
+  // 단축키: 저장(Ctrl+S), 백업(Ctrl+Shift+S)
+  document.addEventListener("keydown", function (e) {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
+      e.preventDefault();
+      if (e.shiftKey) {
+        backupBtn.click();
+      } else {
+        saveMemo();
+      }
+    }
+  });
+
+  // 다크모드 토글
+  toggleDarkModeBtn.addEventListener("click", () => {
+    document.body.classList.toggle("dark-mode");
+  });
+
+  // 수동 백업 기능
+  backupBtn.addEventListener("click", function () {
+    const allMemos = {};
+    Object.keys(localStorage).forEach(key => {
+      if (key.startsWith("memo_")) {
+        allMemos[key] = localStorage.getItem(key);
+      }
+    });
+
+    const blob = new Blob([JSON.stringify(allMemos, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const todayStr = formatDate(new Date());
+    a.href = url;
+    a.download = `memo_backup_${todayStr}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  // 복원 기능
+  restoreBtn.addEventListener("click", () => restoreInput.click());
+
+  restoreInput.addEventListener("change", function () {
+    const file = this.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      try {
+        const data = JSON.parse(e.target.result);
+        Object.keys(data).forEach(key => {
+          if (key.startsWith("memo_")) {
+            localStorage.setItem(key, data[key]);
+          }
+        });
+        alert("✅ 메모 복원이 완료되었습니다!");
+        updateDateList();
+        loadMemo(currentDate);
+      } catch (err) {
+        alert("❌ 복원 실패: 잘못된 파일 형식입니다.");
+      }
+    };
+    reader.readAsText(file);
+  });
+
+  // 글머리 기호 처리 (Tab)
+  schedule.addEventListener("keydown", function (e) {
+    const cursor = schedule.selectionStart;
+    const value = schedule.value;
+    const lineStart = value.lastIndexOf("\n", cursor - 1) + 1;
+    const currentLine = value.substring(lineStart, cursor);
+
+    if (e.key === "Tab") {
+      if (/^\s*\*$/.test(currentLine)) {
+        e.preventDefault();
+        const before = value.substring(0, lineStart);
+        const after = value.substring(schedule.selectionEnd);
+        const newLine = "• ";
+        schedule.value = before + newLine + after;
+        const newPos = before.length + newLine.length;
+        schedule.selectionStart = schedule.selectionEnd = newPos;
+      } else if (/^\s*• /.test(currentLine)) {
+        e.preventDefault();
+        const before = value.substring(0, lineStart);
+        const after = value.substring(schedule.selectionEnd);
+        const newLine = "  ◦ ";
+        schedule.value = before + newLine + after;
+        const newPos = before.length + newLine.length;
+        schedule.selectionStart = schedule.selectionEnd = newPos;
+      } else if (/^\s*◦ /.test(currentLine)) {
+        e.preventDefault();
+        const before = value.substring(0, lineStart);
+        const after = value.substring(schedule.selectionEnd);
+        const newLine = "    ▪ ";
+        schedule.value = before + newLine + after;
+        const newPos = before.length + newLine.length;
+        schedule.selectionStart = schedule.selectionEnd = newPos;
+      }
+    }
+  });
+
+  // 날짜 검색
+  searchInput.addEventListener("input", updateDateList);
+
+  // 초기화
+  todayDateEl.textContent = displayDate(currentDate);
+  schedule.value = localStorage.getItem("memo_" + currentDate) || "";
+  updateDateList();
+  updateCountdown();
+  setInterval(updateCountdown, 1000);
+</script>
+
+</body>
+</html>

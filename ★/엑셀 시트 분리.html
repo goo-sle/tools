@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<title>엑셀 시트 분리 도구</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+
+<style>
+    body {
+        font-family: 'Segoe UI', Arial;
+        background: #f5f6f7;
+        display: flex;
+        justify-content: center;
+        padding-top: 80px;
+    }
+    .container {
+        width: 420px;
+        background: #fff;
+        border-radius: 14px;
+        padding: 35px 40px;
+        box-shadow: 0 8px 18px rgba(0,0,0,0.08);
+    }
+    h2 {
+        margin: 0 0 20px 0;
+        font-size: 22px;
+        font-weight: 600;
+        text-align: center;
+        color: #333;
+    }
+    .file-box {
+        padding: 25px;
+        border: 2px dashed #b9b9b9;
+        text-align: center;
+        border-radius: 10px;
+        background: #fafafa;
+        cursor: pointer;
+        margin-bottom: 12px;
+    }
+    .file-box:hover {
+        border-color: #3498db;
+        color: #3498db;
+    }
+    #excelFile { display: none; }
+
+    /* 파일명 표시 박스 */
+    #fileNameBox {
+        margin-bottom: 20px;
+        font-size: 14px;
+        color: #333;
+        text-align: center;
+        min-height: 20px;
+    }
+
+    button {
+        width: 100%;
+        padding: 14px 0;
+        background: #3498db;
+        color: #fff;
+        font-size: 16px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        margin-top: 10px;
+    }
+    button:hover {
+        background: #2980b9;
+    }
+    .info {
+        font-size: 13px;
+        color: #555;
+        text-align: center;
+        margin-top: 12px;
+        line-height: 1.5;
+    }
+</style>
+
+</head>
+<body>
+
+<div class="container">
+    <h2>엑셀 시트 분리 도구</h2>
+
+    <label for="excelFile">
+        <div class="file-box">엑셀 파일 업로드 클릭</div>
+    </label>
+    <input type="file" id="excelFile" accept=".xlsx,.xls" />
+
+    <!-- 업로드 파일명 표시 -->
+    <div id="fileNameBox"></div>
+
+    <button onclick="splitSheets()">시트 분리 실행</button>
+
+    <div class="info">
+        - 접수 시트 자동 제외<br>
+        - 시트별 개별 엑셀 자동 다운로드
+    </div>
+</div>
+
+<script>
+document.getElementById("excelFile").addEventListener("change", function(){
+    const file = this.files[0];
+    const box = document.getElementById("fileNameBox");
+
+    if (file) {
+        box.textContent = "선택된 파일: " + file.name;
+    } else {
+        box.textContent = "";
+    }
+});
+
+
+function splitSheets() {
+  const input = document.getElementById("excelFile");
+  const file = input.files[0];
+
+  if (!file) {
+    alert("엑셀 파일을 업로드해주세요.");
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = function(e){
+    const data = new Uint8Array(e.target.result);
+    const workbook = XLSX.read(data, {type:'array'});
+
+    const sheetNames = workbook.SheetNames;
+    let count = 0;
+
+    sheetNames.forEach(name => {
+
+      // ✔ 접수 시트 자동 제외
+      if (name.trim() === "접수") return;
+
+      const ws = workbook.Sheets[name];
+
+      const newWB = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(newWB, ws, name);
+
+      const fileName = name + ".xlsx";
+      XLSX.writeFile(newWB, fileName);
+
+      count++;
+    });
+
+    alert(count + "개 시트가 분리되어 다운로드되었습니다.");
+  };
+
+  reader.readAsArrayBuffer(file);
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>블로그 배포 금액 계산기</title>
+  <style>
+    body { 
+      font-family: 'Noto Sans KR', sans-serif; 
+      background: #f5f6fa; 
+      display: flex; 
+      justify-content: center; 
+      align-items: flex-start; 
+      min-height: 100vh; 
+      margin: 0; 
+      padding: 40px;
+    }
+    .container {
+      background: #fff;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      width: 400px;
+      box-sizing: border-box;
+    }
+    h2 {
+      margin-top: 0;
+      text-align: center;
+      color: #2c3e50;
+    }
+    label {
+      font-size: 15px;
+      font-weight: 600;
+      margin-top: 15px;
+      display: block;
+      color: #34495e;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-top: 6px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 15px;
+      box-sizing: border-box;
+    }
+    button {
+      margin-top: 20px;
+      width: 100%;
+      padding: 12px;
+      font-size: 15px;
+      font-weight: 600;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      color: #fff;
+      transition: background 0.3s;
+      box-sizing: border-box;
+    }
+    .make-btn {
+      background: #3498db;
+    }
+    .make-btn:hover {
+      background: #2980b9;
+    }
+    .copy-btn {
+      background: #27ae60;
+    }
+    .copy-btn:hover {
+      background: #1e8449;
+    }
+    .result {
+      margin-top: 25px;
+      padding: 20px;
+      border-radius: 10px;
+      background: #ecf0f1;
+      font-size: 16px;
+      font-weight: 500;
+      color: #2c3e50;
+      white-space: pre-line;
+      line-height: 1.5;
+      box-sizing: border-box;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>블로그 배포 금액 계산기</h2>
+    
+    <label for="unit">단가 (원):</label>
+    <input type="number" id="unit" placeholder="예: 500" onkeydown="handleEnter(event)" />
+
+    <label for="count">신청 건수:</label>
+    <input type="number" id="count" placeholder="예: 320" onkeydown="handleEnter(event)" />
+
+    <button id="makeBtn" class="make-btn" onclick="calculate()">만들기</button>
+
+    <div class="result" id="output">합계 금액: 0원 (VAT 포함)</div>
+    <button class="copy-btn" onclick="copyText()">결과 복사하기</button>
+  </div>
+
+  <script>
+    function calculate() {
+      const vat = 0.1; // 부가세 10%
+      const unitPrice = document.getElementById("unit").value;
+      const count = document.getElementById("count").value;
+
+      if (!unitPrice || !count || unitPrice <= 0 || count <= 0) {
+        document.getElementById("output").innerText = "합계 금액: 0원 (VAT 포함)";
+        return;
+      }
+
+      const total = unitPrice * count;
+      const totalWithVat = total * (1 + vat);
+
+      const text = 
+        "블로그 배포 작업\n\n" +
+        "단가 : " + Number(unitPrice).toLocaleString() + "원\n" +
+        "신청 : " + Number(count).toLocaleString() + "건\n\n" +
+        "합계 금액 : " + totalWithVat.toLocaleString() + "원 (VAT 포함)\n\n" +
+        "주식회사 하이어애드\n" +
+        "318-085637-04-018\n" +
+        "IBK기업은행\n\n" +
+        "입금 해주시면 작업 진행 하겠습니다 :)";
+
+      document.getElementById("output").innerText = text;
+    }
+
+    function copyText() {
+      const text = document.getElementById("output").innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        alert("결과가 클립보드에 복사되었습니다!");
+      });
+    }
+
+    function handleEnter(event) {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        document.getElementById("makeBtn").click();
+      }
+    }
+  </script>
+</body>
+</html>
