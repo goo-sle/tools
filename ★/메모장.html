@@ -2,136 +2,237 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>📋업무정리</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter&family=Noto+Sans+KR&display=swap" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>📋 업무 정리 메모</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
   <style>
+    :root {
+      --primary: #2e7d32;
+      --primary-hover: #1b5e20;
+      --bg-sidebar: #f8f9fa;
+      --bg-main: #ffffff;
+      --border: #e0e0e0;
+      --text-main: #2c3e50;
+      --text-muted: #7f8c8d;
+      --danger: #e74c3c;
+      --radius: 12px;
+      --shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+
+    body.dark-mode {
+      --bg-sidebar: #1e1e1e;
+      --bg-main: #252525;
+      --border: #3d3d3d;
+      --text-main: #e0e0e0;
+      --text-muted: #a0a0a0;
+      --shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+
+    * { box-sizing: border-box; font-family: 'Pretendard', sans-serif; }
+    
     body {
-      font-family: 'Inter', 'Noto Sans KR', sans-serif;
       display: flex;
       margin: 0;
       height: 100vh;
-      transition: background 0.3s, color 0.3s;
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      transition: background 0.3s;
+      overflow: hidden;
     }
-    body.dark-mode {
-      background: #1e1e1e;
-      color: #eee;
-    }
+
+    /* 사이드바 스타일 */
     #sidebar {
-      width: 250px;
-      background: #f0f0f0;
-      padding: 20px;
-      border-right: 1px solid #ccc;
-      overflow-y: auto;
-    }
-    body.dark-mode #sidebar {
-      background: #2a2a2a;
-    }
-    #sidebar-header {
+      width: 280px;
+      background: var(--bg-sidebar);
+      border-right: 1px solid var(--border);
       display: flex;
       flex-direction: column;
-      gap: 5px;
+      padding: 24px 16px;
     }
+
+    .top-btns {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .icon-btn {
+      flex: 1;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg-main);
+      color: var(--text-main);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      transition: all 0.2s;
+    }
+
+    .icon-btn:hover { background: #eee; transform: translateY(-1px); }
+    body.dark-mode .icon-btn:hover { background: #333; }
+
+    #searchInput {
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--bg-main);
+      color: var(--text-main);
+      margin-bottom: 15px;
+      font-size: 14px;
+    }
+
+    #dateList {
+      flex: 1;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
     .date-item {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 5px;
-      border-radius: 4px;
-      margin-bottom: 4px;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 6px;
       cursor: pointer;
+      font-size: 14px;
+      transition: background 0.2s;
     }
-    .date-item:hover {
-      background: #ddd;
-    }
-    body.dark-mode .date-item:hover {
-      background: #444;
-    }
+
+    .date-item:hover { background: rgba(0,0,0,0.05); }
+    body.dark-mode .date-item:hover { background: rgba(255,255,255,0.05); }
+
     .delete-icon {
-      color: red;
-      font-weight: bold;
-      margin-left: 10px;
-      cursor: pointer;
+      color: var(--text-muted);
+      font-size: 16px;
+      padding: 4px;
+      opacity: 0;
+      transition: opacity 0.2s, color 0.2s;
     }
+
+    .date-item:hover .delete-icon { opacity: 1; }
+    .delete-icon:hover { color: var(--danger); }
+
+    /* 메인 콘텐츠 영역 */
     #main {
       flex: 1;
-      padding: 40px;
-      text-align: center;
+      padding: 60px 40px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      overflow-y: auto;
     }
-    /* 카운트다운 관련 스타일 제거됨 */
+
+    h1 {
+      font-size: 28px;
+      font-weight: 800;
+      margin-bottom: 40px;
+      color: var(--primary);
+    }
+
+    .memo-container {
+      width: 100%;
+      max-width: 800px;
+    }
+
+    .memo-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-bottom: 12px;
+      padding: 0 4px;
+    }
+
+    #todayDate { font-size: 18px; font-weight: 700; color: var(--text-main); }
+    
     #schedule {
       width: 100%;
-      max-width: 500px;
-      height: 300px; /* 입력창을 조금 더 키웠습니다 */
-      font-size: 1em;
-      padding: 10px;
-      border: 1px solid #ccc;
+      height: 500px;
+      padding: 24px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: var(--bg-main);
+      color: var(--text-main);
+      font-size: 16px;
+      line-height: 1.7;
       resize: none;
-      margin: 10px auto;
-      font-family: 'Inter', 'Noto Sans KR', sans-serif;
+      box-shadow: var(--shadow);
+      transition: border-color 0.2s;
     }
+
+    #schedule:focus { outline: none; border-color: var(--primary); background: #fff; }
+    body.dark-mode #schedule:focus { background: #2a2a2a; }
+
+    .bottom-area {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      margin-top: 20px;
+    }
+
     #saveBtn {
-      padding: 8px 20px;
-      font-size: 1em;
-      margin: 5px;
-      cursor: pointer;
-    }
-    #message {
-      margin-top: 10px;
-      color: green;
-      font-weight: bold;
-      display: none;
-    }
-    #todayDate {
-      margin: 5px 0 10px 0;
-      font-size: 0.95em;
-    }
-    #searchInput {
       width: 100%;
-      padding: 5px;
-      margin: 10px 0;
-    }
-    #toggleDarkMode, #backupBtn, #restoreBtn {
-      font-size: 0.9em;
-      padding: 5px 10px;
+      padding: 16px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 16px;
+      font-weight: 700;
       cursor: pointer;
-      margin-right: 5px;
+      transition: background 0.2s, transform 0.1s;
     }
-    button {
-      background: #eee;
-      border: 1px solid #aaa;
-      font-family: 'Inter', 'Noto Sans KR', sans-serif;
+
+    #saveBtn:hover { background: var(--primary-hover); }
+    #saveBtn:active { transform: scale(0.99); }
+
+    #message {
+      font-weight: 600;
+      color: var(--primary);
+      display: none;
+      font-size: 14px;
     }
-    body.dark-mode button {
-      background: #444;
-      color: #fff;
-      border: 1px solid #888;
-    }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #ccc; border-radius: 10px; }
   </style>
 </head>
 <body>
 
   <div id="sidebar">
-    <div id="sidebar-header">
-      <div>
-        <button id="backupBtn">📤 백업</button>
-        <button id="restoreBtn">📥 복원</button>
-        <button id="toggleDarkMode">🌙</button>
-      </div>
-      <h3>📅 메모 목록</h3>
+    <div class="top-btns">
+      <button id="backupBtn" class="icon-btn">📤 백업</button>
+      <button id="restoreBtn" class="icon-btn">📥 복원</button>
+      <button id="toggleDarkMode" class="icon-btn">🌙</button>
     </div>
-    <input id="searchInput" type="text" placeholder="날짜 검색 (YYYY-MM-DD)">
+    <h3 style="margin: 10px 0 10px 4px; font-size: 15px; color: var(--text-muted);">📅 메모 히스토리</h3>
+    <input id="searchInput" type="text" placeholder="날짜로 검색 (YYYY-MM-DD)">
     <input type="file" id="restoreInput" accept=".json" style="display:none;">
     <div id="dateList"></div>
   </div>
 
   <div id="main">
     <h1>🗓 업무 정리 메모</h1>
-    
-    <div>
-      <div id="todayDate"></div>
-      <textarea id="schedule" placeholder="오늘 할 일을 적어보세요!"></textarea><br>
-      <button id="saveBtn">저장</button>
-      <div id="message">💾 저장되었습니다!</div>
+
+    <div class="memo-container">
+      <div class="memo-header">
+        <div id="todayDate"></div>
+        <span style="font-size: 12px; color: var(--text-muted);">Tab: 기호 변환 | Ctrl+S: 저장</span>
+      </div>
+      <textarea id="schedule" placeholder="오늘 진행할 업무 리스트를 정리해 보세요."></textarea>
+      
+      <div class="bottom-area">
+        <button id="saveBtn">안전하게 저장하기</button>
+        <div id="message">💾 저장되었습니다!</div>
+      </div>
     </div>
   </div>
 
@@ -143,7 +244,6 @@
   const todayDateEl = document.getElementById("todayDate");
   const searchInput = document.getElementById("searchInput");
   const toggleDarkModeBtn = document.getElementById("toggleDarkMode");
-
   const backupBtn = document.getElementById("backupBtn");
   const restoreBtn = document.getElementById("restoreBtn");
   const restoreInput = document.getElementById("restoreInput");
@@ -152,16 +252,12 @@
   const today = new Date();
   let currentDate = formatDate(today);
 
-  function formatDate(date) {
-    return date.toISOString().slice(0, 10);
-  }
+  function formatDate(date) { return date.toISOString().slice(0, 10); }
 
   function displayDate(dateStr) {
     const d = new Date(dateStr);
     return `📅 ${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일 (${dayNames[d.getDay()]})`;
   }
-
-  // updateCountdown 함수 제거됨
 
   function loadMemo(dateKey) {
     currentDate = dateKey;
@@ -178,9 +274,7 @@
   function deleteMemo(dateKey) {
     if (confirm(`${dateKey} 메모를 삭제할까요?`)) {
       localStorage.removeItem("memo_" + dateKey);
-      if (currentDate === dateKey) {
-        schedule.value = "";
-      }
+      if (currentDate === dateKey) schedule.value = "";
       updateDateList();
     }
   }
@@ -188,145 +282,85 @@
   function showMessage(text) {
     message.innerText = text;
     message.style.display = "block";
-    setTimeout(() => {
-      message.style.display = "none";
-    }, 2000);
+    setTimeout(() => { message.style.display = "none"; }, 2000);
   }
 
   function updateDateList() {
     dateList.innerHTML = "";
     const keys = Object.keys(localStorage).filter(k => k.startsWith("memo_"));
     const query = searchInput.value.trim();
-    const dates = keys
-      .map(k => k.replace("memo_", ""))
-      .filter(d => d.includes(query))
-      .sort().reverse();
+    const dates = keys.map(k => k.replace("memo_", "")).filter(d => d.includes(query)).sort().reverse();
 
     dates.forEach(date => {
       const container = document.createElement("div");
       container.className = "date-item";
-
-      const span = document.createElement("span");
       const dayName = dayNames[new Date(date).getDay()];
-      span.innerText = `${date} (${dayName})`;
-      span.onclick = () => loadMemo(date);
-
-      const del = document.createElement("span");
-      del.className = "delete-icon";
-      del.innerText = "🗑";
-      del.title = "삭제";
-      del.onclick = (e) => {
-        e.stopPropagation();
-        deleteMemo(date);
-      };
-
-      container.appendChild(span);
-      container.appendChild(del);
+      container.innerHTML = `<span>${date} (${dayName})</span><span class="delete-icon">🗑</span>`;
+      container.onclick = () => loadMemo(date);
+      container.querySelector(".delete-icon").onclick = (e) => { e.stopPropagation(); deleteMemo(date); };
       dateList.appendChild(container);
     });
   }
 
   saveBtn.addEventListener("click", saveMemo);
-
-  document.addEventListener("keydown", function (e) {
+  document.addEventListener("keydown", (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
       e.preventDefault();
-      if (e.shiftKey) {
-        backupBtn.click();
-      } else {
-        saveMemo();
-      }
+      e.shiftKey ? backupBtn.click() : saveMemo();
     }
   });
 
-  toggleDarkModeBtn.addEventListener("click", () => {
-    document.body.classList.toggle("dark-mode");
-  });
+  toggleDarkModeBtn.addEventListener("click", () => document.body.classList.toggle("dark-mode"));
 
-  backupBtn.addEventListener("click", function () {
+  backupBtn.addEventListener("click", () => {
     const allMemos = {};
-    Object.keys(localStorage).forEach(key => {
-      if (key.startsWith("memo_")) {
-        allMemos[key] = localStorage.getItem(key);
-      }
-    });
-
+    Object.keys(localStorage).forEach(key => { if (key.startsWith("memo_")) allMemos[key] = localStorage.getItem(key); });
     const blob = new Blob([JSON.stringify(allMemos, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    const todayStr = formatDate(new Date());
-    a.href = url;
-    a.download = `memo_backup_${todayStr}.json`;
+    a.href = URL.createObjectURL(blob);
+    a.download = `memo_backup_${formatDate(new Date())}.json`;
     a.click();
-    URL.revokeObjectURL(url);
   });
 
   restoreBtn.addEventListener("click", () => restoreInput.click());
-
   restoreInput.addEventListener("change", function () {
     const file = this.files[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = function (e) {
+    reader.onload = (e) => {
       try {
         const data = JSON.parse(e.target.result);
-        Object.keys(data).forEach(key => {
-          if (key.startsWith("memo_")) {
-            localStorage.setItem(key, data[key]);
-          }
-        });
+        Object.keys(data).forEach(key => { if (key.startsWith("memo_")) localStorage.setItem(key, data[key]); });
         alert("✅ 메모 복원이 완료되었습니다!");
         updateDateList();
         loadMemo(currentDate);
-      } catch (err) {
-        alert("❌ 복원 실패: 잘못된 파일 형식입니다.");
-      }
+      } catch (err) { alert("❌ 복원 실패: 잘못된 파일 형식입니다."); }
     };
     reader.readAsText(file);
   });
 
   schedule.addEventListener("keydown", function (e) {
-    const cursor = schedule.selectionStart;
-    const value = schedule.value;
-    const lineStart = value.lastIndexOf("\n", cursor - 1) + 1;
-    const currentLine = value.substring(lineStart, cursor);
-
     if (e.key === "Tab") {
-      if (/^\s*\*$/.test(currentLine)) {
+      const cursor = this.selectionStart;
+      const value = this.value;
+      const lineStart = value.lastIndexOf("\n", cursor - 1) + 1;
+      const currentLine = value.substring(lineStart, cursor);
+      let newLine = "";
+      if (/^\s*\*$/.test(currentLine)) newLine = "• ";
+      else if (/^\s*• /.test(currentLine)) newLine = "  ◦ ";
+      else if (/^\s*◦ /.test(currentLine)) newLine = "    ▪ ";
+      if(newLine) {
         e.preventDefault();
-        const before = value.substring(0, lineStart);
-        const after = value.substring(schedule.selectionEnd);
-        const newLine = "• ";
-        schedule.value = before + newLine + after;
-        const newPos = before.length + newLine.length;
-        schedule.selectionStart = schedule.selectionEnd = newPos;
-      } else if (/^\s*• /.test(currentLine)) {
-        e.preventDefault();
-        const before = value.substring(0, lineStart);
-        const after = value.substring(schedule.selectionEnd);
-        const newLine = "  ◦ ";
-        schedule.value = before + newLine + after;
-        const newPos = before.length + newLine.length;
-        schedule.selectionStart = schedule.selectionEnd = newPos;
-      } else if (/^\s*◦ /.test(currentLine)) {
-        e.preventDefault();
-        const before = value.substring(0, lineStart);
-        const after = value.substring(schedule.selectionEnd);
-        const newLine = "    ▪ ";
-        schedule.value = before + newLine + after;
-        const newPos = before.length + newLine.length;
-        schedule.selectionStart = schedule.selectionEnd = newPos;
+        this.value = value.substring(0, lineStart) + newLine + value.substring(this.selectionEnd);
+        this.selectionStart = this.selectionEnd = lineStart + newLine.length;
       }
     }
   });
 
   searchInput.addEventListener("input", updateDateList);
-
-  // 초기화 부분에서 카운트다운 관련 호출 제거
   todayDateEl.textContent = displayDate(currentDate);
   schedule.value = localStorage.getItem("memo_" + currentDate) || "";
   updateDateList();
 </script>
-
 </body>
 </html>
