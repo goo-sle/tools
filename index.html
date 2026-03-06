@@ -291,20 +291,33 @@
       localStorage.setItem("toolDashboardState", JSON.stringify(state));
     }
 
-    function loadState() {
+  function loadState() {
   const saved = localStorage.getItem("toolDashboardState");
   let state = saved ? JSON.parse(saved) : { fav: [], active: defaultTools.map(t => t.file), inactive: [] };
 
-  // [추가된 로직] defaultTools에는 있는데 state에는 없는 새로운 도구 찾기
-  const currentAllFiles = [...state.fav, ...state.active, ...state.inactive];
-  const newTools = defaultTools.filter(t => !currentAllFiles.includes(t.file));
+  // 1. 현재 저장된 데이터(localStorage)에 있는 모든 파일 목록 추출
+  const currentSavedFiles = [
+    ...(state.fav || []),
+    ...(state.active || []),
+    ...(state.inactive || [])
+  ];
 
+  // 2. defaultTools 배열에는 있지만, 현재 저장된 데이터에는 없는 '새 도구' 찾기
+  const newTools = defaultTools.filter(t => !currentSavedFiles.includes(t.file));
+
+  // 3. 새 도구가 있다면 '사용 중(active)' 섹션 배열에만 추가
   if (newTools.length > 0) {
-    // 새로운 도구가 발견되면 '미사용' 혹은 '사용 중' 섹션에 자동으로 추가
-    newTools.forEach(nt => state.active.push(nt.file));
-    localStorage.setItem("toolDashboardState", JSON.stringify(state)); // 업데이트된 상태 저장
+    newTools.forEach(nt => {
+      // 중복 방지를 한 번 더 체크 후 '사용 중' 섹션에 추가
+      if (!state.active.includes(nt.file)) {
+        state.active.push(nt.file);
+      }
+    });
+    // 업데이트된 상태를 브라우저에 즉시 저장 (다음 접속 시에도 유지됨)
+    localStorage.setItem("toolDashboardState", JSON.stringify(state));
   }
 
+  // 화면 그리기 (렌더링)
   const render = (files, container) => {
     files.forEach(file => {
       const tool = defaultTools.find(t => t.file === file);
@@ -312,10 +325,10 @@
     });
   };
 
-  sections.forEach(s => s.innerHTML = "");
-  render(state.fav || [], sections[0]);
-  render(state.active, sections[1]);
-  render(state.inactive, sections[2]);
+  sections.forEach(s => s.innerHTML = ""); // 기존 내용 비우기
+  render(state.fav || [], sections[0]);    // ⭐ 자주 쓰는 도구
+  render(state.active || [], sections[1]); // 🛠 사용 중
+  render(state.inactive || [], sections[2]); // 📦 미사용
 }
 
     function updateClock() {
