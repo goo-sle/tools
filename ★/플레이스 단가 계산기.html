@@ -26,7 +26,7 @@
   .hr{height:1px;background:var(--line);margin:14px 0 0}
   label{display:block;font-weight:600;margin-bottom:6px;font-size:14px}
   
-  /* [수정] 입력창 크기 및 높이 고정 (자릿수 변경 시 흔들림 방지) */
+  /* 입력창 크기 및 높이 고정 (흔들림 방지 핵심) */
   input[type="number"], input[type="date"], input[type="text"]{
     width:100%; height: 46px; padding:0 14px; border:1px solid var(--line);
     border-radius:12px; font-size:16px; background:#fff;
@@ -35,7 +35,7 @@
   input[readonly]{background:#f3f4f6; color:#6b7280; cursor:not-allowed;}
   input:focus{outline:none;border-color:var(--accent)}
   .row{display:flex;gap:12px;flex-wrap:wrap; align-items: flex-end;}
-  .col{flex:1 1 150px; min-width: 0;} /* 최소 너비 확보 */
+  .col{flex:1 1 150px; min-width: 0;}
   
   .pill{
     display:inline-flex;gap:8px;align-items:center;padding:8px 12px;
@@ -73,7 +73,7 @@
   .grp h3{margin:0 0 8px;font-size:13px;color:#374151}
   .mini{font-size:13px;color:var(--muted);margin-top:10px}
 
-  /* [수정] 날짜 정보 텍스트 영역 고정 */
+  /* 안내 텍스트 영역 고정 */
   #ref_date_info {
     min-width: 90px;
     margin-bottom: 12px; 
@@ -227,7 +227,7 @@
   let clients = JSON.parse(localStorage.getItem('higherad_clients') || '[]');
   let editIndex = -1;
 
-  // CSV 및 업체 관리 (기존 유지)
+  // 업체 관리 로직 (기존과 동일)
   $("#uploadCsvBtn").onclick = () => $("#csvFileInput").click();
   $("#csvFileInput").onchange = (e) => {
     const file = e.target.files[0];
@@ -322,7 +322,7 @@
   $("#openClientModal").onclick = () => { $("#modalOverlay").style.display = "flex"; $("#clientSearch").value=""; renderClientList(); };
   $("#closeModal").onclick = () => { $("#modalOverlay").style.display = "none"; };
 
-  // [수정] 날짜 계산 및 업데이트 함수
+  // 날짜 계산 함수
   function getDiffDays() {
     const d1 = $("#ref_today").value;
     const d2 = $("#ref_endDate").value;
@@ -385,6 +385,7 @@
     $("#blockCount").textContent = $$("#blocks .blk").length;
   }
 
+  // 환불 금액 실시간 재계산 함수
   function recalcRefund() {
     const tp=num($("#trafficPrice").value), rp=num($("#routePrice").value);
     let T=0, R=0, A=0;
@@ -412,7 +413,7 @@
   $("#addBlock").onclick=()=>{ const b=createBlock(false); $("#blocks").prepend(b); bindBlock(b,false); recalc(); };
   $("#resetAll").onclick=()=>{ $("#blocks").innerHTML=""; const b=createBlock(false); $("#blocks").prepend(b); bindBlock(b,false); recalc(); };
   
-  // [수정] 환불 항목 추가 시에만 날짜 주입, 이후 변경 시에는 고정
+  // 환불 항목 추가
   $("#addRefundBlock").onclick=()=>{ 
     const b=createBlock(true); 
     const diff = getDiffDays();
@@ -430,12 +431,22 @@
   $("#ref_today").value = todayStr;
   $("#ref_endDate").value = todayStr;
 
-  // [수정] 날짜 변경 시 안내 문구만 갱신 (항목 데이터 보존)
+  // 날짜 변경 시 '일수 문구'만 업데이트하고 리스트 수치는 안 건드림
   $("#ref_today").onchange = updateDateLabelOnly;
   $("#ref_endDate").onchange = updateDateLabelOnly;
 
-  ["trafficPrice","routePrice","showTraffic1","showRoute1","combine1","showTraffic2","showRoute2","combine2","isNextDay"].forEach(id=>{
-    if($( "#"+id )) { $( "#"+id ).onchange=recalc; $( "#"+id ).oninput=recalc; }
+  // [수정] 단가가 바뀌면 상단 견적서와 하단 환불액 모두 실시간 반영
+  ["trafficPrice","routePrice"].forEach(id => {
+    const el = $("#" + id);
+    el.oninput = () => {
+      recalc();
+      recalcRefund();
+    };
+  });
+
+  // 기타 옵션 변경 시 재계산
+  ["showTraffic1","showRoute1","combine1","showTraffic2","showRoute2","combine2","isNextDay"].forEach(id=>{
+    if($( "#"+id )) { $( "#"+id ).onchange=recalc; }
   });
 
   const copy=(t,b)=>{ $(b).onclick=()=>{ navigator.clipboard.writeText($(t).innerText.trim()).then(()=>{ 
