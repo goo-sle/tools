@@ -25,14 +25,18 @@
   h1{margin:0;font-size:22px}
   .hr{height:1px;background:var(--line);margin:14px 0 0}
   label{display:block;font-weight:600;margin-bottom:6px;font-size:14px}
+  
+  /* [수정] 입력창 크기 및 높이 고정 (자릿수 변경 시 흔들림 방지) */
   input[type="number"], input[type="date"], input[type="text"]{
-    width:100%; padding:12px 14px; border:1px solid var(--line);
-    border-radius:12px; font-size:16px; background:#fff
+    width:100%; height: 46px; padding:0 14px; border:1px solid var(--line);
+    border-radius:12px; font-size:16px; background:#fff;
+    box-sizing: border-box; 
   }
   input[readonly]{background:#f3f4f6; color:#6b7280; cursor:not-allowed;}
   input:focus{outline:none;border-color:var(--accent)}
-  .row{display:flex;gap:12px;flex-wrap:wrap}
-  .col{flex:1 1 200px}
+  .row{display:flex;gap:12px;flex-wrap:wrap; align-items: flex-end;}
+  .col{flex:1 1 150px; min-width: 0;} /* 최소 너비 확보 */
+  
   .pill{
     display:inline-flex;gap:8px;align-items:center;padding:8px 12px;
     border-radius:999px;border:1px solid var(--line);background:#fff
@@ -69,9 +73,18 @@
   .grp h3{margin:0 0 8px;font-size:13px;color:#374151}
   .mini{font-size:13px;color:var(--muted);margin-top:10px}
 
+  /* [수정] 날짜 정보 텍스트 영역 고정 */
+  #ref_date_info {
+    min-width: 90px;
+    margin-bottom: 12px; 
+    font-weight: bold; 
+    color: var(--error); 
+    font-size: 14px;
+    text-align: right;
+  }
+
   .filter-group { display: flex; gap: 10px; align-items: center; font-size: 12px; font-weight: 600; }
 
-  /* Modal Style */
   .modal-overlay {
     display:none; position:fixed; top:0; left:0; width:100%; height:100%;
     background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;
@@ -167,10 +180,10 @@
       </div>
     </div>
     <div class="hr" style="margin-bottom:15px"></div>
-    <div class="row" style="margin-bottom:20px; align-items: flex-end;">
+    <div class="row" style="margin-bottom:20px;">
       <div class="col"><label>기준일(오늘)</label><input id="ref_today" type="date" /></div>
       <div class="col"><label>종료 예정일</label><input id="ref_endDate" type="date" /></div>
-      <div id="ref_date_info" style="margin-bottom: 12px; font-weight: bold; color: var(--error); font-size: 14px;">(총 -일)</div>
+      <div class="col" style="flex:0 0 auto;"><div id="ref_date_info">(총 -일)</div></div>
     </div>
     <div id="refundBlocks" style="display: flex; flex-direction: column;"></div>
     <div class="card" style="background:#fff1f2; border:1px solid #fecdd3; padding:16px; margin-top:10px;">
@@ -204,7 +217,7 @@
 </div>
 
 <script>
-(()=>{  
+(() => {  
   const $  = (s, r=document)=>r.querySelector(s);
   const $$ = (s, r=document)=>Array.from(r.querySelectorAll(s));
   const num = v => Number((v??"").toString().replace(/[^0-9.-]/g,"")) || 0;
@@ -214,60 +227,35 @@
   let clients = JSON.parse(localStorage.getItem('higherad_clients') || '[]');
   let editIndex = -1;
 
-  // --- CSV 업로드 기능 ---
+  // CSV 및 업체 관리 (기존 유지)
   $("#uploadCsvBtn").onclick = () => $("#csvFileInput").click();
   $("#csvFileInput").onchange = (e) => {
     const file = e.target.files[0];
     if(!file) return;
     const reader = new FileReader();
-    reader.onload = (ev) => {
-      const text = ev.target.result;
-      processCsvData(text);
-      e.target.value = "";
-    };
-    // 한글 인코딩 대응 (EUC-KR 시도 후 실패 시 UTF-8)
+    reader.onload = (ev) => { processCsvData(ev.target.result); e.target.value = ""; };
     reader.readAsText(file, "EUC-KR");
   };
 
   function processCsvData(csvText) {
     const lines = csvText.split(/\r?\n/);
     let addedCount = 0;
-
-    // 인덱스 3부터 시작 (파일의 4행부터 읽기 시작)
     for (let i = 4; i < lines.length; i++) {
       const line = lines[i].trim();
-      
-      // 빈 줄이거나 콤마만 있는 행(,,,,)은 건너뛰기
       if (!line || line.replace(/,/g, '').trim() === "") continue;
-      
       const cols = line.split(',').map(c => c.replace(/"/g, '').trim());
-      
-      // 첫 번째 열(업체명)이 비어있지 않은 경우에만 데이터 처리
       if (cols[0]) {
-        const name = cols[0];
-        const p1 = num(cols[1]); // 트래픽 단가
-        const p2 = num(cols[2]); // 길찾기 단가 (병합된 경우 0원 처리됨)
-
-        const clientData = {
-          name: name,
-          tp: p1,
-          rp: p2
-        };
-
+        const name = cols[0], p1 = num(cols[1]), p2 = num(cols[2]);
+        const clientData = { name, tp: p1, rp: p2 };
         const existingIdx = clients.findIndex(c => c.name === name);
-        if (existingIdx > -1) {
-          clients[existingIdx] = clientData;
-        } else {
-          clients.push(clientData);
-          addedCount++;
-        }
+        if (existingIdx > -1) clients[existingIdx] = clientData;
+        else { clients.push(clientData); addedCount++; }
       }
     }
-    alert(`${addedCount}개의 업체가 새로 등록되었습니다.`);
+    alert(`${addedCount}개 업체 등록 완료`);
     saveClients();
   }
 
-  // --- 기존 업체 관리 로직 ---
   function getChosung(str) {
     const cho = ["ㄱ","ㄲ","ㄴ","ㄷ","ㄸ","ㄹ","ㅁ","ㅂ","ㅃ","ㅅ","ㅆ","ㅇ","ㅈ","ㅉ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
     let result = "";
@@ -292,21 +280,16 @@
       const search = filter.toLowerCase();
       return target.includes(search) || getChosung(target).includes(search);
     });
-
     if(!filtered.length) {
       area.innerHTML = "<div style='padding:40px; text-align:center; color:#999; font-size:13px;'>결과가 없습니다.</div>";
       return;
     }
-
     filtered.forEach((c) => {
       const originalIdx = clients.findIndex(oc => oc === c);
       const item = document.createElement("div");
       item.className = "client-item";
       item.innerHTML = `
-        <div class="client-info">
-          <div class="client-name">${c.name}</div>
-          <div class="client-meta">트래픽: ${c.tp}원 / 길찾기: ${c.rp}원</div>
-        </div>
+        <div class="client-info"><div class="client-name">${c.name}</div><div class="client-meta">${c.tp}원 / ${c.rp}원</div></div>
         <div style="display:flex; gap:6px;">
           <button class="btn ghost sm" onclick="editClient(${originalIdx})">수정</button>
           <button class="btn primary sm" onclick="applyClient(${originalIdx})">적용</button>
@@ -317,48 +300,43 @@
   }
 
   window.applyClient = (idx) => {
-    const c = clients[idx];
-    $("#trafficPrice").value = c.tp;
-    $("#routePrice").value = c.rp;
-    recalc(); recalcRefund();
-    $("#modalOverlay").style.display = "none";
+    const c = clients[idx]; $("#trafficPrice").value = c.tp; $("#routePrice").value = c.rp;
+    recalc(); recalcRefund(); $("#modalOverlay").style.display = "none";
   };
-
   window.editClient = (idx) => {
-    const c = clients[idx];
-    editIndex = idx;
-    $("#newClientName").value = c.name;
-    $("#newClientTraffic").value = c.tp;
-    $("#newClientRoute").value = c.rp;
-    $("#addClientBtn").textContent = "저장";
-    $("#addClientBtn").style.background = "var(--ok)";
+    const c = clients[idx]; editIndex = idx;
+    $("#newClientName").value = c.name; $("#newClientTraffic").value = c.tp; $("#newClientRoute").value = c.rp;
+    $("#addClientBtn").textContent = "저장"; $("#addClientBtn").style.background = "var(--ok)";
   };
-
-  window.deleteClient = (idx) => {
-    if(confirm("삭제할까요?")) { clients.splice(idx, 1); saveClients(); }
-  };
+  window.deleteClient = (idx) => { if(confirm("삭제할까요?")) { clients.splice(idx, 1); saveClients(); } };
 
   $("#addClientBtn").onclick = () => {
-    const name = $("#newClientName").value.trim();
-    const tp = num($("#newClientTraffic").value);
-    const rp = num($("#newClientRoute").value);
+    const name = $("#newClientName").value.trim(), tp = num($("#newClientTraffic").value), rp = num($("#newClientRoute").value);
     if(!name) return alert("업체명을 입력해주세요.");
-    if(editIndex > -1) {
-      clients[editIndex] = {name, tp, rp};
-      editIndex = -1;
-      $("#addClientBtn").textContent = "추가";
-      $("#addClientBtn").style.background = "var(--accent)";
-    } else {
-      clients.push({name, tp, rp});
-    }
-    $("#newClientName").value = ""; $("#newClientTraffic").value = ""; $("#newClientRoute").value = "";
-    saveClients();
+    if(editIndex > -1) { clients[editIndex] = {name, tp, rp}; editIndex = -1; $("#addClientBtn").textContent = "추가"; $("#addClientBtn").style.background = "var(--accent)"; }
+    else { clients.push({name, tp, rp}); }
+    $("#newClientName").value = ""; saveClients();
   };
 
-  // --- 기존 계산기 로직 (recalc, createBlock 등 동일) ---
   $("#clientSearch").oninput = (e) => renderClientList(e.target.value);
   $("#openClientModal").onclick = () => { $("#modalOverlay").style.display = "flex"; $("#clientSearch").value=""; renderClientList(); };
   $("#closeModal").onclick = () => { $("#modalOverlay").style.display = "none"; };
+
+  // [수정] 날짜 계산 및 업데이트 함수
+  function getDiffDays() {
+    const d1 = $("#ref_today").value;
+    const d2 = $("#ref_endDate").value;
+    if(!d1 || !d2) return 0;
+    const start = new Date(d1); start.setHours(0,0,0,0);
+    const end = new Date(d2); end.setHours(0,0,0,0);
+    const diff = Math.round((end - start) / (1000 * 60 * 60 * 24));
+    return diff < 0 ? 0 : diff;
+  }
+
+  function updateDateLabelOnly() {
+    const diff = getDiffDays();
+    $("#ref_date_info").textContent = `(총 ${diff}일)`;
+  }
 
   function todayFormat(){
     const d = new Date();
@@ -433,10 +411,30 @@
 
   $("#addBlock").onclick=()=>{ const b=createBlock(false); $("#blocks").prepend(b); bindBlock(b,false); recalc(); };
   $("#resetAll").onclick=()=>{ $("#blocks").innerHTML=""; const b=createBlock(false); $("#blocks").prepend(b); bindBlock(b,false); recalc(); };
-  $("#addRefundBlock").onclick=()=>{ const b=createBlock(true); $("#refundBlocks").prepend(b); bindBlock(b,true); };
   
-  $("#ref_today").value = new Date().toISOString().split('T')[0];
-  ["trafficPrice","routePrice","showTraffic1","showRoute1","combine1","showTraffic2","showRoute2","combine2","isNextDay","ref_today","ref_endDate"].forEach(id=>{
+  // [수정] 환불 항목 추가 시에만 날짜 주입, 이후 변경 시에는 고정
+  $("#addRefundBlock").onclick=()=>{ 
+    const b=createBlock(true); 
+    const diff = getDiffDays();
+    $(".t-days", b).value = diff;
+    $(".r-days", b).value = diff;
+    $("#refundBlocks").prepend(b); 
+    bindBlock(b,true); 
+    recalcRefund();
+  };
+
+  $("#resetRefund").onclick=()=>{ $("#refundBlocks").innerHTML=""; recalcRefund(); };
+  
+  // 초기 세팅
+  const todayStr = new Date().toISOString().split('T')[0];
+  $("#ref_today").value = todayStr;
+  $("#ref_endDate").value = todayStr;
+
+  // [수정] 날짜 변경 시 안내 문구만 갱신 (항목 데이터 보존)
+  $("#ref_today").onchange = updateDateLabelOnly;
+  $("#ref_endDate").onchange = updateDateLabelOnly;
+
+  ["trafficPrice","routePrice","showTraffic1","showRoute1","combine1","showTraffic2","showRoute2","combine2","isNextDay"].forEach(id=>{
     if($( "#"+id )) { $( "#"+id ).onchange=recalc; $( "#"+id ).oninput=recalc; }
   });
 
@@ -446,6 +444,7 @@
   copy("#summary1","#copy1"); copy("#summary2","#copy2");
 
   const f1=createBlock(false); $("#blocks").prepend(f1); bindBlock(f1,false);
+  updateDateLabelOnly();
   recalc(); recalcRefund();
 })();
 </script>
