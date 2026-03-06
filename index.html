@@ -292,19 +292,31 @@
     }
 
     function loadState() {
-      const saved = localStorage.getItem("toolDashboardState");
-      const state = saved ? JSON.parse(saved) : { fav: [], active: defaultTools.map(t => t.file), inactive: [] };
-      const render = (files, container) => {
-        files.forEach(file => {
-          const tool = defaultTools.find(t => t.file === file);
-          if (tool) container.appendChild(createButton(tool));
-        });
-      };
-      sections.forEach(s => s.innerHTML = "");
-      render(state.fav || [], sections[0]);
-      render(state.active, sections[1]);
-      render(state.inactive, sections[2]);
-    }
+  const saved = localStorage.getItem("toolDashboardState");
+  let state = saved ? JSON.parse(saved) : { fav: [], active: defaultTools.map(t => t.file), inactive: [] };
+
+  // [추가된 로직] defaultTools에는 있는데 state에는 없는 새로운 도구 찾기
+  const currentAllFiles = [...state.fav, ...state.active, ...state.inactive];
+  const newTools = defaultTools.filter(t => !currentAllFiles.includes(t.file));
+
+  if (newTools.length > 0) {
+    // 새로운 도구가 발견되면 '미사용' 혹은 '사용 중' 섹션에 자동으로 추가
+    newTools.forEach(nt => state.active.push(nt.file));
+    localStorage.setItem("toolDashboardState", JSON.stringify(state)); // 업데이트된 상태 저장
+  }
+
+  const render = (files, container) => {
+    files.forEach(file => {
+      const tool = defaultTools.find(t => t.file === file);
+      if (tool) container.appendChild(createButton(tool));
+    });
+  };
+
+  sections.forEach(s => s.innerHTML = "");
+  render(state.fav || [], sections[0]);
+  render(state.active, sections[1]);
+  render(state.inactive, sections[2]);
+}
 
     function updateClock() {
       const now = new Date();
