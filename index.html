@@ -4,9 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>통합 업무 도구 모음</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚙️</text></svg>">
   <style>
-    /* 사용자님이 주신 디자인 스타일 그대로 유지 */
     :root {
       --primary-color: #2e7d32;
       --hover-color: #e9f0ff;
@@ -14,6 +14,11 @@
       --sidebar-bg: #f9f9f9;
       --border-color: #ccc;
       --text-main: #333;
+      /* 브랜드별 포인트 컬러 */
+      --notion-color: #000000;
+      --sheet-color: #0F9D58;
+      --admin-color: #4285F4;
+      --store-color: #FBBC05;
     }
 
     * { box-sizing: border-box; }
@@ -67,7 +72,8 @@
       border: 1px dashed #ddd; border-radius: 8px;
     }
 
-    #content { flex-grow: 1; position: relative; background: #fff; }
+    /* 메인 콘텐츠 영역 */
+    #content { flex-grow: 1; position: relative; background: #fff; overflow-y: auto; }
     iframe { width: 100%; height: 100%; border: none; display: none; }
 
     #loader {
@@ -83,12 +89,61 @@
 
     #welcome {
       display: flex; flex-direction: column; justify-content: center;
-      align-items: center; height: 100%; text-align: center;
+      align-items: center; min-height: 100%; text-align: center; padding: 40px 20px;
     }
     #naverClock {
-      font-size: 42px; font-weight: bold; margin: 20px 0;
+      font-size: 42px; font-weight: bold; margin: 15px 0;
       background: #f0f0f0; padding: 10px 30px; border-radius: 12px;
     }
+
+    /* 퀵링크 그리드 스타일 */
+    .quick-links {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 15px;
+      margin-top: 30px;
+      width: 100%;
+      max-width: 700px;
+    }
+    .link-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 25px 15px;
+      background: #fff;
+      border: 1px solid #e5e5e5;
+      border-radius: 12px;
+      text-decoration: none;
+      color: var(--text-main);
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+    }
+    .link-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 15px rgba(0,0,0,0.08);
+      background: #fafafa;
+    }
+    
+    /* 아이콘 스타일 */
+    .link-card .material-symbols-outlined {
+      font-size: 32px;
+      margin-bottom: 12px;
+    }
+    .link-card span { font-size: 14px; font-weight: 600; }
+
+    /* 카드 포인트 및 아이콘 컬러 */
+    .c-notion { border-top: 4px solid var(--notion-color); }
+    .c-notion .material-symbols-outlined { color: var(--notion-color); }
+
+    .c-sheet { border-top: 4px solid var(--sheet-color); }
+    .c-sheet .material-symbols-outlined { color: var(--sheet-color); }
+
+    .c-admin { border-top: 4px solid var(--admin-color); }
+    .c-admin .material-symbols-outlined { color: var(--admin-color); }
+
+    .c-store { border-top: 4px solid var(--store-color); }
+    .c-store .material-symbols-outlined { color: var(--store-color); }
 
     .sidebar-footer { padding: 10px; border-top: 1px solid #eee; display: flex; gap: 5px; }
     .footer-btn { 
@@ -125,10 +180,41 @@
     <div id="loader"><div class="spinner"></div></div>
     
     <div id="welcome">
-      <h2 style="color: var(--primary-color);">🍀 환영합니다!</h2>
-      <p id="todayDisplay"></p>
+      <h2 style="color: var(--primary-color); margin-bottom: 5px;">🍀 환영합니다!</h2>
+      <p id="todayDisplay" style="margin-top: 0; color: #666;"></p>
       <div id="naverClock">00:00:00</div>
-      <p style="color: #888;">왼쪽 메뉴에서 도구를 선택하거나 드래그하여 순서를 변경하세요.</p>
+
+      <div class="quick-links">
+        <a href="https://www.notion.so/HigherAd-Lab-24d5c6b1d0d68034a68afd3e96f80255" target="_blank" class="link-card c-notion">
+          <span class="material-symbols-outlined">description</span>
+          <span>하이어애드 노션</span>
+        </a>
+        
+        <a href="https://docs.google.com/spreadsheets/d/1sHZCaJTA9icEf2S4Ad9zLWdo8oAvoK1hTfA1EONmzS8/edit?usp=sharing" target="_blank" class="link-card c-sheet">
+          <span class="material-symbols-outlined">table_chart</span>
+          <span>⭐순위표</span>
+        </a>
+        <a href="https://docs.google.com/spreadsheets/d/1Ia3CcylXPF-Y4f2V6qBiVHmRf85vSPiJ43v9GnQPB2c/edit?usp=sharing" target="_blank" class="link-card c-sheet">
+          <span class="material-symbols-outlined">table_chart</span>
+          <span>♠️단독 상품성 분류</span>
+        </a>
+
+        <a href="https://admin.bizfit.kr/v1/admin/index.php" target="_blank" class="link-card c-admin">
+          <span class="material-symbols-outlined">admin_panel_settings</span>
+          <span>비즈핏 어드민</span>
+        </a>
+
+        <a href="https://bizfit.co.kr/bfnew/partners/account/view/login.html" target="_blank" class="link-card c-store">
+          <span class="material-symbols-outlined">storefront</span>
+          <span>지사 페이지</span>
+        </a>
+        <a href="http://higherad.co.kr/bfnew/partners/account/view/login.html" target="_blank" class="link-card c-store">
+          <span class="material-symbols-outlined">store</span>
+          <span>광고주 페이지</span>
+        </a>
+      </div>
+
+      <p style="color: #bbb; margin-top: 40px; font-size: 13px;">왼쪽 메뉴에서 도구를 선택하거나 드래그하여 순서를 변경하세요.</p>
     </div>
 
     <iframe id="toolFrame"></iframe>
@@ -142,7 +228,7 @@
     let dragged = null;
 
     const defaultTools = [
-      {file: "★/메모장.html", label: "📋 메모장"},
+      {file: "★/메모장.html", label: "⏰ 메모장"},
       {file: "★/경쟁사 주소.html", label: "📍 경쟁사 주소"},
       {file: "★/등급 확인.html", label: "🎖️ 등급 확인"},
       {file: "★/URL 인코딩_디코딩.html", label: "🔗 URL 인코딩/디코딩"},
@@ -163,7 +249,6 @@
       setupDragAndDrop();
     };
 
-    // 초성 추출 함수 (ㄱㅈㅅ -> 경쟁사 매칭용)
     function getChosung(str) {
       const cho = ["ㄱ","ㄲ","ㄴ","ㄷ","ㄸ","ㄹ","ㅁ","ㅂ","ㅃ","ㅅ","ㅆ","ㅇ","ㅈ","ㅉ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
       let result = "";
@@ -175,20 +260,14 @@
       return result;
     }
 
-    // 초성 검색이 적용된 필터 기능
     function filterTools() {
       const query = document.getElementById('toolSearch').value.toLowerCase().replace(/\s/g, "");
       const queryChosung = getChosung(query);
-
       document.querySelectorAll('.tool-button').forEach(btn => {
         const label = btn.textContent.toLowerCase().replace(/\s/g, "");
         const labelChosung = getChosung(label);
-
-        if (label.includes(query) || labelChosung.includes(query)) {
-          btn.style.display = "flex";
-        } else {
-          btn.style.display = "none";
-        }
+        if (label.includes(query) || labelChosung.includes(query)) btn.style.display = "flex";
+        else btn.style.display = "none";
       });
     }
 
@@ -198,7 +277,6 @@
       btn.draggable = true;
       btn.dataset.file = tool.file;
       btn.innerHTML = `<span class="btn-label">${tool.label}</span>`;
-      
       btn.onclick = () => {
         document.querySelectorAll('.tool-button').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
@@ -208,12 +286,7 @@
         frame.src = tool.file;
         frame.onload = () => { loader.style.display = "none"; };
       };
-
-      btn.ondragstart = (e) => {
-        dragged = btn;
-        e.dataTransfer.effectAllowed = 'move';
-      };
-
+      btn.ondragstart = (e) => { dragged = btn; e.dataTransfer.effectAllowed = 'move'; };
       return btn;
     }
 
@@ -224,11 +297,8 @@
           e.preventDefault();
           if (!dragged) return;
           const afterElement = getDragAfterElement(section, e.clientY);
-          if (afterElement == null) {
-            section.appendChild(dragged);
-          } else {
-            section.insertBefore(dragged, afterElement);
-          }
+          if (afterElement == null) section.appendChild(dragged);
+          else section.insertBefore(dragged, afterElement);
           saveState();
         };
       });
@@ -239,11 +309,8 @@
       return draggableElements.reduce((closest, child) => {
         const box = child.getBoundingClientRect();
         const offset = y - box.top - box.height / 2;
-        if (offset < 0 && offset > closest.offset) {
-          return { offset: offset, element: child };
-        } else {
-          return closest;
-        }
+        if (offset < 0 && offset > closest.offset) return { offset: offset, element: child };
+        else return closest;
       }, { offset: Number.NEGATIVE_INFINITY }).element;
     }
 
@@ -262,24 +329,20 @@
       const allFiles = defaultTools.map(t => t.file);
       const combinedSaved = [...(state.fav || []), ...state.active, ...state.inactive];
       const newFiles = allFiles.filter(f => !combinedSaved.includes(f));
-
       const render = (files, container) => {
         files.forEach(file => {
           const tool = defaultTools.find(t => t.file === file);
           if (tool) container.appendChild(createButton(tool));
         });
       };
-
       sections.forEach(s => s.innerHTML = "");
       render(state.fav || [], sections[0]);
       render(state.active, sections[1]);
       render(state.inactive, sections[2]);
-      
       newFiles.forEach(file => {
         const tool = defaultTools.find(t => t.file === file);
         if (tool) sections[1].appendChild(createButton(tool));
       });
-      
       if (newFiles.length > 0) saveState();
     }
 
@@ -287,7 +350,7 @@
       const now = new Date();
       document.getElementById('naverClock').textContent = now.toTimeString().split(' ')[0];
       const days = ['일','월','화','수','목','금','토'];
-      document.getElementById('todayDisplay').textContent = `${now.getFullYear()}. ${now.getMonth()+1}. ${now.getDate()}(${days[now.getDay()]})`;
+      document.getElementById('todayDisplay').textContent = `${now.getFullYear()}. ${now.getMonth()+1}. ${now.getDate()} (${days[now.getDay()]})`;
     }
 
     function exportData() {
