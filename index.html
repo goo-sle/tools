@@ -14,7 +14,6 @@
       --sidebar-bg: #f9f9f9;
       --border-color: #ccc;
       --text-main: #333;
-      /* 브랜드별 포인트 컬러 */
       --notion-color: #000000;
       --sheet-color: #0F9D58;
       --admin-color: #4285F4;
@@ -30,10 +29,11 @@
 
     /* 사이드바 스타일 */
     #sidebar {
-      width: 260px;
+      width: 260px; min-width: 260px;
       background-color: var(--sidebar-bg);
       border-right: 1px solid var(--border-color);
       display: flex; flex-direction: column;
+      transition: all 0.3s ease;
     }
     .sidebar-header { padding: 15px; border-bottom: 1px solid #eee; }
     #toolSearch {
@@ -46,9 +46,7 @@
     .section-title {
       font-size: 12px; font-weight: bold; color: #777;
       margin: 15px 0 8px 3px; user-select: none;
-      display: flex; justify-content: space-between;
     }
-
     .section { display: flex; flex-direction: column; gap: 6px; min-height: 30px; }
     
     .tool-button {
@@ -56,35 +54,17 @@
       padding: 10px 12px; font-size: 14px;
       cursor: grab; background-color: #fff;
       border: 1px solid #eee; border-radius: 8px;
-      transition: all 0.2s; position: relative;
+      transition: all 0.2s;
     }
     .tool-button:hover { background-color: var(--hover-color); transform: translateX(3px); }
-    .tool-button.active { 
-      background-color: var(--active-bg); 
-      border-color: #a0c4ff; font-weight: bold; 
-    }
-    .btn-label { flex-grow: 1; pointer-events: none; }
-    
-    .section:empty::before {
-      content: "항목을 끌어다 놓으세요";
-      display: block; font-size: 11px; color: #bbb;
-      text-align: center; padding: 15px 0;
-      border: 1px dashed #ddd; border-radius: 8px;
-    }
+    .tool-button.active { background-color: var(--active-bg); border-color: #a0c4ff; font-weight: bold; }
 
     /* 메인 콘텐츠 영역 */
-    #content { flex-grow: 1; position: relative; background: #fff; overflow-y: auto; }
-    iframe { width: 100%; height: 100%; border: none; display: none; }
+    #content { flex-grow: 1; position: relative; background: #fff; overflow-y: auto; display: flex; flex-direction: column; }
+    iframe { width: 100%; height: 100%; border: none; display: none; flex-grow: 1; }
 
-    #loader {
-      display: none; position: absolute; top: 50%; left: 50%;
-      transform: translate(-50%, -50%);
-    }
-    .spinner {
-      width: 40px; height: 40px; border: 4px solid #f3f3f3;
-      border-top: 4px solid var(--primary-color);
-      border-radius: 50%; animation: spin 1s linear infinite;
-    }
+    #loader { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10; }
+    .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid var(--primary-color); border-radius: 50%; animation: spin 1s linear infinite; }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
     #welcome {
@@ -96,59 +76,65 @@
       background: #f0f0f0; padding: 10px 30px; border-radius: 12px;
     }
 
-    /* 퀵링크 그리드 스타일 */
+    /* 퀵링크 그리드 (PC 기준 3x3 비율 유지 및 사이즈 최적화) */
     .quick-links {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      /* PC에서는 무조건 한 줄에 3개씩 배치 */
+      grid-template-columns: repeat(3, 1fr); 
       gap: 15px;
-      margin-top: 30px;
+      margin-top: 25px;
       width: 100%;
-      max-width: 700px;
+      /* 박스가 너무 커지지 않도록 전체 너비 제한 */
+      max-width: 700px; 
+      margin-left: auto;
+      margin-right: auto;
     }
-    .link-card {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 25px 15px;
-      background: #fff;
-      border: 1px solid #e5e5e5;
-      border-radius: 12px;
-      text-decoration: none;
-      color: var(--text-main);
-      transition: all 0.2s ease;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.04);
-    }
-    .link-card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 8px 15px rgba(0,0,0,0.08);
-      background: #fafafa;
-    }
-    
-    /* 아이콘 스타일 */
-    .link-card .material-symbols-outlined {
-      font-size: 32px;
-      margin-bottom: 12px;
-    }
-    .link-card span { font-size: 14px; font-weight: 600; }
 
-    /* 카드 포인트 및 아이콘 컬러 */
+    .link-card {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      /* 박스 내부 여백을 줄여 콤팩트하게 변경 */
+      padding: 15px 10px; 
+      background: #fff; border: 1px solid #e5e5e5; border-radius: 12px;
+      text-decoration: none; color: var(--text-main); transition: all 0.2s ease;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+      /* 가로 대비 세로 높이를 줄여 슬림한 직사각형 유지 */
+      aspect-ratio: 2 / 1.1; 
+    }
+
+    .link-card:hover { transform: translateY(-3px); box-shadow: 0 6px 12px rgba(0,0,0,0.08); background: #fafafa; }
+    
+    /* 아이콘 및 텍스트 크기 미세 조정 */
+    .link-card .material-symbols-outlined { font-size: 28px; margin-bottom: 8px; }
+    .link-card span { font-size: 13px; font-weight: 600; word-break: keep-all; text-align: center; }
+
+    /* 카드 포인트 컬러 */
     .c-notion { border-top: 4px solid var(--notion-color); }
     .c-notion .material-symbols-outlined { color: var(--notion-color); }
-
     .c-sheet { border-top: 4px solid var(--sheet-color); }
     .c-sheet .material-symbols-outlined { color: var(--sheet-color); }
-
     .c-admin { border-top: 4px solid var(--admin-color); }
     .c-admin .material-symbols-outlined { color: var(--admin-color); }
-
     .c-store { border-top: 4px solid var(--store-color); }
     .c-store .material-symbols-outlined { color: var(--store-color); }
 
+    /* 하단 푸터 */
     .sidebar-footer { padding: 10px; border-top: 1px solid #eee; display: flex; gap: 5px; }
-    .footer-btn { 
-      flex: 1; font-size: 11px; padding: 5px; cursor: pointer;
-      background: #fff; border: 1px solid #ddd; border-radius: 4px;
+    .footer-btn { flex: 1; font-size: 11px; padding: 8px 5px; cursor: pointer; background: #fff; border: 1px solid #ddd; border-radius: 4px; }
+
+    /* [반응형 미디어 쿼리] */
+    @media (max-width: 850px) {
+      body { flex-direction: column; overflow-y: auto; }
+      #sidebar { width: 100%; min-width: 100%; height: auto; max-height: 350px; border-right: none; border-bottom: 1px solid var(--border-color); }
+      #content { height: auto; min-height: 100vh; }
+      /* 태블릿 화면에서는 2열로 변경 */
+      .quick-links { grid-template-columns: repeat(2, 1fr); max-width: 500px; }
+    }
+
+    @media (max-width: 480px) {
+      #naverClock { font-size: 30px; padding: 8px 20px; }
+      /* 모바일 세로 화면에서는 1열로 변경 */
+      .quick-links { grid-template-columns: 1fr; max-width: 280px; }
+      .link-card { padding: 15px 10px; }
     }
   </style>
 </head>
@@ -158,18 +144,14 @@
     <div class="sidebar-header">
       <input type="text" id="toolSearch" placeholder="도구 검색 (이름, 초성)..." oninput="filterTools()">
     </div>
-
     <div class="scroll-area">
       <div class="section-title">⭐ 자주 쓰는 도구</div>
       <div id="favTools" class="section"></div>
-
       <div class="section-title">🛠 사용 중</div>
       <div id="activeTools" class="section"></div>
-
       <div class="section-title">📦 미사용</div>
       <div id="inactiveTools" class="section"></div>
     </div>
-
     <div class="sidebar-footer">
       <button class="footer-btn" onclick="exportData()">💾 백업</button>
       <button class="footer-btn" onclick="importData()">📂 복구</button>
@@ -180,8 +162,8 @@
     <div id="loader"><div class="spinner"></div></div>
     
     <div id="welcome">
-      <h2 style="color: var(--primary-color); margin-bottom: 5px;">🍀 환영합니다!</h2>
-      <p id="todayDisplay" style="margin-top: 0; color: #666;"></p>
+      <h2 style="color: var(--primary-color); margin-bottom: 5px;">🍀 통합 업무 포털</h2>
+      <p id="todayDisplay" style="margin-top: 0; color: #666; font-size: 14px;"></p>
       <div id="naverClock">00:00:00</div>
 
       <div class="quick-links">
@@ -194,6 +176,7 @@
           <span class="material-symbols-outlined">table_chart</span>
           <span>⭐순위표</span>
         </a>
+
         <a href="https://docs.google.com/spreadsheets/d/1Ia3CcylXPF-Y4f2V6qBiVHmRf85vSPiJ43v9GnQPB2c/edit?usp=sharing" target="_blank" class="link-card c-sheet">
           <span class="material-symbols-outlined">table_chart</span>
           <span>♠️단독 상품성 분류</span>
@@ -208,15 +191,14 @@
           <span class="material-symbols-outlined">storefront</span>
           <span>지사 페이지</span>
         </a>
+
         <a href="http://higherad.co.kr/bfnew/partners/account/view/login.html" target="_blank" class="link-card c-store">
           <span class="material-symbols-outlined">store</span>
           <span>광고주 페이지</span>
         </a>
       </div>
-
-      <p style="color: #bbb; margin-top: 40px; font-size: 13px;">왼쪽 메뉴에서 도구를 선택하거나 드래그하여 순서를 변경하세요.</p>
+      <p style="color: #bbb; margin-top: 40px; font-size: 12px;">메뉴를 클릭하여 도구를 사용하거나 순서를 변경하세요.</p>
     </div>
-
     <iframe id="toolFrame"></iframe>
   </div>
 
@@ -285,6 +267,7 @@
         frame.style.display = "block";
         frame.src = tool.file;
         frame.onload = () => { loader.style.display = "none"; };
+        if (window.innerWidth <= 850) window.scrollTo({ top: document.getElementById('content').offsetTop, behavior: 'smooth' });
       };
       btn.ondragstart = (e) => { dragged = btn; e.dataTransfer.effectAllowed = 'move'; };
       return btn;
