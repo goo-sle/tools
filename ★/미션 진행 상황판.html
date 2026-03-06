@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📊 NP 트래픽 통합 상황판</title>
+    <style>
+        :root {
+            --primary: #2e7d32;
+            --bg: #f0f2f5;
+            --white: #ffffff;
+            --border: #e0e0e0;
+        }
+
+        body { background: var(--bg); margin: 0; padding: 20px; font-family: 'Pretendard', sans-serif; color: #333; }
+        .container { max-width: 1000px; margin: 0 auto; text-align: center; }
+        h1 { color: var(--primary); margin-bottom: 30px; font-size: 24px; }
+
+        /* 아코디언 스타일 */
+        .accordion-item {
+            background: var(--white);
+            border-radius: 12px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
+        .accordion-header {
+            width: 100%;
+            padding: 20px;
+            background: var(--white);
+            border: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            outline: none;
+            transition: background 0.2s;
+        }
+
+        .accordion-header:hover { background: #f9f9f9; }
+        .accordion-header h3 { margin: 0; font-size: 18px; color: #2c3e50; pointer-events: none; }
+        
+        /* 오른쪽 컨트롤 영역 */
+        .header-right { 
+            display: flex; 
+            align-items: center; 
+            gap: 15px; 
+            min-width: 130px; 
+            justify-content: flex-end; 
+        }
+
+        /* 새창으로 버튼 - 평소 숨김 */
+        .full-btn { 
+            display: none; 
+            padding: 6px 12px; 
+            font-size: 12px; 
+            background: #f0f4f0; 
+            border: 1px solid #d0ddd0; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            color: var(--primary); 
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        .full-btn:hover { background: var(--primary); color: white; }
+
+        .accordion-header .icon { 
+            font-size: 20px; 
+            transition: transform 0.3s; 
+            color: var(--primary);
+        }
+
+        /* 클릭 시 아이템 활성화 상태 */
+        .accordion-item.active .full-btn { display: inline-block; } /* 활성화 시 버튼 보임 */
+        .accordion-item.active .icon { transform: rotate(180deg); }
+
+        /* 시트 콘텐츠 영역 */
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease-out;
+            background: #fff;
+        }
+
+        .accordion-item.active .accordion-content {
+            max-height: 850px; 
+            border-top: 1px solid var(--border);
+        }
+
+        .sheet-frame {
+            width: 100%;
+            height: 700px; /* 원본보다 조금 더 키움 */
+            border: none;
+        }
+
+        .footer-info { margin-top: 20px; font-size: 13px; color: #888; text-align: center; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🍀 비즈핏 통합 상황판</h1>
+
+    <div class="accordion-item">
+        <button class="accordion-header">
+            <h3>📒 NP 트래픽 등급표</h3>
+            <div class="header-right">
+                <span class="full-btn" onclick="openNewTab('https://docs.google.com/spreadsheets/d/e/2PACX-1vQoNV2gqFCCiUae_UiCVhY-WJ4_5wUD0JPHDYk_rHMQcprN0BfQddmxkrLbCuWnmg/pubhtml?gid=40553156&single=true&widget=false&chrome=false')">새창으로</span>
+                <span class="icon">▼</span>
+            </div>
+        </button>
+        <div class="accordion-content">
+            <iframe class="sheet-frame" src="https://docs.google.com/spreadsheets/d/e/2PACX-1vQoNV2gqFCCiUae_UiCVhY-WJ4_5wUD0JPHDYk_rHMQcprN0BfQddmxkrLbCuWnmg/pubhtml?gid=40553156&single=true&widget=false&chrome=false"></iframe>
+        </div>
+    </div>
+
+    <div class="accordion-item">
+        <button class="accordion-header">
+            <h3>📒 NS 트래픽(단독) 등급표</h3>
+            <div class="header-right">
+                <span class="full-btn" onclick="openNewTab('https://docs.google.com/spreadsheets/d/e/2PACX-1vR3OdGJxL1NjwRU89xfKURxPMlJvl-AshXFgqR7X1NM3hwFZ9HUrkT76oA7fXJ90Q/pubhtml?gid=1221355086&single=true&widget=false&chrome=false')">새창으로</span>
+                <span class="icon">▼</span>
+            </div>
+        </button>
+        <div class="accordion-content">
+            <iframe class="sheet-frame" src="https://docs.google.com/spreadsheets/d/e/2PACX-1vR3OdGJxL1NjwRU89xfKURxPMlJvl-AshXFgqR7X1NM3hwFZ9HUrkT76oA7fXJ90Q/pubhtml?gid=1221355086&single=true&widget=false&chrome=false"></iframe>
+        </div>
+    </div>
+
+    <div class="accordion-item">
+        <button class="accordion-header">
+            <h3>📒 NS 트래픽(가격비교) 등급표</h3>
+            <div class="header-right">
+                <span class="full-btn" onclick="openNewTab('https://docs.google.com/spreadsheets/d/e/2PACX-1vR3OdGJxL1NjwRU89xfKURxPMlJvl-AshXFgqR7X1NM3hwFZ9HUrkT76oA7fXJ90Q/pubhtml?gid=1007752263&single=true&widget=false&chrome=false')">새창으로</span>
+                <span class="icon">▼</span>
+            </div>
+        </button>
+        <div class="accordion-content">
+            <iframe class="sheet-frame" src="https://docs.google.com/spreadsheets/d/e/2PACX-1vR3OdGJxL1NjwRU89xfKURxPMlJvl-AshXFgqR7X1NM3hwFZ9HUrkT76oA7fXJ90Q/pubhtml?gid=1007752263&single=true&widget=false&chrome=false"></iframe>
+        </div>
+    </div>
+
+    <p class="footer-info">※ 각 항목을 클릭하면 상세 상황판이 열립니다. 데이터는 약 5분 주기로 자동 갱신됩니다.</p>
+</div>
+
+<script>
+    // 아코디언 클릭 이벤트
+    document.querySelectorAll('.accordion-header').forEach(button => {
+        button.addEventListener('click', (e) => {
+            // 버튼 자체를 클릭했을 때는 아코디언이 반응하지 않도록 처리(오픈 함수에서 stopPropagation 사용)
+            const accordionItem = button.parentElement;
+            accordionItem.classList.toggle('active');
+        });
+    });
+
+    // 새창 열기 함수
+    function openNewTab(url) {
+        event.stopPropagation(); // 아코디언 토글 이벤트 차단
+        window.open(url, '_blank');
+    }
+</script>
+
+</body>
+</html>
