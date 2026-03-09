@@ -255,7 +255,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
     import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
-    import { getDatabase, ref, set, get, update } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-database.js";
+    import { getDatabase, ref, set, onValue, update } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCRnAMy3PyD0zracrwyo17hEZ-R40pAvt4",
@@ -273,57 +273,47 @@
 
     const formatId = (id) => `${id.trim()}@higherad.com`;
 
-    // [전역 등록] 로그인/회원가입 폼 전환
     window.toggleAuth = (isRegister) => {
       document.getElementById('loginBox').style.display = isRegister ? 'none' : 'block';
       document.getElementById('regBox').style.display = isRegister ? 'block' : 'none';
     };
 
+    // 실시간 감시 엔진 (onValue)
     onAuthStateChanged(auth, async (user) => {
-      const authOverlay = document.getElementById('authOverlay');
       if (user) {
-        authOverlay.style.display = 'none';
+        document.getElementById('authOverlay').style.display = 'none';
         document.getElementById('displayUser').textContent = user.email.split('@')[0] + "님";
         
-        try {
-          // 1. 서버에서 최신 데이터 강제 로드
-          const snapshot = await get(ref(db, 'users/' + user.uid));
+        // 서버 데이터 변화 실시간 감시 (PC에서 옮기면 모바일이 바로 바뀜)
+        onValue(ref(db, 'users/' + user.uid), (snapshot) => {
           if (snapshot.exists()) {
             const data = snapshot.val();
-            
-            // 2. 메뉴 설정 데이터가 있는지 확인 후 덮어쓰기
             if (data.toolDashboardState) {
+              // 로컬스토리지 백업 및 화면 렌더링
               localStorage.setItem("toolDashboardState", data.toolDashboardState);
-              // 3. 다른 추가 데이터(메모 등)가 있다면 함께 동기화
-              Object.keys(data).forEach(key => {
-                if(key !== 'email' && key !== 'createdAt') {
-                  localStorage.setItem(key, data[key]);
-                }
-              });
+              renderAppFromServer(JSON.parse(data.toolDashboardState));
             }
+          } else {
+            // 초기 가입 사용자
+            initApp();
           }
-          // 4. 데이터 주입 완료 후 앱 초기화 (이 순서가 중요합니다)
-          initApp(); 
-        } catch (e) {
-          console.error("모바일 동기화 실패:", e);
-          initApp();
-        }
+        });
+
+        updateClock();
+        setInterval(updateClock, 1000);
+        setupDragAndDrop();
       } else {
-        authOverlay.style.display = 'flex';
+        document.getElementById('authOverlay').style.display = 'flex';
       }
     });
 
-    window.saveToCloud = function() {
+    // 실시간 서버 저장 함수 (드래그 끝날 때 호출)
+    window.saveStateToServer = function(state) {
       const user = auth.currentUser;
       if (!user) return;
-      const payload = {};
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        payload[key] = localStorage.getItem(key);
-      }
-      update(ref(db, 'users/' + user.uid), payload)
-        .then(() => console.log("Cloud Synced"))
-        .catch(err => console.error("Sync Error:", err));
+      update(ref(db, 'users/' + user.uid), {
+        toolDashboardState: JSON.stringify(state)
+      });
     };
 
     window.handleLogin = async () => {
@@ -342,22 +332,13 @@
       try {
         const userCredential = await createUserWithEmailAndPassword(auth, formatId(id), pw);
         const user = userCredential.user;
-
-        // 회원가입 시 초기 메뉴 세팅 강제 주입
-        const initialState = {
-          fav: [],
-          active: defaultTools.map(t => t.file),
-          inactive: []
-        };
-
+        const initialState = { fav: [], active: defaultTools.map(t => t.file), inactive: [] };
         await set(ref(db, 'users/' + user.uid), {
           toolDashboardState: JSON.stringify(initialState),
           email: user.email,
           createdAt: new Date().toISOString()
         });
-
-        alert("가입 성공! 로그인 해주세요.");
-        window.toggleAuth(false);
+        alert("가입 성공!"); window.toggleAuth(false);
       } catch (e) { alert("가입 실패: " + e.message); }
     };
 
@@ -367,7 +348,6 @@
   <script>
     const sections = ['favTools', 'activeTools', 'inactiveTools'].map(id => document.getElementById(id));
     const frame = document.getElementById('toolFrame');
-    const loader = document.getElementById('loader');
     const welcome = document.getElementById('welcome');
     let dragged = null;
 
@@ -388,47 +368,23 @@
       {file: "★/업체별 수량 관리.html", label: "📚 업체별 수량 관리"},
     ];
 
-    function initApp() {
-      loadState();
-      updateClock();
-      setInterval(updateClock, 1000);
-      setupDragAndDrop();
-    }
-
-    function saveState() {
-      const state = {
-        fav: Array.from(sections[0].children).map(b => b.dataset.file),
-        active: Array.from(sections[1].children).map(b => b.dataset.file),
-        inactive: Array.from(sections[2].children).map(b => b.dataset.file)
-      };
-      localStorage.setItem("toolDashboardState", JSON.stringify(state));
-      if(typeof window.saveToCloud === 'function') window.saveToCloud();
-    }
-
-    function loadState() {
-      const saved = localStorage.getItem("toolDashboardState");
-      let state = saved ? JSON.parse(saved) : { fav: [], active: defaultTools.map(t => t.file), inactive: [] };
-      
-      const currentSavedFiles = [...(state.fav || []), ...(state.active || []), ...(state.inactive || [])];
-      const newTools = defaultTools.filter(t => !currentSavedFiles.includes(t.file));
-
-      if (newTools.length > 0) {
-        newTools.forEach(nt => { if (!state.active.includes(nt.file)) state.active.push(nt.file); });
-        saveState();
-      }
-
+    function renderAppFromServer(state) {
       const render = (files, container) => {
         container.innerHTML = "";
-        files.forEach(file => {
+        (files || []).forEach(file => {
           const tool = defaultTools.find(t => t.file === file);
           if (tool) container.appendChild(createButton(tool));
         });
       };
+      render(state.fav, sections[0]);
+      render(state.active, sections[1]);
+      render(state.inactive, sections[2]);
+    }
 
-      sections.forEach(s => s.innerHTML = "");
-      render(state.fav || [], sections[0]);
-      render(state.active || [], sections[1]);
-      render(state.inactive || [], sections[2]);
+    function initApp() {
+      const saved = localStorage.getItem("toolDashboardState");
+      let state = saved ? JSON.parse(saved) : { fav: [], active: defaultTools.map(t => t.file), inactive: [] };
+      renderAppFromServer(state);
     }
 
     function createButton(tool) {
@@ -440,11 +396,10 @@
       btn.onclick = () => {
         document.querySelectorAll('.tool-button').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        welcome.style.display = "none"; loader.style.display = "block";
+        welcome.style.display = "none";
         frame.style.display = "block"; frame.src = tool.file;
-        frame.onload = () => { loader.style.display = "none"; };
       };
-      btn.ondragstart = (e) => { dragged = btn; };
+      btn.ondragstart = () => { dragged = btn; };
       return btn;
     }
 
@@ -457,7 +412,14 @@
           const afterElement = getDragAfterElement(section, e.clientY);
           if (afterElement == null) section.appendChild(dragged);
           else section.insertBefore(dragged, afterElement);
-          saveState();
+          
+          // 드래그 종료 후 서버에 즉시 전송
+          const state = {
+            fav: Array.from(sections[0].children).map(b => b.dataset.file),
+            active: Array.from(sections[1].children).map(b => b.dataset.file),
+            inactive: Array.from(sections[2].children).map(b => b.dataset.file)
+          };
+          if(window.saveStateToServer) window.saveStateToServer(state);
         };
       });
     }
@@ -482,7 +444,7 @@
     function goHome() {
       document.querySelectorAll('.tool-button').forEach(b => b.classList.remove('active'));
       frame.src = ""; frame.style.display = "none";
-      loader.style.display = "none"; welcome.style.display = "flex";
+      welcome.style.display = "flex";
     }
 
     function filterTools() {
@@ -495,9 +457,8 @@
 
     function toggleSidebar() {
       const sb = document.getElementById('sidebar');
-      const icon = document.getElementById('toggleIcon');
       sb.classList.toggle('collapsed');
-      icon.textContent = sb.classList.contains('collapsed') ? 'expand_more' : 'expand_less';
+      document.getElementById('toggleIcon').textContent = sb.classList.contains('collapsed') ? 'expand_more' : 'expand_less';
     }
   </script>
 </body>
