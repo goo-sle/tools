@@ -196,7 +196,7 @@
             return {
                 items: [],
                 branches: ['A영업점', 'B영업점', 'C영업점'],
-                activeTab: 'A영업점',
+                activeTab: '', // 초기에는 비워둠 (init에서 첫 번째 탭 할당)
                 editingTab: null,
                 tempTabText: '',
                 showPasteModal: false,
@@ -209,6 +209,11 @@
                     if (savedItems) this.items = JSON.parse(savedItems);
                     if (savedBranches) this.branches = JSON.parse(savedBranches);
                     
+                    // 시작 페이지를 항상 첫 번째 탭으로 설정
+                    if (this.branches.length > 0) {
+                        this.activeTab = this.branches[0];
+                    }
+
                     this.items.forEach(item => {
                         if(!item.id) item.id = Date.now() + Math.random();
                     });
@@ -219,7 +224,6 @@
                     localStorage.setItem('higher_ad_branches', JSON.stringify(this.branches));
                 },
 
-                // 수정된 부분: 현재 선택된 탭의 내용만 초기화
                 resetCurrentTab() {
                     if(confirm(`[${this.activeTab}]의 모든 데이터를 초기화하시겠습니까?`)) {
                         this.items = this.items.filter(item => item.branch !== this.activeTab);
