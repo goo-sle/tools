@@ -14,6 +14,31 @@
         input.tab-edit-input { background: transparent; border: none; outline: none; width: 80px; font-weight: 800; color: inherit; }
         input[type="checkbox"] { cursor: pointer; }
     </style>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCRnAMy3PyD0zracrwyo17hEZ-R40pAvt4",
+            authDomain: "higherad-530c4.firebaseapp.com",
+            databaseURL: "https://higherad-530c4-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "higherad-530c4",
+            storageBucket: "higherad-530c4.firebasestorage.app",
+            messagingSenderId: "1028078651420",
+            appId: "1:1028078651420:web:71c8b8c5e69f0772d637d9",
+            measurementId: "G-R9LXEBT2SR"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // Alpine.js에서 접근 가능하도록 전역 설정
+        window.fbDB = db;
+        window.fbRef = ref;
+        window.fbSet = set;
+        window.fbOnValue = onValue;
+    </script>
 </head>
 <body class="bg-gray-100 font-sans" x-data="managementApp()" x-init="init()" @keydown.f2="startEditing(activeTab)">
 
@@ -36,7 +61,7 @@
         </div>
     </header>
 
-    <main class="p-6 max-w-7xl mx-auto" x-cloak>
+    <main class="p-6 max-w-7xl mx-auto">
         <div class="flex items-center gap-1 mb-6 bg-white p-1 rounded-xl shadow-sm border border-gray-200 overflow-x-auto whitespace-nowrap">
             <template x-for="(tab, index) in branches" :key="tab">
                 <div @dblclick="startEditing(tab)" 
@@ -96,11 +121,10 @@
         <div x-show="selectedIds.length > 0" x-transition class="mb-4 bg-indigo-600 p-3 rounded-xl shadow-lg flex items-center justify-between text-white">
             <div class="flex items-center gap-4 ml-2">
                 <span class="font-bold text-sm leading-none"><i class="fas fa-check-double mr-2"></i><span x-text="selectedIds.length"></span>개 선택됨</span>
-                <div class="h-4 w-[1px] bg-white/30"></div>
                 <div class="flex gap-2">
-                    <button @click="bulkUpdateStatus('접수')" class="bg-white text-indigo-700 hover:bg-blue-50 px-3 py-1 rounded-lg text-xs font-bold transition shadow-sm">접수 전환</button>
-                    <button @click="bulkUpdateStatus('정산대기')" class="bg-white text-indigo-700 hover:bg-orange-50 px-3 py-1 rounded-lg text-xs font-bold transition shadow-sm">정산대기 전환</button>
-                    <button @click="bulkUpdateStatus('완료')" class="bg-white text-indigo-700 hover:bg-green-50 px-3 py-1 rounded-lg text-xs font-bold transition shadow-sm">완료 전환</button>
+                    <button @click="bulkUpdateStatus('접수')" class="bg-white text-indigo-700 hover:bg-blue-50 px-3 py-1 rounded-lg text-xs font-bold transition">접수 전환</button>
+                    <button @click="bulkUpdateStatus('정산대기')" class="bg-white text-indigo-700 hover:bg-orange-50 px-3 py-1 rounded-lg text-xs font-bold transition">정산대기 전환</button>
+                    <button @click="bulkUpdateStatus('완료')" class="bg-white text-indigo-700 hover:bg-green-50 px-3 py-1 rounded-lg text-xs font-bold transition">완료 전환</button>
                 </div>
             </div>
             <button @click="selectedIds = []" class="text-xs opacity-70 hover:opacity-100 mr-2 underline underline-offset-4">선택 취소</button>
@@ -111,7 +135,7 @@
                 <thead class="bg-gray-50 border-b text-gray-600 font-bold">
                     <tr>
                         <th class="p-4 w-12 text-center">
-                            <input type="checkbox" @change="toggleAllSelection($event)" :checked="isAllSelected()" class="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                            <input type="checkbox" @change="toggleAllSelection($event)" :checked="isAllSelected()" class="w-4 h-4 rounded border-gray-300 text-indigo-600">
                         </th>
                         <th class="p-4">업체 정보 (MID)</th>
                         <th class="p-4">순위 키워드</th>
@@ -125,13 +149,13 @@
                     <template x-for="(item, index) in filteredItems()" :key="item.id">
                         <tr class="hover:bg-indigo-50/30 transition duration-150" :class="selectedIds.includes(item.id) ? 'bg-indigo-50/60' : ''">
                             <td class="p-4 text-center">
-                                <input type="checkbox" :value="item.id" x-model="selectedIds" class="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                                <input type="checkbox" :value="item.id" x-model="selectedIds" class="w-4 h-4 rounded border-gray-300 text-indigo-600">
                             </td>
                             <td class="p-4">
                                 <div class="flex items-center gap-2">
                                     <span class="font-bold text-gray-900 leading-tight" x-text="item.name"></span>
                                     <template x-if="item.url">
-                                        <a :href="item.url" target="_blank" class="text-gray-300 hover:text-indigo-600 transition">
+                                        <a :href="item.url" target="_blank" class="text-gray-300 hover:text-indigo-600">
                                             <i class="fas fa-external-link-alt text-[10px]"></i>
                                         </a>
                                     </template>
@@ -141,7 +165,7 @@
                             <td class="p-4">
                                 <a :href="'https://m.search.naver.com/search.naver?query=' + encodeURIComponent(item.keyword)" 
                                    target="_blank" 
-                                   class="inline-flex items-center gap-1.5 bg-gray-100 border border-gray-200 px-3 py-1 rounded text-gray-600 text-xs hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-200 transition">
+                                   class="inline-flex items-center gap-1.5 bg-gray-100 border border-gray-200 px-3 py-1 rounded text-gray-600 text-xs hover:bg-indigo-50">
                                      <i class="fab fa-neos text-[10px] text-green-500"></i>
                                      <span x-text="item.keyword"></span>
                                 </a>
@@ -152,7 +176,7 @@
                             </td>
                             <td class="p-4 text-center font-mono font-black text-gray-800 text-base" x-text="item.goal"></td>
                             <td class="p-4">
-                                <select x-model="item.status" @change="saveData()" :class="{
+                                <select x-model="item.status" @change="syncWithFirebase()" :class="{
                                     'bg-blue-600 text-white': item.status === '접수',
                                     'bg-orange-500 text-white': item.status === '정산대기',
                                     'bg-green-600 text-white': item.status === '완료'
@@ -182,35 +206,17 @@
                 <button @click="showPasteModal = false" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times-circle text-xl"></i></button>
             </div>
             <div class="p-6">
-                <textarea x-model="pasteData" rows="10" class="w-full border-2 border-gray-200 rounded-xl p-4 text-sm font-mono focus:border-indigo-500 outline-none transition bg-gray-50" placeholder="업체명 | URL | MID | 키워드 | 일수 | 시작일 | 일목표 (탭 구분)"></textarea>
+                <textarea x-model="pasteData" rows="10" class="w-full border-2 border-gray-200 rounded-xl p-4 text-sm font-mono focus:border-indigo-500 outline-none transition bg-gray-50" placeholder="업체명 | URL | MID | 키워드 | 일수 | 시작일 | 일목표"></textarea>
                 <div class="flex gap-3 mt-5">
                     <button @click="processPaste()" class="flex-grow bg-indigo-600 text-white font-bold py-3 rounded-xl hover:bg-indigo-700 shadow-lg">일괄 등록 시작</button>
-                    <button @click="showPasteModal = false; pasteData = ''" class="px-6 bg-gray-100 text-gray-500 font-bold rounded-xl font-bold">취소</button>
+                    <button @click="showPasteModal = false; pasteData = ''" class="px-6 bg-gray-100 text-gray-500 font-bold rounded-xl">취소</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
-        import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-database.js";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyCRnAMy3PyD0zracrwyo17hEZ-R40pAvt4",
-            authDomain: "higherad-530c4.firebaseapp.com",
-            databaseURL: "https://higherad-530c4-default-rtdb.asia-southeast1.firebasedatabase.app",
-            projectId: "higherad-530c4",
-            storageBucket: "higherad-530c4.firebasestorage.app",
-            messagingSenderId: "1028078651420",
-            appId: "1:1028078651420:web:71c8b8c5e69f0772d637d9"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getDatabase(app);
-
-        window.managementApp = function() {
+    <script>
+        function managementApp() {
             return {
                 items: [],
                 branches: ['A영업점', 'B영업점', 'C영업점'],
@@ -220,55 +226,46 @@
                 showPasteModal: false,
                 pasteData: '',
                 selectedIds: [],
-                userId: null,
-                isLoading: true,
-
+                
                 init() {
-                    onAuthStateChanged(auth, async (user) => {
-                        if (user) {
-                            this.userId = user.uid;
-                            await this.loadFromServer();
-                        } else {
-                            alert("세션이 만료되었거나 로그인이 필요합니다.");
-                            window.location.href = "index.html"; 
+                    // Firebase 실시간 리스너 연결
+                    const loadInterval = setInterval(() => {
+                        if (window.fbOnValue) {
+                            clearInterval(loadInterval);
+                            window.fbOnValue(window.fbRef(window.fbDB, 'higher_ad_v1'), (snapshot) => {
+                                const data = snapshot.val();
+                                if (data) {
+                                    this.items = data.items || [];
+                                    this.branches = data.branches || ['A영업점', 'B영업점', 'C영업점'];
+                                    
+                                    if (this.activeTab === '' && this.branches.length > 0) {
+                                        this.activeTab = this.branches[0];
+                                    }
+                                }
+                            });
+                            console.log("Firebase Realtime Sync Active");
                         }
-                    });
+                    }, 100);
                 },
 
-                async loadFromServer() {
+                // 서버 데이터 저장 공통 함수
+                async syncWithFirebase() {
+                    if (!window.fbSet) return;
                     try {
-                        const snapshot = await get(ref(db, `users/${this.userId}/managementData`));
-                        if (snapshot.exists()) {
-                            const data = snapshot.val();
-                            this.items = data.items || [];
-                            this.branches = data.branches || ['A영업점', 'B영업점', 'C영업점'];
-                        }
-                        this.activeTab = this.branches[0] || '';
-                    } catch (e) {
-                        console.error("데이터 로드 실패:", e);
-                    } finally {
-                        this.isLoading = false;
-                    }
-                },
-
-                async saveData() {
-                    if (!this.userId) return;
-                    try {
-                        await set(ref(db, `users/${this.userId}/managementData`), {
-                            items: this.items,
-                            branches: this.branches,
-                            lastUpdated: new Date().toISOString()
+                        await window.fbSet(window.fbRef(window.fbDB, 'higher_ad_v1'), {
+                            items: JSON.parse(JSON.stringify(this.items)), // Proxy 객체 제거 후 순수 객체 저장
+                            branches: this.branches
                         });
                     } catch (e) {
-                        console.error("클라우드 저장 실패:", e);
+                        console.error("저장 실패:", e);
                     }
                 },
 
-                resetCurrentTab() {
+                async resetCurrentTab() {
                     if(confirm(`[${this.activeTab}]의 모든 데이터를 초기화하시겠습니까?`)) {
                         this.items = this.items.filter(item => item.branch !== this.activeTab);
                         this.selectedIds = [];
-                        this.saveData();
+                        await this.syncWithFirebase();
                     }
                 },
 
@@ -277,35 +274,35 @@
                     this.tempTabText = tab;
                 },
 
-                saveTabName(oldName) {
+                async saveTabName(oldName) {
                     const newName = this.tempTabText.trim();
                     if (newName && newName !== oldName && !this.branches.includes(newName)) {
                         const idx = this.branches.indexOf(oldName);
                         this.branches[idx] = newName;
                         this.items.forEach(item => { if (item.branch === oldName) item.branch = newName; });
                         this.activeTab = newName;
-                        this.saveData();
+                        await this.syncWithFirebase();
                     }
                     this.editingTab = null;
                 },
 
-                addBranch() {
+                async addBranch() {
                     const name = prompt('새로운 영업점 이름을 입력하세요:');
                     if (name && !this.branches.includes(name)) {
                         this.branches.push(name);
                         this.activeTab = name;
-                        this.saveData();
+                        await this.syncWithFirebase();
                     }
                 },
 
-                removeBranch() {
-                    const name = prompt(`현재 영업점 [${this.activeTab}]을 삭제하시겠습니까?\n이름을 정확히 입력하세요.`);
+                async removeBranch() {
+                    const name = prompt(`현재 영업점 [${this.activeTab}]을 삭제하시겠습니까?`);
                     if (name === this.activeTab) {
-                        if(confirm(`정말로 삭제하시겠습니까?`)) {
+                        if(confirm(`정말로 모든 데이터를 삭제하시겠습니까?`)) {
                             this.items = this.items.filter(item => item.branch !== this.activeTab);
                             this.branches = this.branches.filter(b => b !== this.activeTab);
                             this.activeTab = this.branches[0] || '';
-                            this.saveData();
+                            await this.syncWithFirebase();
                         }
                     }
                 },
@@ -315,9 +312,7 @@
                 },
 
                 calculateTotalQuantity() {
-                    return this.filteredItems().reduce((acc, i) => {
-                        return acc + (Number(i.goal) || 0) * (Number(i.days) || 0);
-                    }, 0);
+                    return this.filteredItems().reduce((acc, i) => acc + (Number(i.goal) * Number(i.days)), 0);
                 },
 
                 toggleAllSelection(e) {
@@ -334,16 +329,16 @@
                     return currentIds.length > 0 && currentIds.every(id => this.selectedIds.includes(id));
                 },
 
-                bulkUpdateStatus(newStatus) {
-                    if(!confirm(`${this.selectedIds.length}개 항목 상태를 [${newStatus}]로 변경하시겠습니까?`)) return;
+                async bulkUpdateStatus(newStatus) {
+                    if(!confirm(`${this.selectedIds.length}개 항목을 [${newStatus}]로 변경하시겠습니까?`)) return;
                     this.items.forEach(item => {
                         if(this.selectedIds.includes(item.id)) item.status = newStatus;
                     });
                     this.selectedIds = [];
-                    this.saveData();
+                    await this.syncWithFirebase();
                 },
 
-                processPaste() {
+                async processPaste() {
                     if(!this.pasteData.trim()) return;
                     const rows = this.pasteData.trim().split('\n');
                     const newItems = rows.map(row => {
@@ -362,17 +357,17 @@
                         };
                     });
                     this.items = [...this.items, ...newItems];
-                    this.saveData();
                     this.showPasteModal = false;
                     this.pasteData = '';
+                    await this.syncWithFirebase();
                 },
 
-                handleFileUpload(event) {
+                async handleFileUpload(event) {
                     const file = event.target.files[0];
                     if (!file) return;
                     Papa.parse(file, {
                         header: true, skipEmptyLines: true,
-                        complete: (res) => {
+                        complete: async (res) => {
                             const mapped = res.data.map(r => ({
                                 id: Date.now() + Math.random(),
                                 branch: this.activeTab,
@@ -386,16 +381,16 @@
                                 status: '접수'
                             }));
                             this.items = [...this.items, ...mapped];
-                            this.saveData();
+                            await this.syncWithFirebase();
                         }
                     });
                 },
 
-                removeItem(targetItem) {
+                async removeItem(targetItem) {
                     if(confirm('데이터를 삭제하시겠습니까?')) {
                         this.items = this.items.filter(i => i !== targetItem);
                         this.selectedIds = this.selectedIds.filter(id => id !== targetItem.id);
-                        this.saveData();
+                        await this.syncWithFirebase();
                     }
                 }
             }
