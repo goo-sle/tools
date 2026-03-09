@@ -256,10 +256,10 @@
     <iframe id="toolFrame"></iframe>
   </div>
 
-  <script type="module">
+<script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
     import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
-    import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-database.js";
+    import { getDatabase, ref, set, get, update } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCRnAMy3PyD0zracrwyo17hEZ-R40pAvt4",
@@ -275,91 +275,75 @@
     const auth = getAuth(app);
     const db = getDatabase(app);
 
-    // 일반 ID를 이메일 형식으로 변환
     const formatId = (id) => `${id.trim()}@higherad.com`;
 
-    // 엔터 키 감지 이벤트 등록
-    document.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') {
-        const isLoginVisible = document.getElementById('loginBox').style.display !== 'none';
-        const isRegVisible = document.getElementById('regBox').style.display !== 'none';
+    // [1] 인증 상태 감지 및 데이터 서버 강제 로드
+    onAuthStateChanged(auth, async (user) => {
+      const authOverlay = document.getElementById('authOverlay');
+      if (user) {
+        authOverlay.style.display = 'none';
+        document.getElementById('displayUser').textContent = user.email.split('@')[0] + "님";
         
-        if (isLoginVisible) handleLogin();
-        else if (isRegVisible) handleRegister();
+        try {
+          // 서버에서 해당 유저의 모든 데이터(메뉴 순서 + 메모 내용 등) 가져오기
+          const snapshot = await get(ref(db, 'users/' + user.uid));
+          if (snapshot.exists()) {
+            const data = snapshot.val();
+            // 로컬 스토리지를 서버 데이터로 완전히 동기화
+            localStorage.clear();
+            Object.keys(data).forEach(key => {
+              localStorage.setItem(key, data[key]);
+            });
+          }
+          initApp(); // 데이터 주입 완료 후 앱 실행
+        } catch (e) {
+          console.error("데이터 동기화 실패:", e);
+          initApp();
+        }
+      } else {
+        authOverlay.style.display = 'flex';
       }
     });
 
-    window.toggleAuth = (isReg) => {
-      document.getElementById('loginBox').style.display = isReg ? 'none' : 'block';
-      document.getElementById('regBox').style.display = isReg ? 'block' : 'none';
+    // [2] 서버 실시간 저장 (모든 localStorage 내용 포함)
+    window.saveToCloud = function() {
+      const user = auth.currentUser;
+      if (!user) return;
+
+      const payload = {};
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        payload[key] = localStorage.getItem(key);
+      }
+      
+      // 서버의 'users/UID' 경로에 전체 덮어씌움 (메뉴 구성 + 내부 메모 전체 데이터)
+      update(ref(db, 'users/' + user.uid), payload)
+        .then(() => console.log("Cloud Synced"))
+        .catch(err => console.error("Sync Error:", err));
     };
 
+    // 로그인/회원가입/로그아웃 로직
     window.handleLogin = async () => {
       const id = document.getElementById('userId').value;
       const pw = document.getElementById('userPw').value;
-      if(!id || !pw) return alert("아이디와 비밀번호를 입력하세요.");
-      try {
-        await signInWithEmailAndPassword(auth, formatId(id), pw);
-      } catch (e) {
-        alert("로그인 실패: 정보를 확인하세요.");
-      }
+      if(!id || !pw) return alert("아이디/비번을 입력하세요.");
+      try { await signInWithEmailAndPassword(auth, formatId(id), pw); } catch(e) { alert("계정 정보를 확인하세요."); }
     };
 
     window.handleRegister = async () => {
       const id = document.getElementById('regId').value;
       const pw = document.getElementById('regPw').value;
       const pwC = document.getElementById('regPwConfirm').value;
-      if(!id || pw.length < 6) return alert("아이디 입력 및 비밀번호 6자 이상 필수");
+      if(!id || pw.length < 6) return alert("비밀번호는 6자 이상이어야 합니다.");
       if(pw !== pwC) return alert("비밀번호가 일치하지 않습니다.");
       try {
         await createUserWithEmailAndPassword(auth, formatId(id), pw);
-        alert("가입 성공! 이제 로그인 해주세요.");
+        alert("가입 성공! 로그인 해주세요.");
         window.toggleAuth(false);
-      } catch (e) {
-        alert("가입 실패: " + e.message);
-      }
+      } catch (e) { alert("가입 실패: " + e.message); }
     };
 
     window.handleLogout = () => { if(confirm("로그아웃 하시겠습니까?")) signOut(auth).then(()=>location.reload()); };
-
-    // [수정] 인증 상태 확인 로직: 확인 전까지 오버레이 숨김 유지 후 상태에 따라 노출
-    onAuthStateChanged(auth, async (user) => {
-  const authOverlay = document.getElementById('authOverlay');
-  if (user) {
-    authOverlay.style.display = 'none';
-    document.getElementById('displayUser').textContent = user.email.split('@')[0] + "님";
-    
-    // 서버에서 데이터를 가져와 로컬 스토리지에 강제 업데이트
-    const snapshot = await get(ref(db, 'users/' + user.uid));
-    if (snapshot.exists()) {
-      const data = snapshot.val();
-      // 기존 로컬 스토리지를 비우고 서버 데이터로 교체
-      localStorage.clear(); 
-      Object.keys(data).forEach(key => localStorage.setItem(key, data[key]));
-      
-      // 데이터 적용 후 앱 초기화
-      initApp(); 
-    } else {
-      // 서버에 데이터가 없는 신규 계정이라면 기본값으로 초기화
-      initApp();
-    }
-  } else {
-    authOverlay.style.display = 'flex';
-  }
-  });
-
-    // 클라우드 저장용 함수
-    window.saveToCloud = function() {
-      const user = auth.currentUser;
-      if (user) {
-        const payload = {};
-        for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i);
-          payload[key] = localStorage.getItem(key);
-        }
-        set(ref(db, 'users/' + user.uid), payload);
-      }
-    }
   </script>
 
   <script>
@@ -393,29 +377,43 @@
       setupDragAndDrop();
     }
 
-    function toggleSidebar() {
-      const sidebar = document.getElementById('sidebar');
-      const icon = document.getElementById('toggleIcon');
-      sidebar.classList.toggle('collapsed');
-      icon.textContent = sidebar.classList.contains('collapsed') ? 'expand_more' : 'expand_less';
+    // [3] 상태 변경 시 로컬과 서버 동시 업데이트
+    function saveState() {
+      const state = {
+        fav: Array.from(sections[0].children).map(b => b.dataset.file),
+        active: Array.from(sections[1].children).map(b => b.dataset.file),
+        inactive: Array.from(sections[2].children).map(b => b.dataset.file)
+      };
+      localStorage.setItem("toolDashboardState", JSON.stringify(state));
+      
+      // 서버 저장 함수 호출 (전체 로컬 데이터 동기화)
+      if(typeof window.saveToCloud === 'function') window.saveToCloud();
     }
 
-    function goHome() {
-      document.querySelectorAll('.tool-button').forEach(b => b.classList.remove('active'));
-      frame.src = ""; frame.style.display = "none";
-      loader.style.display = "none"; welcome.style.display = "flex";
-      if (window.innerWidth <= 768) {
-        document.getElementById('sidebar').classList.remove('collapsed');
-        document.getElementById('toggleIcon').textContent = 'expand_less';
+    function loadState() {
+      const saved = localStorage.getItem("toolDashboardState");
+      let state = saved ? JSON.parse(saved) : { fav: [], active: defaultTools.map(t => t.file), inactive: [] };
+      
+      const currentSavedFiles = [...(state.fav || []), ...(state.active || []), ...(state.inactive || [])];
+      const newTools = defaultTools.filter(t => !currentSavedFiles.includes(t.file));
+
+      if (newTools.length > 0) {
+        newTools.forEach(nt => { if (!state.active.includes(nt.file)) state.active.push(nt.file); });
+        saveState();
       }
-    }
 
-    function filterTools() {
-      const query = document.getElementById('toolSearch').value.toLowerCase().replace(/\s/g, "");
-      document.querySelectorAll('.tool-button').forEach(btn => {
-        const label = btn.textContent.toLowerCase().replace(/\s/g, "");
-        btn.style.display = label.includes(query) ? "flex" : "none";
-      });
+      const render = (files, container) => {
+        container.innerHTML = "";
+        files.forEach(file => {
+          const tool = defaultTools.find(t => t.file === file);
+          if (tool) container.appendChild(createButton(tool));
+        });
+      };
+
+      sections.forEach(s => s.innerHTML = "");
+      render(state.fav || [], sections[0]);
+      render(state.active || [], sections[1]);
+      render(state.inactive || [], sections[2]);
     }
 
     function createButton(tool) {
@@ -430,12 +428,8 @@
         welcome.style.display = "none"; loader.style.display = "block";
         frame.style.display = "block"; frame.src = tool.file;
         frame.onload = () => { loader.style.display = "none"; };
-        if (window.innerWidth <= 768) {
-          document.getElementById('sidebar').classList.add('collapsed');
-          document.getElementById('toggleIcon').textContent = 'expand_more';
-        }
       };
-      btn.ondragstart = (e) => { dragged = btn; e.dataTransfer.effectAllowed = 'move'; };
+      btn.ondragstart = (e) => { dragged = btn; };
       return btn;
     }
 
@@ -463,40 +457,6 @@
       }, { offset: Number.NEGATIVE_INFINITY }).element;
     }
 
-    function saveState() {
-      const state = {
-        fav: Array.from(sections[0].children).map(b => b.dataset.file),
-        active: Array.from(sections[1].children).map(b => b.dataset.file),
-        inactive: Array.from(sections[2].children).map(b => b.dataset.file)
-      };
-      localStorage.setItem("toolDashboardState", JSON.stringify(state));
-      if(typeof window.saveToCloud === 'function') window.saveToCloud();
-    }
-
-    function loadState() {
-      const saved = localStorage.getItem("toolDashboardState");
-      let state = saved ? JSON.parse(saved) : { fav: [], active: defaultTools.map(t => t.file), inactive: [] };
-      const currentSavedFiles = [...(state.fav || []), ...(state.active || []), ...(state.inactive || [])];
-      const newTools = defaultTools.filter(t => !currentSavedFiles.includes(t.file));
-
-      if (newTools.length > 0) {
-        newTools.forEach(nt => { if (!state.active.includes(nt.file)) state.active.push(nt.file); });
-        saveState();
-      }
-
-      const render = (files, container) => {
-        files.forEach(file => {
-          const tool = defaultTools.find(t => t.file === file);
-          if (tool) container.appendChild(createButton(tool));
-        });
-      };
-
-      sections.forEach(s => s.innerHTML = ""); 
-      render(state.fav || [], sections[0]);
-      render(state.active || [], sections[1]);
-      render(state.inactive || [], sections[2]);
-    }
-
     function updateClock() {
       const now = new Date();
       document.getElementById('naverClock').textContent = now.toTimeString().split(' ')[0];
@@ -504,40 +464,18 @@
       document.getElementById('todayDisplay').textContent = `${now.getFullYear()}. ${now.getMonth()+1}. ${now.getDate()} (${days[now.getDay()]})`;
     }
 
-    function exportData() {
-      const allData = {};
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        allData[key] = localStorage.getItem(key);
-      }
-      if (Object.keys(allData).length === 0) return alert("백업할 데이터가 없습니다.");
-      const blob = new Blob([JSON.stringify(allData)], {type: "application/json"});
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = `higherad_total_backup_${new Date().toISOString().slice(0,10)}.json`;
-      a.click();
+    function goHome() {
+      document.querySelectorAll('.tool-button').forEach(b => b.classList.remove('active'));
+      frame.src = ""; frame.style.display = "none";
+      loader.style.display = "none"; welcome.style.display = "flex";
     }
 
-    function importData() {
-      const input = document.createElement("input");
-      input.type = "file"; input.accept = ".json";
-      input.onchange = e => {
-        const file = e.target.files[0];
-        const reader = new FileReader();
-        reader.onload = event => {
-          try {
-            const importedData = JSON.parse(event.target.result);
-            if (confirm("기존 데이터가 덮어씌워집니다. 계속하시겠습니까?")) {
-              Object.keys(importedData).forEach(key => localStorage.setItem(key, importedData[key]));
-              if(typeof window.saveToCloud === 'function') window.saveToCloud();
-              alert("성공적으로 복구되었습니다.");
-              location.reload();
-            }
-          } catch (err) { alert("파일 오류가 발생했습니다."); }
-        };
-        reader.readAsText(file);
-      };
-      input.click();
+    function filterTools() {
+      const query = document.getElementById('toolSearch').value.toLowerCase().replace(/\s/g, "");
+      document.querySelectorAll('.tool-button').forEach(btn => {
+        const label = btn.textContent.toLowerCase().replace(/\s/g, "");
+        btn.style.display = label.includes(query) ? "flex" : "none";
+      });
     }
   </script>
 </body>
