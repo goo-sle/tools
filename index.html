@@ -13,7 +13,7 @@
   <meta property="og:image:height" content="630">
 
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:image" content="https://raw.githubusercontent.com/goo-sle/tools/main/%ED%95%98%EC%96%B4%EC%95%A0%EB%93%9C_%EB%A1%9C%EA%B3%A0_1.png">
+  <meta name="twitter:image" content="https://raw.githubusercontent.com/goo-sle/tools/main/%ED%95%98%EC%9D%B4%EC%96%B4%EC%95%A0%EB%93%9C_%EB%A1%9C%EA%B3%A0_1.png">
 
   <title>통합 도구 모음</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
@@ -46,7 +46,7 @@
       background-color: var(--sidebar-bg);
       border-right: 1px solid var(--border-color);
       display: flex; flex-direction: column;
-      transition: all 0.3s ease; /* 접기 애니메이션 */
+      transition: all 0.3s ease;
       z-index: 20;
     }
     
@@ -132,36 +132,26 @@
     .sidebar-footer { padding: 10px; border-top: 1px solid #eee; display: flex; gap: 5px; }
     .footer-btn { flex: 1; font-size: 11px; padding: 8px 5px; cursor: pointer; background: #fff; border: 1px solid #ddd; border-radius: 4px; }
 
-    /* [접기 버튼 스타일] */
     #toggleMenuBtn {
       display: none; width: 100%; padding: 6px; background: #eee;
       border: none; border-top: 1px solid #ddd; cursor: pointer;
       align-items: center; justify-content: center; color: #666;
     }
 
-    /* ============================================================
-       [모바일 전용 반응형 레이아웃]
-       ============================================================ */
     @media (max-width: 768px) {
       body { flex-direction: column; overflow-y: hidden; }
-
       #sidebar {
-        width: 100%; min-width: 100%; height: 50%; /* 화면의 절반 차지 */
+        width: 100%; min-width: 100%; height: 50%;
         border-right: none; border-bottom: 1px solid var(--border-color);
       }
-
-      /* 접혔을 때 상태 */
       #sidebar.collapsed { height: 62px !important; }
       #sidebar.collapsed .scroll-area, 
       #sidebar.collapsed .sidebar-footer { display: none; }
-
-      #toggleMenuBtn { display: flex; } /* 모바일에서만 노출 */
-      
+      #toggleMenuBtn { display: flex; }
       #naverClock { font-size: 28px; padding: 8px 20px; }
       .quick-links { grid-template-columns: repeat(2, 1fr); gap: 10px; }
       .link-card { aspect-ratio: 1.5 / 1; }
       .link-card span { font-size: 11px; }
-
       #welcome { padding: 20px 15px; }
       #content { height: 100%; flex-grow: 1; overflow-y: auto; }
       #toolFrame { height: 100%; }
@@ -186,8 +176,8 @@
       <div id="inactiveTools" class="section"></div>
     </div>
     <div class="sidebar-footer">
-      <button class="footer-btn" onclick="exportData()">💾 백업</button>
-      <button class="footer-btn" onclick="importData()">📂 복구</button>
+      <button class="footer-btn" onclick="exportData()">💾 전체 백업</button>
+      <button class="footer-btn" onclick="importData()">📂 전체 복구</button>
     </div>
     <button id="toggleMenuBtn" onclick="toggleSidebar()">
       <span id="toggleIcon" class="material-symbols-outlined">expand_less</span>
@@ -228,7 +218,7 @@
           <span>광고주 페이지</span>
         </a>
       </div>
-      <p style="color: #bbb; margin-top: 40px; font-size: 12px;">메뉴를 클릭하여 도구를 사용하거나 순서를 변경하세요.</p>
+      <p style="color: #bbb; margin-top: 40px; font-size: 12px;">백업 시 메뉴 순서와 도구 내 작성 데이터가 모두 저장됩니다.</p>
     </div>
     <iframe id="toolFrame"></iframe>
   </div>
@@ -264,7 +254,6 @@
       setupDragAndDrop();
     };
 
-    // 모바일 사이드바 접기/펴기
     function toggleSidebar() {
       const sidebar = document.getElementById('sidebar');
       const icon = document.getElementById('toggleIcon');
@@ -276,7 +265,6 @@
       document.querySelectorAll('.tool-button').forEach(b => b.classList.remove('active'));
       frame.src = ""; frame.style.display = "none";
       loader.style.display = "none"; welcome.style.display = "flex";
-      // 홈으로 가면 모바일에서 메뉴 다시 펴주기
       if (window.innerWidth <= 768) {
         document.getElementById('sidebar').classList.remove('collapsed');
         document.getElementById('toggleIcon').textContent = 'expand_less';
@@ -303,8 +291,6 @@
         welcome.style.display = "none"; loader.style.display = "block";
         frame.style.display = "block"; frame.src = tool.file;
         frame.onload = () => { loader.style.display = "none"; };
-        
-        // [추가] 모바일에서 도구 클릭 시 자동으로 메뉴 접기
         if (window.innerWidth <= 768) {
           document.getElementById('sidebar').classList.add('collapsed');
           document.getElementById('toggleIcon').textContent = 'expand_more';
@@ -355,7 +341,7 @@
 
       if (newTools.length > 0) {
         newTools.forEach(nt => { if (!state.active.includes(nt.file)) state.active.push(nt.file); });
-        localStorage.setItem("toolDashboardState", JSON.stringify(state));
+        saveState();
       }
 
       const render = (files, container) => {
@@ -378,15 +364,27 @@
       document.getElementById('todayDisplay').textContent = `${now.getFullYear()}. ${now.getMonth()+1}. ${now.getDate()} (${days[now.getDay()]})`;
     }
 
+    // [개선] 전체 데이터 백업 (메뉴 설정 + 모든 도구의 데이터)
     function exportData() {
-      const data = localStorage.getItem("toolDashboardState");
-      const blob = new Blob([data], {type: "application/json"});
+      const allData = {};
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        allData[key] = localStorage.getItem(key);
+      }
+
+      if (Object.keys(allData).length === 0) {
+        alert("백업할 데이터가 없습니다.");
+        return;
+      }
+
+      const blob = new Blob([JSON.stringify(allData)], {type: "application/json"});
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
-      a.download = `tool_backup_${new Date().toISOString().slice(0,10)}.json`;
+      a.download = `higherad_total_backup_${new Date().toISOString().slice(0,10)}.json`;
       a.click();
     }
 
+    // [개선] 전체 데이터 복구
     function importData() {
       const input = document.createElement("input");
       input.type = "file";
@@ -395,8 +393,19 @@
         const file = e.target.files[0];
         const reader = new FileReader();
         reader.onload = event => {
-          localStorage.setItem("toolDashboardState", event.target.result);
-          location.reload();
+          try {
+            const importedData = JSON.parse(event.target.result);
+            if (confirm("기존의 모든 설정과 작성된 데이터가 덮어씌워집니다. 계속하시겠습니까?")) {
+              // 한 번에 적용
+              Object.keys(importedData).forEach(key => {
+                localStorage.setItem(key, importedData[key]);
+              });
+              alert("성공적으로 복구되었습니다.");
+              location.reload();
+            }
+          } catch (err) {
+            alert("파일 읽기 중 오류가 발생했습니다. 올바른 백업 파일인지 확인해주세요.");
+          }
         };
         reader.readAsText(file);
       };
