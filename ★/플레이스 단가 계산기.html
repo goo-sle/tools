@@ -350,7 +350,11 @@
     if(!name) return alert("업체명을 입력해주세요.");
     if(editIndex > -1) { clients[editIndex] = {name, tp, rp}; editIndex = -1; $("#addClientBtn").textContent = "추가"; $("#addClientBtn").style.background = "var(--accent)"; }
     else { clients.push({name, tp, rp}); }
-    $("#newClientName").value = ""; saveClients();
+    $("#newClientName").value = "";      // 업체명 리셋
+    $("#newClientTraffic").value = "";   // 트래픽 단가 리셋
+    $("#newClientRoute").value = "";     // 길찾기 단가 리셋
+    
+    saveClients();
   };
 
   $("#clientSearch").oninput = (e) => renderClientList(e.target.value);
