@@ -216,45 +216,72 @@
   </div>
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+
 <script>
 (() => {  
-  const $  = (s, r=document)=>r.querySelector(s);
-  const $$ = (s, r=document)=>Array.from(r.querySelectorAll(s));
-  const num = v => Number((v??"").toString().replace(/[^0-9.-]/g,"")) || 0;
-  const fmtInt = n => n.toLocaleString();
-  const fmtWon = n => n.toLocaleString() + "원";
+    // 1. Firebase 설정 (이전에 사용하신 설정과 동일하게 유지)
+    const firebaseConfig = {
+        apiKey: "AIzaSyCRnAMy3PyD0zracrwyo17hEZ-R40pAvt4",
+        authDomain: "higherad-530c4.firebaseapp.com",
+        databaseURL: "https://higherad-530c4-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "higherad-530c4",
+        storageBucket: "higherad-530c4.firebasestorage.app",
+        messagingSenderId: "1028078651420",
+        appId: "1:1028078651420:web:71c8b8c5e69f0772d637d9"
+    };
 
-  let clients = JSON.parse(localStorage.getItem('higherad_clients') || '[]');
-  let editIndex = -1;
+    // Firebase 초기화
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    let userPath = ""; // 개인 경로 저장용
 
-  // 업체 관리 로직 (기존과 동일)
-  $("#uploadCsvBtn").onclick = () => $("#csvFileInput").click();
-  $("#csvFileInput").onchange = (e) => {
-    const file = e.target.files[0];
-    if(!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => { processCsvData(ev.target.result); e.target.value = ""; };
-    reader.readAsText(file, "EUC-KR");
-  };
+    const $  = (s, r=document)=>r.querySelector(s);
+    const $$ = (s, r=document)=>Array.from(r.querySelectorAll(s));
+    const num = v => Number((v??"").toString().replace(/[^0-9.-]/g,"")) || 0;
+    const fmtInt = n => n.toLocaleString();
+    const fmtWon = n => n.toLocaleString() + "원";
 
-  function processCsvData(csvText) {
-    const lines = csvText.split(/\r?\n/);
-    let addedCount = 0;
-    for (let i = 4; i < lines.length; i++) {
-      const line = lines[i].trim();
-      if (!line || line.replace(/,/g, '').trim() === "") continue;
-      const cols = line.split(',').map(c => c.replace(/"/g, '').trim());
-      if (cols[0]) {
-        const name = cols[0], p1 = num(cols[1]), p2 = num(cols[2]);
-        const clientData = { name, tp: p1, rp: p2 };
-        const existingIdx = clients.findIndex(c => c.name === name);
-        if (existingIdx > -1) clients[existingIdx] = clientData;
-        else { clients.push(clientData); addedCount++; }
-      }
+    let clients = [];
+    let editIndex = -1;
+
+    // [핵심] 로그인 상태 확인 및 데이터 불러오기
+    firebase.auth().onAuthStateChanged(async (user) => {
+        if (user) {
+            userPath = `users/${user.uid}/clients`; // 업체 리스트 저장 경로
+            
+            // Firebase에서 업체 데이터 가져오기
+            const snapshot = await db.ref(userPath).once('value');
+            const data = snapshot.val();
+            if (data) {
+                clients = data;
+                renderClientList();
+            }
+        } else {
+            alert("로그인이 필요합니다. 메인 페이지로 이동합니다.");
+            // location.href = "index.html"; 
+        }
+    });
+
+    // [핵심] 업체 리스트 저장 함수 (Firebase 연동)
+    function saveClients() {
+        if (!userPath) return;
+
+        // Firebase에 저장
+        db.ref(userPath).set(clients)
+            .then(() => {
+                console.log("업체 리스트가 서버에 저장되었습니다.");
+                renderClientList($("#clientSearch").value);
+            })
+            .catch(err => {
+                console.error("저장 실패:", err);
+                alert("데이터 저장 권한이 없습니다.");
+            });
     }
-    alert(`${addedCount}개 업체 등록 완료`);
-    saveClients();
-  }
+
+    // --- 이후 기존 업체 관리 로직 (processCsvData, renderClientList 등) 동일하게 유지 ---
 
   function getChosung(str) {
     const cho = ["ㄱ","ㄲ","ㄴ","ㄷ","ㄸ","ㄹ","ㅁ","ㅂ","ㅃ","ㅅ","ㅆ","ㅇ","ㅈ","ㅉ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
