@@ -277,23 +277,22 @@
       document.getElementById('regBox').style.display = isRegister ? 'block' : 'none';
     };
 
-    // 실시간 감시 엔진 (onValue)
     onAuthStateChanged(auth, async (user) => {
       if (user) {
         document.getElementById('authOverlay').style.display = 'none';
         document.getElementById('displayUser').textContent = user.email.split('@')[0] + "님";
         
-        // 서버 데이터 변화 실시간 감시 (PC에서 옮기면 모바일이 바로 바뀜)
         onValue(ref(db, 'users/' + user.uid), (snapshot) => {
           if (snapshot.exists()) {
             const data = snapshot.val();
             if (data.toolDashboardState) {
-              // 로컬스토리지 백업 및 화면 렌더링
-              localStorage.setItem("toolDashboardState", data.toolDashboardState);
-              renderAppFromServer(JSON.parse(data.toolDashboardState));
+              // ★ [핵심 추가] DB의 이전 파일명(경쟁사 주소)을 새 파일명(업무 관련 URL)으로 자동 치환
+              let stateText = data.toolDashboardState.replace(/경쟁사 주소\.html/g, "업무 관련 URL.html");
+              
+              localStorage.setItem("toolDashboardState", stateText);
+              renderAppFromServer(JSON.parse(stateText));
             }
           } else {
-            // 초기 가입 사용자
             initApp();
           }
         });
@@ -306,7 +305,6 @@
       }
     });
 
-    // 실시간 서버 저장 함수 (드래그 끝날 때 호출)
     window.saveStateToServer = function(state) {
       const user = auth.currentUser;
       if (!user) return;
@@ -411,7 +409,6 @@
           if (afterElement == null) section.appendChild(dragged);
           else section.insertBefore(dragged, afterElement);
           
-          // 드래그 종료 후 서버에 즉시 전송
           const state = {
             fav: Array.from(sections[0].children).map(b => b.dataset.file),
             active: Array.from(sections[1].children).map(b => b.dataset.file),
@@ -445,7 +442,6 @@
       welcome.style.display = "flex";
     }
 
-    // 1. 한글 초성 추출 함수 추가
     function getChosung(str) {
       const cho = ["ㄱ","ㄲ","ㄴ","ㄷ","ㄸ","ㄹ","ㅁ","ㅂ","ㅃ","ㅅ","ㅆ","ㅇ","ㅈ","ㅉ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
       let result = "";
@@ -457,16 +453,14 @@
       return result;
     }
 
-    // 2. 수정된 검색 함수
     function filterTools() {
       const query = document.getElementById('toolSearch').value.toLowerCase().replace(/\s/g, "");
-      const queryChosung = getChosung(query); // 입력값의 초성 추출
+      const queryChosung = getChosung(query);
 
       document.querySelectorAll('.tool-button').forEach(btn => {
         const label = btn.textContent.toLowerCase().replace(/\s/g, "");
-        const labelChosung = getChosung(label); // 버튼 텍스트의 초성 추출
+        const labelChosung = getChosung(label);
 
-        // 일반 포함 검사 OR 초성 포함 검사
         if (label.includes(query) || labelChosung.includes(query)) {
           btn.style.display = "flex";
         } else {
