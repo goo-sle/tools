@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HIGHER AD | 스마트 운영 관리</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
@@ -193,35 +195,56 @@
 
     <script>
         function managementApp() {
+            // 1. Firebase 설정 및 초기화
+            const firebaseConfig = {
+                databaseURL: "https://higherad-530c4-default-rtdb.asia-southeast1.firebasedatabase.app/"
+            };
+            
+            if (!firebase.apps.length) {
+                firebase.initializeApp(firebaseConfig);
+            }
+            const db = firebase.database();
+
             return {
                 items: [],
                 branches: ['A영업점', 'B영업점', 'C영업점'],
-                activeTab: '', // 초기에는 비워둠 (init에서 첫 번째 탭 할당)
+                activeTab: '',
                 editingTab: null,
                 tempTabText: '',
                 showPasteModal: false,
                 pasteData: '',
                 selectedIds: [],
                 
-                init() {
-                    const savedItems = localStorage.getItem('higher_ad_items');
-                    const savedBranches = localStorage.getItem('higher_ad_branches');
-                    if (savedItems) this.items = JSON.parse(savedItems);
-                    if (savedBranches) this.branches = JSON.parse(savedBranches);
-                    
-                    // 시작 페이지를 항상 첫 번째 탭으로 설정
-                    if (this.branches.length > 0) {
-                        this.activeTab = this.branches[0];
-                    }
+                async init() {
+                    // Firebase에서 데이터 실시간 가져오기 (메모장과 동일한 방식)
+                    db.ref('higher_ad_v2').on('value', (snapshot) => {
+                        const data = snapshot.val();
+                        if (data) {
+                            this.items = data.items || [];
+                            this.branches = data.branches || ['A영업점', 'B영업점', 'C영업점'];
+                            
+                            // 현재 선택된 탭이 없으면 첫 번째 탭 활성화
+                            if (!this.activeTab && this.branches.length > 0) {
+                                this.activeTab = this.branches[0];
+                            }
+                        } else {
+                            // DB에 데이터가 아예 없을 때 초기값 세팅
+                            if (!this.activeTab) this.activeTab = this.branches[0];
+                        }
 
-                    this.items.forEach(item => {
-                        if(!item.id) item.id = Date.now() + Math.random();
+                        // ID가 없는 예외 항목 방어 코드
+                        this.items.forEach(item => {
+                            if(!item.id) item.id = Date.now() + Math.random();
+                        });
                     });
                 },
 
                 saveData() {
-                    localStorage.setItem('higher_ad_items', JSON.stringify(this.items));
-                    localStorage.setItem('higher_ad_branches', JSON.stringify(this.branches));
+                    // Firebase에 데이터 쓰기
+                    db.ref('higher_ad_v2').set({
+                        items: JSON.parse(JSON.stringify(this.items)),
+                        branches: this.branches
+                    });
                 },
 
                 resetCurrentTab() {
@@ -312,9 +335,9 @@
                             url: cols[1] || '',
                             mid: cols[2] || '-',
                             keyword: cols[3] || '-',
-                            days: cols[4] || 0,
+                            days: Number(cols[4]) || 0,
                             startDate: cols[5] || '2026-03-09',
-                            goal: cols[6] || 0,
+                            goal: Number(cols[6]) || 0,
                             status: '접수'
                         };
                     });
@@ -333,17 +356,19 @@
                             const mapped = res.data.map(r => ({
                                 id: Date.now() + Math.random(),
                                 branch: this.activeTab,
-                                name: r['업체명'] || '미지정',
-                                mid: r['업체MID번호'] || '-',
-                                url: r['업체URL'] || '',
-                                keyword: r['순위키워드'] || '-',
-                                days: r['일수'] || 0,
+                                // 다양한 엑셀 헤더명에 대응 (방어 로직)
+                                name: r['업체명'] || r['상호'] || '미지정',
+                                mid: r['업체MID번호'] || r['MID'] || '-',
+                                url: r['업체URL'] || r['URL'] || '',
+                                keyword: r['순위키워드'] || r['키워드'] || '-',
+                                days: Number(r['일수']) || 0,
                                 startDate: r['시작일'] || '2026-03-09',
-                                goal: r['일목표 개수'] || 0,
+                                goal: Number(r['일목표 개수']) || Number(r['일목표']) || 0,
                                 status: '접수'
                             }));
                             this.items = [...this.items, ...mapped];
                             this.saveData();
+                            alert(`${mapped.length}건이 등록되었습니다.`);
                         }
                     });
                 },
