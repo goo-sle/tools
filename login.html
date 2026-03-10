@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>로그인 - 하이어애드 통합 도구</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+  <style>
+    :root { 
+      --primary-color: #2e7d32; 
+      --bg-color: #f4f7f9;
+    }
+    
+    body {
+      font-family: 'Pretendard', sans-serif;
+      margin: 0; height: 100vh; display: flex; justify-content: center; align-items: center;
+      background: var(--bg-color);
+    }
+
+    .auth-card { 
+      background: white; 
+      padding: 60px 40px 45px 40px; 
+      border-radius: 24px; 
+      width: 440px; 
+      text-align: center; 
+      box-shadow: 0 20px 40px rgba(0,0,0,0.06); 
+    }
+
+    /* 로고 스타일 - 타이틀 삭제 후 더 강조 */
+    .logo-container {
+      margin-bottom: 50px; 
+    }
+    .logo-img {
+      width: 100%;
+      max-width: 380px; /* 로고 사이즈 대폭 상향 */
+      height: auto;
+      display: block;
+      margin: 0 auto;
+    }
+
+    /* 타이틀 텍스트 삭제 */
+    .auth-card h3 { 
+      display: none; 
+    }
+
+    .auth-card input { 
+      width: 100%; 
+      padding: 16px; 
+      margin: 10px 0; 
+      border: 1px solid #e0e0e0; 
+      border-radius: 12px; 
+      outline: none; 
+      font-size: 16px; 
+      box-sizing: border-box; 
+      transition: all 0.2s ease;
+      background-color: #fafafa;
+    }
+    
+    .auth-card input:focus {
+      border-color: var(--primary-color);
+      background-color: #fff;
+      box-shadow: 0 0 0 4px rgba(46, 125, 50, 0.1);
+    }
+
+    .auth-btn { 
+      width: 100%; 
+      padding: 16px; 
+      background: var(--primary-color); 
+      color: white; 
+      border: none; 
+      border-radius: 12px; 
+      cursor: pointer; 
+      margin-top: 20px; 
+      font-weight: 700; 
+      font-size: 17px;
+      transition: all 0.2s ease;
+    }
+    
+    .auth-btn:hover {
+      background: #1b5e20;
+      transform: translateY(-1px);
+    }
+
+    .auth-footer { 
+      font-size: 14px; 
+      color: #888; 
+      margin-top: 30px; 
+      cursor: pointer; 
+      text-decoration: none;
+      display: inline-block;
+    }
+    
+    .auth-footer:hover {
+      color: var(--primary-color);
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="auth-card" id="loginBox">
+    <div class="logo-container">
+      <img src="https://raw.githubusercontent.com/goo-sle/tools/main/%ED%95%98%EC%9D%B4%EC%96%B4%EC%95%A0%EB%93%9C_%EB%A1%9C%EA%B3%A0_1.png" alt="하이어애드 로고" class="logo-img">
+    </div>
+    
+    <input type="text" id="userId" placeholder="아이디">
+    <input type="password" id="userPw" placeholder="비밀번호">
+    <button class="auth-btn" onclick="handleLogin()">로그인</button>
+    <p class="auth-footer" onclick="toggleAuth(true)">계정이 없으신가요? 회원가입</p>
+  </div>
+
+  <div class="auth-card" id="regBox" style="display: none;">
+    <div class="logo-container">
+      <img src="https://raw.githubusercontent.com/goo-sle/tools/main/%ED%95%98%EC%9D%B4%EC%96%B4%EC%95%A0%EB%93%9C_%EB%A1%9C%EA%B3%A0_1.png" alt="하이어애드 로고" class="logo-img">
+    </div>
+    
+    <input type="text" id="regId" placeholder="아이디 입력">
+    <input type="password" id="regPw" placeholder="비밀번호 (6자 이상)">
+    <input type="password" id="regPwConfirm" placeholder="비밀번호 확인">
+    <button class="auth-btn" style="background: #444;" onclick="handleRegister()">가입하기</button>
+    <p class="auth-footer" onclick="toggleAuth(false)">이미 계정이 있습니다</p>
+  </div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
+  import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCRnAMy3PyD0zracrwyo17hEZ-R40pAvt4",
+    authDomain: "higherad-530c4.firebaseapp.com",
+    databaseURL: "https://higherad-530c4-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "higherad-530c4",
+    storageBucket: "higherad-530c4.firebasestorage.app",
+    messagingSenderId: "1028078651420",
+    appId: "1:1028078651420:web:71c8b8c5e69f0772d637d9"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getDatabase(app);
+
+  const formatId = (id) => `${id.trim()}@higherad.com`;
+
+  // 로그인 시 자동 리다이렉트
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      location.replace("index.html");
+    }
+  });
+
+  window.toggleAuth = (isRegister) => {
+    document.getElementById('loginBox').style.display = isRegister ? 'none' : 'block';
+    document.getElementById('regBox').style.display = isRegister ? 'block' : 'none';
+  };
+
+  window.handleLogin = async () => {
+    const id = document.getElementById('userId').value;
+    const pw = document.getElementById('userPw').value;
+    if(!id || !pw) return alert("아이디와 비밀번호를 입력해주세요.");
+    try { 
+      await signInWithEmailAndPassword(auth, formatId(id), pw); 
+    } catch(e) { 
+      alert("로그인 정보가 올바르지 않습니다."); 
+    }
+  };
+
+  window.handleRegister = async () => {
+    const id = document.getElementById('regId').value;
+    const pw = document.getElementById('regPw').value;
+    const pwC = document.getElementById('regPwConfirm').value;
+    if(!id || pw.length < 6) return alert("비밀번호는 6자 이상이어야 합니다.");
+    if(pw !== pwC) return alert("비밀번호 확인이 일치하지 않습니다.");
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, formatId(id), pw);
+      const user = userCredential.user;
+      const initialState = { fav: [], active: ["★/메모장.html"], inactive: [] };
+      await set(ref(db, 'users/' + user.uid), {
+        toolDashboardState: JSON.stringify(initialState),
+        email: user.email,
+        createdAt: new Date().toISOString()
+      });
+      alert("회원가입이 완료되었습니다!");
+    } catch (e) { alert("가입 실패: " + e.message); }
+  };
+</script>
+</body>
+</html>
