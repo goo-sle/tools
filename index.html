@@ -277,23 +277,21 @@
       document.getElementById('regBox').style.display = isRegister ? 'block' : 'none';
     };
 
-    // 실시간 감시 엔진 (onValue)
+    // index.html의 스크립트 부분
     onAuthStateChanged(auth, async (user) => {
       if (user) {
-        document.getElementById('authOverlay').style.display = 'none';
+        // 로그인된 경우: 화면을 보여주고 데이터 로드
+        document.body.style.display = 'flex'; 
         document.getElementById('displayUser').textContent = user.email.split('@')[0] + "님";
         
-        // 서버 데이터 변화 실시간 감시 (PC에서 옮기면 모바일이 바로 바뀜)
         onValue(ref(db, 'users/' + user.uid), (snapshot) => {
           if (snapshot.exists()) {
             const data = snapshot.val();
             if (data.toolDashboardState) {
-              // 로컬스토리지 백업 및 화면 렌더링
               localStorage.setItem("toolDashboardState", data.toolDashboardState);
               renderAppFromServer(JSON.parse(data.toolDashboardState));
             }
           } else {
-            // 초기 가입 사용자
             initApp();
           }
         });
@@ -302,7 +300,8 @@
         setInterval(updateClock, 1000);
         setupDragAndDrop();
       } else {
-        document.getElementById('authOverlay').style.display = 'flex';
+        // 로그인 안 된 경우: 즉시 로그인 페이지로 이동
+        location.replace("login.html");
       }
     });
 
