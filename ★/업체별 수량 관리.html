@@ -207,7 +207,7 @@
     </div>
 
     <script>
-        // 1. 전체 설정값을 상단에 정의 (한 번만)
+            // 1. 전체 설정값을 상단에 정의 (한 번만)
             const firebaseConfig = {
                 apiKey: "AIzaSyCRnAMy3PyD0zracrwyo17hEZ-R40pAvt4",
                 authDomain: "higherad-530c4.firebaseapp.com",
@@ -235,27 +235,38 @@
                 pasteData: '',
                 selectedIds: [],
                 
-                async init() {
-                    // 1. 기본 탭 설정
+async init() {
+                    // 1. 기본 탭 설정 (초기값)
                     if (!this.activeTab) this.activeTab = this.branches[0];
 
-                    // 2. Firebase 인증 상태 감지 (인덱스 페이지의 로그인 정보 활용)
+                    // 2. Firebase 인증 상태 감지
                     firebase.auth().onAuthStateChanged(async (user) => {
                         if (user) {
-                            // 로그인된 사용자의 UID로 경로 설정
                             const userPath = `users/${user.uid}/higher_ad_v2`;
                             this.userPath = userPath; 
 
-                            // 해당 경로에서 데이터 가져오기
+                            // 데이터 1회 강제 로드
                             const snapshot = await db.ref(userPath).once('value');
                             const data = snapshot.val();
                             
                             if (data) {
+                                // 데이터 업데이트
                                 this.items = data.items || [];
                                 this.branches = data.branches || ['A영업점', 'B영업점', 'C영업점'];
+                                
+                                // [핵심 수정] 데이터 로드 직후, 현재 활성 탭을 다시 한번 확정
+                                // 만약 저장된 탭 목록에 현재 탭이 없다면 첫 번째 탭으로 강제 이동
+                                if (!this.branches.includes(this.activeTab)) {
+                                    this.activeTab = this.branches[0];
+                                } else {
+                                    // 현재 탭을 유지하면서 데이터 바인딩을 강제 리프레시
+                                    const current = this.activeTab;
+                                    this.activeTab = ''; 
+                                    this.activeTab = current;
+                                }
                             }
 
-                            // 실시간 리스너 연결
+                            // 3. 실시간 리스너 연결
                             db.ref(userPath).on('value', (snapshot) => {
                                 const data = snapshot.val();
                                 if (data) {
@@ -264,9 +275,8 @@
                                 }
                             });
                         } else {
-                            // 로그인이 안 되어 있다면 인덱스나 로그인 페이지로 튕기기 (선택 사항)
                             alert("로그인이 필요합니다.");
-                            // location.href = 'index.html'; 
+                            // location.href = 'login.html'; // 실제 로그인 페이지 경로로 수정 가능
                         }
                     });
                 },
