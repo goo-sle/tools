@@ -17,18 +17,9 @@
 
         .search-section { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 20px; }
         .search-controls { display: flex; gap: 10px; align-items: stretch; }
-        
-        .search-input { 
-            flex: 1; height: 80px; padding: 12px 15px; border: 1px solid var(--border); border-radius: 8px; 
-            outline: none; resize: none; font-family: inherit; font-size: 14px; line-height: 1.5; box-sizing: border-box;
-        }
-        
-        .btn-search { 
-            width: 120px; height: 80px; background: var(--dark-blue); color: white; border: none; border-radius: 8px; 
-            cursor: pointer; font-weight: bold; font-size: 15px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.2s;
-        }
+        .search-input { flex: 1; height: 80px; padding: 12px 15px; border: 1px solid var(--border); border-radius: 8px; outline: none; resize: none; font-family: inherit; font-size: 14px; line-height: 1.5; box-sizing: border-box; }
+        .btn-search { width: 120px; height: 80px; background: var(--dark-blue); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 15px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.2s; }
         .btn-search:hover { background: #3b36c4; }
-        
         .search-result-area { max-height: 400px; overflow: auto; border-top: 2px solid var(--dark-blue); padding-top: 15px; display: none; margin-top: 20px; background: #fff; }
 
         .type-selector { display: flex; gap: 10px; margin-bottom: 15px; justify-content: center; }
@@ -43,16 +34,24 @@
         .data-table td { border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 0; text-align: center; }
         .data-table input { width: 100%; border: none; padding: 10px 2px; box-sizing: border-box; font-size: 12px; outline: none; background: transparent; text-align: center; }
 
-        .btn-bulk { width: 100%; padding: 18px; background: var(--main-green); color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 17px; cursor: pointer; margin-top: 15px; }
+        /* 하단 버튼 영역 */
+        .action-buttons { display: flex; gap: 10px; margin-top: 15px; }
+        .btn-bulk { flex: 1; padding: 18px; background: var(--main-green); color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 17px; cursor: pointer; }
+        .btn-clear-input { width: 80px; background: #666; color: white; border: none; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s; }
+        .btn-clear-input:hover { background: #444; }
 
         .master-section { display: none; margin-top: 20px; }
         .master-section.active { display: block; }
         .main-table-card { background: white; border-radius: 12px; overflow-x: auto; box-shadow: 0 2px 10px rgba(0,0,0,0.05); max-height: 500px; }
         .result-td { padding: 10px !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-bottom: 1px solid #eee; }
-        .table-title { font-size: 16px; font-weight: bold; margin-bottom: 10px; color: var(--dark-blue); }
+        .table-title { font-size: 16px; font-weight: bold; margin-bottom: 10px; color: var(--dark-blue); display: flex; align-items: center; }
         
-        /* 수량 표시 배지 스타일 */
         .count-badge { font-size: 13px; background: #eef2ff; color: var(--dark-blue); padding: 2px 10px; border-radius: 12px; margin-left: 8px; border: 1px solid #e0e7ff; }
+        
+        /* 쓰레기통 아이콘 스타일 */
+        .btn-trash { background: none; border: none; cursor: pointer; padding: 5px; display: flex; align-items: center; justify-content: center; color: #888; transition: 0.2s; }
+        .btn-trash:hover { color: #ff4d4d; transform: scale(1.1); }
+        .btn-trash svg { width: 16px; height: 16px; stroke: currentColor; stroke-width: 2; fill: none; }
     </style>
 </head>
 <body>
@@ -60,7 +59,7 @@
 <div class="container">
     <div class="header">
         <h1>Higher Ad 통합 데이터 관리</h1>
-        <button class="btn-reset-icon" onclick="resetAllData()" title="전체 데이터 초기화">
+        <button class="btn-reset-icon" onclick="resetAllData()" title="전체 초기화">
             <svg viewBox="0 0 24 24" width="20" height="20" stroke="white" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="23 4 23 10 17 10"></polyline>
                 <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
@@ -70,7 +69,7 @@
 
     <div class="search-section">
         <div class="search-controls">
-            <textarea id="searchInput" class="search-input" placeholder="중복 체크할 MID를 여러 줄로 입력하세요 (엔터로 구분)"></textarea>
+            <textarea id="searchInput" class="search-input" placeholder="중복 체크할 MID를 입력하세요"></textarea>
             <button class="btn-search" onclick="searchMID()">중복 검색하기</button>
         </div>
         <div id="searchResultArea" class="search-result-area">
@@ -93,11 +92,24 @@
                 <tbody id="inputBody"></tbody>
             </table>
         </div>
-        <button class="btn-bulk" onclick="processData()">등록하기</button>
+        <div class="action-buttons">
+            <button class="btn-bulk" onclick="processData()">등록하기</button>
+            <button class="btn-clear-input" onclick="clearInputTable()" title="입력창 비우기">
+                <svg viewBox="0 0 24 24" width="24" height="24" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+            </button>
+        </div>
     </div>
 
     <div id="sectionA" class="master-section active">
-        <div class="table-title">📂 A 리스트 등록 현황 <span id="countA" class="count-badge">0건</span></div>
+        <div class="table-title">
+            📂 A 리스트 등록 현황 
+            <span id="countA" class="count-badge">0건</span>
+            <button class="btn-trash" onclick="clearDb('A')" title="A 리스트 비우기">
+                <svg viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+            </button>
+        </div>
         <div class="main-table-card">
             <table class="data-table">
                 <thead id="masterHeaderA"></thead>
@@ -107,7 +119,13 @@
     </div>
 
     <div id="sectionB" class="master-section">
-        <div class="table-title">📂 B 리스트 등록 현황 <span id="countB" class="count-badge">0건</span></div>
+        <div class="table-title">
+            📂 B 리스트 등록 현황 
+            <span id="countB" class="count-badge">0건</span>
+            <button class="btn-trash" onclick="clearDb('B')" title="B 리스트 비우기">
+                <svg viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+            </button>
+        </div>
         <div class="main-table-card">
             <table class="data-table">
                 <thead id="masterHeaderB"></thead>
@@ -138,17 +156,12 @@
   const provider = new GoogleAuthProvider();
 
   onAuthStateChanged(auth, (user) => {
-    if (user) {
-      window.userUid = user.uid;
-      startRealtimeSync();
-    } else {
-      signInWithPopup(auth, provider).catch(err => console.log("로그인 대기 중..."));
-    }
+    if (user) { window.userUid = user.uid; startRealtimeSync(); }
+    else { signInWithPopup(auth, provider).catch(err => console.log("로그인 필요")); }
   });
 
   function startRealtimeSync() {
     const basePath = `users/${window.userUid}/higher_ad`;
-    
     onValue(ref(db, `${basePath}/A`), (snapshot) => {
       window.dbA = snapshot.val() ? Object.values(snapshot.val()) : [];
       document.getElementById('countA').innerText = window.dbA.length + "건";
@@ -163,7 +176,6 @@
 
   window.processData = function() {
     if (!window.userUid) return alert("로그인이 필요합니다.");
-    
     const rows = document.getElementById('inputBody').rows;
     let added = 0;
     const currentHeaders = window.currentType === 'A' ? headersA : headersB;
@@ -173,48 +185,45 @@
       const ins = Array.from(rows[i].querySelectorAll('input')).map(el => el.value.trim());
       const mid = ins[3]; 
       if (mid && mid !== "") {
-        const isDuplicate = window.dbA.some(d => d.mid === mid) || window.dbB.some(d => d.mid === mid);
-        if (!isDuplicate) {
           let rowObj = { mid: mid, data: {} };
           currentHeaders.forEach((h, idx) => { rowObj.data[h] = ins[idx] || ''; });
           push(targetRef, rowObj);
           added++;
-        }
       }
     }
-    if(added > 0) alert(added + "건 등록 완료!");
-    else alert("등록할 새 데이터가 없거나 중복입니다.");
-    switchType(window.currentType); 
+    if(added > 0) {
+        alert(added + "건 등록 완료!");
+        clearInputTable();
+    }
+  };
+
+  window.clearDb = function(type) {
+    if (!window.userUid) return;
+    if(confirm(`${type} 리스트를 비우시겠습니까?`)) {
+      remove(ref(db, `users/${window.userUid}/higher_ad/${type}`));
+    }
   };
 
   window.resetAllData = function() {
     if (!window.userUid) return;
-    if(confirm("개인 계정의 모든 데이터를 삭제하시겠습니까?")) {
-      remove(ref(db, `users/${window.userUid}/higher_ad`)).then(() => {
-        alert("삭제 완료");
-        location.reload();
-      });
+    if(confirm("전체 데이터를 삭제하시겠습니까?")) {
+      remove(ref(db, `users/${window.userUid}/higher_ad`)).then(() => location.reload());
     }
   };
 </script>
 
 <script>
-    window.dbA = [];
-    window.dbB = [];
-    window.currentType = 'A';
-
+    window.dbA = []; window.dbB = []; window.currentType = 'A';
     function getDateStr(offset) {
-        const d = new Date();
-        d.setDate(d.getDate() - offset);
+        const d = new Date(); d.setDate(d.getDate() - offset);
         return `${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     }
-
     const headersA = ['지점', '등급', '업체명', 'MID', '순위키워드', '키워드수', '찾검키워드', '메모', '최초순위', getDateStr(2), getDateStr(1), getDateStr(0), '등락'];
     const headersB = ['지점', '등급', '업체명', 'MID', '순위키워드', '키워드수', '찾검키워드', '시작일', '시작일순위', '최초순위', getDateStr(2), getDateStr(1), getDateStr(0), '등락'];
 
     window.onload = () => { 
-        renderHeader('masterHeaderA', headersA);
-        renderHeader('masterHeaderB', headersB);
+        renderHeader('masterHeaderA', headersA); 
+        renderHeader('masterHeaderB', headersB); 
         switchType('A'); 
     };
 
@@ -229,6 +238,10 @@
         document.getElementById('sectionA').classList.toggle('active', type === 'A');
         document.getElementById('sectionB').classList.toggle('active', type === 'B');
         renderHeader('gridHeader', type === 'A' ? headersA : headersB);
+        clearInputTable();
+    }
+
+    window.clearInputTable = function() {
         document.getElementById('inputBody').innerHTML = '';
         addRows(5);
     }
@@ -244,69 +257,51 @@
     }
 
     function renderMaster() {
-    const draw = (db, headers) => db.map(item => {
-        // 필드명(Header)을 기준으로 데이터를 순서대로 추출하여 매핑 오류 방지
-        return `<tr>${headers.map((h, idx) => {
-            const v = item.data[h] || '-'; // 헤더 이름으로 직접 접근
-            let style = (h === "MID") ? "color:var(--main-green); font-weight:bold;" : "";
-            
-            // 등락 표시 색상 로직
-            if (String(v).includes('▲')) style = "color: #ff4d4d; font-weight:bold;";
-            else if (String(v).includes('▼')) style = "color: #4e46e5; font-weight:bold;";
-            
-            return `<td class="result-td" style="${style}">${v}</td>`;
-        }).join('')}</tr>`;
-    }).join('');
-
-    // 각각의 헤더 배열을 인자로 전달
-    document.getElementById('masterBodyA').innerHTML = draw(window.dbA, headersA);
-    document.getElementById('masterBodyB').innerHTML = draw(window.dbB, headersB);
+        const draw = (db, headers) => db.map(item => {
+            return `<tr>${headers.map(h => {
+                const v = item.data[h] || '-';
+                let style = (h === 'MID') ? "color:var(--main-green); font-weight:bold;" : "";
+                if (String(v).includes('▲')) style = "color: #ff4d4d; font-weight:bold;";
+                else if (String(v).includes('▼')) style = "color: #4e46e5; font-weight:bold;";
+                return `<td class="result-td" style="${style}">${v}</td>`;
+            }).join('')}</tr>`;
+        }).join('');
+        document.getElementById('masterBodyA').innerHTML = draw(window.dbA, headersA);
+        document.getElementById('masterBodyB').innerHTML = draw(window.dbB, headersB);
     }
 
-    function searchMID() {
+    window.searchMID = function() {
         const input = document.getElementById('searchInput').value;
         const resultArea = document.getElementById('searchResultArea');
         const resultBody = document.getElementById('searchResultBody');
         const searchHeader = document.getElementById('searchHeader');
-        
         const queries = input.split('\n').map(s => s.trim()).filter(s => s !== "");
         if(queries.length === 0) return alert("검색할 MID를 입력하세요.");
-
         let foundRows = [];
         queries.forEach(query => {
-            const matchA = window.dbA.filter(item => item.mid.includes(query)).map(d => ({...d, listType: 'A', headers: headersA}));
-            const matchB = window.dbB.filter(item => item.mid.includes(query)).map(d => ({...d, listType: 'B', headers: headersB}));
+            const matchA = window.dbA.filter(item => item.mid.includes(query)).map(d => ({...d, listType: 'A'}));
+            const matchB = window.dbB.filter(item => item.mid.includes(query)).map(d => ({...d, listType: 'B'}));
             foundRows = [...foundRows, ...matchA, ...matchB];
         });
-
         if(foundRows.length > 0) {
             resultArea.style.display = 'block';
-            // 기준 헤더는 더 긴 B 리스트 헤더를 사용하여 틀을 잡습니다.
             searchHeader.innerHTML = `<tr><th style="width:80px; background:#eee">구분</th>${headersB.map(h => `<th>${h}</th>`).join('')}</tr>`;
-            
             resultBody.innerHTML = foundRows.map(item => {
-                // 해당 아이템이 원래 가지고 있던 헤더 순서대로 데이터를 추출
                 return `<tr>
                     <td style="background:#f9f9f9; font-weight:bold; color:var(--dark-blue)">${item.listType} 리스트</td>
-                    ${headersB.map((h) => {
-                        // 현재 출력하려는 헤더(h)가 해당 데이터의 헤더에 존재하는지 확인
-                        const v = item.data[h] || '-'; 
-                        let style = (h === "MID") ? "color:red; font-weight:bold;" : "";
-                        
+                    ${headersB.map(h => {
+                        const v = item.data[h] || '-';
+                        let style = (h === 'MID') ? "color:red; font-weight:bold;" : "";
                         if (String(v).includes('▲')) style += "color: #ff4d4d; font-weight:bold;";
                         else if (String(v).includes('▼')) style += "color: #4e46e5; font-weight:bold;";
-                        
                         return `<td class="result-td" style="${style}">${v}</td>`;
                     }).join('')}
                 </tr>`;
             }).join('');
-        } else {
-            alert("등록된 데이터가 없습니다.");
-            resultArea.style.display = 'none';
-        }
+        } else { alert("등록된 데이터가 없습니다."); resultArea.style.display = 'none'; }
     }
 
-    function handlePaste(e) {
+    window.handlePaste = function(e) {
         e.preventDefault();
         const pastedText = (e.clipboardData || window.clipboardData).getData('text');
         const rows = pastedText.split(/\r\n|\n|\r/).filter(r => r.trim() !== "");
