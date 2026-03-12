@@ -90,7 +90,7 @@
 </div>
 
 <script>
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbyYNjfNpwVlFwY8-q7h57hRtERxI6mZC3lB2LNWsCR3zEPnwNYD8fRQPprrKH-jaf0U/exec";
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbwfmae574yabsE2lq5ZXBvRHgu8-uVA102ntxO0_QmZC9nXnr4RMACUrrRH5m65lf9N/exec";
 
     window.dbA = []; 
     window.dbB = []; 
@@ -98,7 +98,7 @@
     window.headersB = [];
     window.currentType = 'A';
 
-    // 데이터 동기화 함수 (매핑 로직 추가)
+    // 데이터 동기화 함수
     async function syncWithGoogleSheet() {
         const btn = document.querySelector('.btn-sync');
         const originalText = btn.innerHTML;
@@ -113,30 +113,19 @@
                 return;
             }
 
-            // [핵심 추가] 기준일 통합 매핑 프로세스
-            const processData = (list) => {
-                return list.map(item => {
-                    // 기존 데이터 유지하면서 '기준일' 키 추가
-                    if (item.data["변경일"]) {
-                        item.data["기준일"] = item.data["변경일"];
-                        item.data["기준일순위"] = item.data["변경일순위"];
-                    } else if (item.data["시작일"]) {
-                        item.data["기준일"] = item.data["시작일"];
-                        item.data["기준일순위"] = item.data["시작일순위"];
-                    }
-                    return item;
-                });
-            };
-
+            // 1. 데이터 및 헤더 저장
             window.headersA = json.headersA;
             window.headersB = json.headersB;
-            window.dbA = processData(json.listA || []);
-            window.dbB = processData(json.listB || []);
+            window.dbA = json.listA || [];
+            window.dbB = json.listB || [];
             
+            // 2. 수량 표시
             document.getElementById('countA').innerText = window.dbA.length + "건";
             document.getElementById('countB').innerText = window.dbB.length + "건";
             
+            // 3. 화면 렌더링
             renderAll();
+            
             alert(`동기화 완료!`);
         } catch (e) {
             console.error(e);
@@ -146,7 +135,42 @@
         }
     }
 
-    // 중복 검색 함수 (헤더 텍스트 변경 적용)
+    function renderAll() {
+        renderHeader('masterHeaderA', window.headersA); 
+        renderHeader('masterHeaderB', window.headersB); 
+        renderMaster();
+    }
+
+    function renderHeader(id, hList) {
+        if(!hList || hList.length === 0) return;
+        document.getElementById(id).innerHTML = `<tr>${hList.map(h => `<th>${h}</th>`).join('')}</tr>`;
+    }
+
+    function switchType(type) {
+        window.currentType = type;
+        document.getElementById('btnTypeA').classList.toggle('active', type === 'A');
+        document.getElementById('btnTypeB').classList.toggle('active', type === 'B');
+        document.getElementById('sectionA').classList.toggle('active', type === 'A');
+        document.getElementById('sectionB').classList.toggle('active', type === 'B');
+    }
+
+    function renderMaster() {
+        const draw = (db, headers) => {
+            if(!db || !headers || headers.length === 0) return '<tr><td colspan="20" style="padding:50px; color:#999;">데이터를 불러와주세요.</td></tr>';
+            return db.map(item => {
+                return `<tr>${headers.map(h => {
+                    const v = item.data[h] || '-';
+                    let style = (h === 'MID') ? "color:var(--main-green); font-weight:bold;" : "";
+                    if (String(v).includes('▲')) style = "color: #ff4d4d; font-weight:bold;";
+                    else if (String(v).includes('▼')) style = "color: #4e46e5; font-weight:bold;";
+                    return `<td class="result-td" style="${style}">${v}</td>`;
+                }).join('')}</tr>`;
+            }).join('');
+        };
+        document.getElementById('masterBodyA').innerHTML = draw(window.dbA, window.headersA);
+        document.getElementById('masterBodyB').innerHTML = draw(window.dbB, window.headersB);
+    }
+
     window.searchMID = function() {
         const input = document.getElementById('searchInput').value;
         const resultArea = document.getElementById('searchResultArea');
@@ -166,26 +190,13 @@
 
         if(foundRows.length > 0) {
             resultArea.style.display = 'block';
-
-            // [수정] 헤더 명칭을 '기준일'로 통합하여 표시
-            const displayHeaders = window.headersB.map(h => {
-                if (h === "시작일" || h === "변경일") return "기준일";
-                if (h === "시작일순위" || h === "변경일순위") return "기준일순위";
-                return h;
-            });
-
-            searchHeader.innerHTML = `<tr><th style="width:80px; background:#eee">구분</th>${displayHeaders.map(h => `<th>${h}</th>`).join('')}</tr>`;
-            
+            // 검색 결과는 기본적으로 더 많은 정보를 포함할 수 있는 B 헤더 기준으로 노출
+            searchHeader.innerHTML = `<tr><th style="width:80px; background:#eee">구분</th>${window.headersB.map(h => `<th>${h}</th>`).join('')}</tr>`;
             resultBody.innerHTML = foundRows.map(item => {
                 return `<tr>
                     <td style="background:#f9f9f9; font-weight:bold; color:var(--dark-blue)">${item.listType}</td>
                     ${window.headersB.map(h => {
-                        // 데이터 추출 시 '기준일' 통합 키 우선 참조
-                        let targetKey = h;
-                        if (h === "시작일" || h === "변경일") targetKey = "기준일";
-                        if (h === "시작일순위" || h === "변경일순위") targetKey = "기준일순위";
-                        
-                        const v = item.data[targetKey] || '-';
+                        const v = item.data[h] || '-';
                         let style = (h === 'MID') ? "color:red; font-weight:bold;" : "";
                         if (String(v).includes('▲')) style += "color: #ff4d4d; font-weight:bold;";
                         else if (String(v).includes('▼')) style += "color: #4e46e5; font-weight:bold;";
@@ -197,7 +208,7 @@
             alert("일치하는 MID 정보가 없습니다."); 
             resultArea.style.display = 'none'; 
         }
-}
+    }
 </script>
 </body>
 </html>
