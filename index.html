@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  
+
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://higheradtool.kro.kr/">
   <meta property="og:title" content="하이어애드 통합 도구 모음">
@@ -11,7 +11,6 @@
   <meta property="og:image" content="https://raw.githubusercontent.com/goo-sle/tools/main/%ED%95%98%EC%9D%B4%EC%96%B4%EC%95%A0%EB%93%9C_%EB%A1%9C%EA%B3%A0_1.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:image" content="https://raw.githubusercontent.com/goo-sle/tools/main/%ED%95%98%EC%9D%B4%EC%96%B4%EC%95%A0%EB%93%9C_%EB%A1%9C%EA%B3%A0_1.png">
 
@@ -26,47 +25,59 @@
       --sidebar-bg: #f9f9f9;
       --border-color: #ccc;
       --text-main: #333;
-      --notion-color: #000000;
-      --sheet-color: #0F9D58;
-      --admin-color: #4285F4;
-      --store-color: #FBBC05;
     }
-
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-    
+
+    /* 인증 전까지 body 숨김 → 로그인 화면 깜빡임 방지 */
     body {
       font-family: 'Pretendard', Arial, sans-serif;
       margin: 0; padding: 0;
-      display: flex; height: 100vh; overflow: hidden; color: var(--text-main);
+      display: none;          /* JS가 .ready 추가 시 flex로 전환 */
+      height: 100vh; overflow: hidden; color: var(--text-main);
     }
+    body.ready { display: flex; }
 
+    /* ── 인증 오버레이 ── */
     #authOverlay {
-      position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.85);
-      display: none; justify-content: center; align-items: center; z-index: 1000;
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.85);
+      display: flex;           /* 기본 표시 */
+      justify-content: center; align-items: center; z-index: 1000;
     }
-    .auth-card { background: white; padding: 35px; border-radius: 16px; width: 340px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+    #authOverlay.hidden { display: none; }
+
+    .auth-card {
+      background: white; padding: 35px; border-radius: 16px;
+      width: 340px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    }
     .auth-card h3 { margin-top: 0; color: var(--primary-color); }
-    .auth-card input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; outline: none; }
-    .auth-btn { width: 100%; padding: 12px; background: var(--primary-color); color: white; border: none; border-radius: 8px; cursor: pointer; margin-top: 10px; font-weight: bold; }
+    .auth-card input {
+      width: 100%; padding: 12px; margin: 8px 0;
+      border: 1px solid #ddd; border-radius: 8px; outline: none; font-size: 14px;
+    }
+    .auth-btn {
+      width: 100%; padding: 12px; background: var(--primary-color);
+      color: white; border: none; border-radius: 8px;
+      cursor: pointer; margin-top: 10px; font-weight: bold; font-size: 15px;
+    }
+    .auth-btn:hover { filter: brightness(1.1); }
     .auth-footer { font-size: 13px; color: #777; margin-top: 20px; cursor: pointer; text-decoration: underline; }
 
+    /* ── 사이드바 ── */
     #sidebar {
       width: 260px; min-width: 260px;
       background-color: var(--sidebar-bg);
       border-right: 1px solid var(--border-color);
       display: flex; flex-direction: column;
       transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      z-index: 20;
+      z-index: 20; overflow: hidden;
     }
-
-    /* PC 사이드바 접힘 상태 */
     #sidebar.collapsed { width: 68px; min-width: 68px; }
-    
-    .sidebar-header { 
-      padding: 12px 15px; 
-      border-bottom: 1px solid #eee; 
+
+    .sidebar-header {
+      padding: 12px 15px; border-bottom: 1px solid #eee;
       display: flex; align-items: center; gap: 8px;
-      height: 62px; overflow: hidden;
+      height: 62px; overflow: hidden; flex-shrink: 0;
     }
     #sidebar.collapsed .sidebar-header { justify-content: center; padding: 12px 0; }
 
@@ -80,14 +91,13 @@
     .home-btn:hover { background-color: var(--hover-color); color: var(--primary-color); border-color: var(--primary-color); }
 
     #toolSearch {
-      flex-grow: 1; width: 0; min-width: 0; 
+      flex-grow: 1; width: 0; min-width: 0;
       padding: 8px 15px; border: 1px solid var(--border-color);
       border-radius: 20px; outline: none; font-size: 13px;
-      transition: opacity 0.2s;
     }
-    #sidebar.collapsed #toolSearch, #sidebar.collapsed .home-btn { display: none; }
+    #sidebar.collapsed #toolSearch,
+    #sidebar.collapsed .home-btn { display: none; }
 
-    /* PC 토글 버튼 스타일 */
     .pc-toggle-btn {
       background: none; border: none; cursor: pointer;
       display: flex; align-items: center; justify-content: center;
@@ -97,71 +107,62 @@
 
     .scroll-area { flex-grow: 1; overflow-y: auto; padding: 15px; }
     #sidebar.collapsed .scroll-area { padding: 15px 0; }
-    
+
     .section-title { font-size: 12px; font-weight: bold; color: #777; margin: 15px 0 8px 3px; user-select: none; white-space: nowrap; }
     #sidebar.collapsed .section-title { display: none; }
 
     .section { display: flex; flex-direction: column; gap: 6px; min-height: 40px; }
     .section:empty::before {
       content: "항목을 끌어다 놓으세요";
-      display: block; font-size: 11px; color: #bbb; text-align: center; padding: 15px 0;
-      border: 1px dashed #ddd; border-radius: 8px; background-color: #fff;
+      display: block; font-size: 11px; color: #bbb; text-align: center;
+      padding: 15px 0; border: 1px dashed #ddd; border-radius: 8px; background-color: #fff;
     }
     #sidebar.collapsed .section:empty::before { content: ""; border: none; }
 
-    /* 툴 버튼 기본 구조 */
     .tool-button {
       display: flex; align-items: center; padding: 10px 12px; font-size: 14px;
-      cursor: pointer; background-color: #fff; border: 1px solid #eee; border-radius: 8px; transition: all 0.2s;
+      cursor: pointer; background-color: #fff; border: 1px solid #eee;
+      border-radius: 8px; transition: all 0.2s;
       white-space: nowrap; overflow: hidden;
     }
     .tool-button:hover { background-color: var(--hover-color); transform: translateX(3px); }
     .tool-button.active { background-color: var(--active-bg); border-color: #a0c4ff; font-weight: bold; }
 
-    /* [추가] 아이콘과 텍스트 각각의 스타일 */
     .tool-icon {
       display: flex; align-items: center; justify-content: center;
       min-width: 24px; font-size: 18px; flex-shrink: 0;
     }
-    .tool-text {
-      margin-left: 10px;
-    }
+    .tool-text { margin-left: 10px; }
 
-    /* [수정] 접혔을 때: 텍스트는 숨기고 아이콘만 정중앙에 배치 */
     #sidebar.collapsed .tool-button {
-      justify-content: center; padding: 0; width: 46px; height: 46px; margin: 0 auto 6px auto;
+      justify-content: center; padding: 0;
+      width: 46px; height: 46px; margin: 0 auto 6px auto;
     }
-    
-    /* 텍스트를 아예 제거해야 쏠림이 없습니다 */
-    #sidebar.collapsed .tool-text {
-      display: none;
-    }
+    #sidebar.collapsed .tool-text { display: none; }
+    #sidebar.collapsed .tool-icon { margin: 0; font-size: 22px; }
 
-    /* 접혔을 때 아이콘 크기 살짝 키움 */
-    #sidebar.collapsed .tool-icon {
-      margin: 0;
-      font-size: 22px;
-    }
-
+    /* ── 탭바 ── */
     #tabBar {
       display: none; background: #f0f0f0; border-bottom: 1px solid var(--border-color);
-      overflow-x: auto; white-space: nowrap; padding: 6px 6px 0 6px; gap: 4px;
-      scrollbar-width: none;
+      overflow-x: auto; white-space: nowrap; padding: 6px 6px 0; gap: 4px;
+      scrollbar-width: none; flex-shrink: 0;
     }
     #tabBar::-webkit-scrollbar { display: none; }
 
     .tab {
-      display: inline-flex; align-items: center; padding: 8px 15px; background: #e0e0e0;
-      border: 1px solid #ccc; border-bottom: none; border-radius: 8px 8px 0 0;
-      font-size: 13px; cursor: pointer; max-width: 180px; transition: all 0.2s; color: #666;
-      user-select: none;
+      display: inline-flex; align-items: center; padding: 8px 15px;
+      background: #e0e0e0; border: 1px solid #ccc; border-bottom: none;
+      border-radius: 8px 8px 0 0; font-size: 13px; cursor: pointer;
+      max-width: 180px; transition: all 0.2s; color: #666; user-select: none;
     }
     .tab.active { background: #fff; font-weight: bold; border-bottom: 2px solid var(--primary-color); color: var(--text-main); }
     .tab .close-tab { margin-left: 8px; font-size: 16px; color: #999; border-radius: 50%; }
+    .tab .close-tab:hover { color: #e53935; }
 
+    /* ── 콘텐츠 ── */
     #content { flex-grow: 1; position: relative; background: #fff; overflow: hidden; display: flex; flex-direction: column; }
     #iframeContainer { flex-grow: 1; position: relative; width: 100%; height: 100%; }
-    #iframeContainer iframe { position: absolute; top:0; left:0; width: 100%; height: 100%; border: none; display: none; }
+    #iframeContainer iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; display: none; }
     #iframeContainer iframe.active { display: block; }
 
     #welcome {
@@ -172,62 +173,65 @@
       font-size: 42px; font-weight: bold; margin: 15px 0;
       background: #f0f0f0; padding: 10px 30px; border-radius: 12px;
     }
-
     .quick-links {
-      display: grid; grid-template-columns: repeat(3, 1fr); 
-      gap: 15px; margin-top: 25px; width: 100%; max-width: 700px; margin-left: auto; margin-right: auto;
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 15px; margin-top: 25px; width: 100%; max-width: 700px;
     }
-
     .link-card {
       display: flex; flex-direction: column; align-items: center; justify-content: center;
       padding: 15px 10px; background: #fff; border: 1px solid #e5e5e5; border-radius: 12px;
       text-decoration: none; color: var(--text-main); transition: all 0.2s ease;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.04); aspect-ratio: 2 / 1.1; 
+      box-shadow: 0 2px 4px rgba(0,0,0,0.04); aspect-ratio: 2 / 1.1; gap: 6px;
     }
     .link-card:hover { transform: translateY(-3px); box-shadow: 0 6px 12px rgba(0,0,0,0.08); background: #fafafa; }
 
-    .sidebar-footer { padding: 10px; border-top: 1px solid #eee; display: flex; flex-wrap: wrap; gap: 5px; }
+    .sidebar-footer {
+      padding: 10px; border-top: 1px solid #eee;
+      display: flex; flex-wrap: wrap; gap: 5px; flex-shrink: 0;
+    }
     #sidebar.collapsed .sidebar-footer { display: none; }
-    .footer-btn { flex: 1; font-size: 11px; padding: 8px 5px; cursor: pointer; background: #fff; border: 1px solid #ddd; border-radius: 4px; }
 
     #toggleMenuBtn {
       display: none; width: 100%; padding: 6px; background: #eee;
       border: none; border-top: 1px solid #ddd; cursor: pointer;
-      align-items: center; justify-content: center; color: #666;
+      align-items: center; justify-content: center; color: #666; flex-shrink: 0;
     }
 
     @media (max-width: 768px) {
-      body { flex-direction: column; }
-      #sidebar { width: 100%; min-width: 100%; height: 40%; border-right: none; border-bottom: 1px solid var(--border-color); flex-shrink: 0; }
-      #sidebar.collapsed { height: 62px !important; width: 100% !important; }
+      body.ready { flex-direction: column; }
+      #sidebar { width: 100% !important; min-width: 100% !important; height: 40%; border-right: none; border-bottom: 1px solid var(--border-color); flex-shrink: 0; }
+      #sidebar.collapsed { height: 62px !important; }
       #sidebar.collapsed .scroll-area, #sidebar.collapsed .sidebar-footer { display: none; }
       #toggleMenuBtn { display: flex; }
       .pc-toggle-btn { display: none; }
-      #content { height: 100%; flex-grow: 1; padding-top: 0; }
+      #content { height: 100%; flex-grow: 1; }
       #tabBar { display: none !important; }
     }
   </style>
 </head>
 <body>
 
+  <!-- ── 인증 오버레이 (기본 표시, 로그인 후 hidden) ── -->
   <div id="authOverlay">
     <div class="auth-card" id="loginBox">
       <h3>🔐 하이어애드 통합 도구</h3>
-      <input type="text" id="userId" placeholder="아이디">
-      <input type="password" id="userPw" placeholder="비밀번호">
+      <input type="text" id="userId" placeholder="아이디" autocomplete="username">
+      <input type="password" id="userPw" placeholder="비밀번호" autocomplete="current-password"
+             onkeydown="if(event.key==='Enter') handleLogin()">
       <button class="auth-btn" onclick="handleLogin()">로그인</button>
       <p class="auth-footer" onclick="toggleAuth(true)">계정이 없으신가요? 회원가입</p>
     </div>
-    <div class="auth-card" id="regBox" style="display: none;">
+    <div class="auth-card" id="regBox" style="display:none;">
       <h3>📝 신규 가입</h3>
-      <input type="text" id="regId" placeholder="아이디">
-      <input type="password" id="regPw" placeholder="비밀번호 (6자 이상)">
-      <input type="password" id="regPwConfirm" placeholder="비밀번호 확인">
-      <button class="auth-btn" style="background: #444;" onclick="handleRegister()">가입하기</button>
+      <input type="text" id="regId" placeholder="아이디" autocomplete="username">
+      <input type="password" id="regPw" placeholder="비밀번호 (6자 이상)" autocomplete="new-password">
+      <input type="password" id="regPwConfirm" placeholder="비밀번호 확인" autocomplete="new-password">
+      <button class="auth-btn" style="background:#444;" onclick="handleRegister()">가입하기</button>
       <p class="auth-footer" onclick="toggleAuth(false)">이미 계정이 있습니다</p>
     </div>
   </div>
 
+  <!-- ── 사이드바 ── -->
   <div id="sidebar">
     <div class="sidebar-header">
       <button class="home-btn" title="메인으로 이동" onclick="goHome()">
@@ -247,9 +251,9 @@
       <div id="inactiveTools" class="section"></div>
     </div>
     <div class="sidebar-footer">
-      <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-        <span id="displayUser" style="font-size: 11px; color: #999; margin-left: 5px;"></span>
-        <button class="footer-btn" style="flex: none; width: auto; padding: 4px 8px;" onclick="handleLogout()">로그아웃</button>
+      <div style="width:100%; display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+        <span id="displayUser" style="font-size:11px; color:#999; margin-left:5px;"></span>
+        <button style="padding:4px 8px; border:1px solid #ddd; border-radius:4px; cursor:pointer; background:#fff; font-size:11px;" onclick="handleLogout()">로그아웃</button>
       </div>
     </div>
     <button id="toggleMenuBtn" onclick="toggleSidebar()">
@@ -257,164 +261,72 @@
     </button>
   </div>
 
+  <!-- ── 콘텐츠 ── -->
   <div id="content">
-    <div id="loader"><div class="spinner"></div></div>
     <div id="tabBar"></div>
     <div id="iframeContainer">
       <div id="welcome">
-        <h2 style="color: var(--primary-color); margin-bottom: 5px;">🍀 환영합니다!</h2>
-        <p id="todayDisplay" style="margin-top: 0; color: #666; font-size: 14px;"></p>
+        <h2 style="color:var(--primary-color); margin-bottom:5px;">🍀 환영합니다!</h2>
+        <p id="todayDisplay" style="margin-top:0; color:#666; font-size:14px;"></p>
         <div id="naverClock">00:00:00</div>
-
         <div class="quick-links">
-          <a href="https://www.notion.so/HigherAd-Lab-24d5c6b1d0d68034a68afd3e96f80255" target="_blank" class="link-card c-notion">
-            <span class="material-symbols-outlined">description</span>
-            <span>하이어애드 노션</span>
+          <a href="https://www.notion.so/HigherAd-Lab-24d5c6b1d0d68034a68afd3e96f80255" target="_blank" rel="noopener noreferrer" class="link-card">
+            <span class="material-symbols-outlined">description</span><span>하이어애드 노션</span>
           </a>
-          <a href="https://docs.google.com/spreadsheets/d/1sHZCaJTA9icEf2S4Ad9zLWdo8oAvoK1hTfA1EONmzS8/edit?usp=sharing" target="_blank" class="link-card c-sheet">
-            <span class="material-symbols-outlined">table_chart</span>
-            <span>⭐순위표</span>
+          <a href="https://docs.google.com/spreadsheets/d/1sHZCaJTA9icEf2S4Ad9zLWdo8oAvoK1hTfA1EONmzS8/edit?usp=sharing" target="_blank" rel="noopener noreferrer" class="link-card">
+            <span class="material-symbols-outlined">table_chart</span><span>⭐순위표</span>
           </a>
-          <a href="https://docs.google.com/spreadsheets/d/1Ia3CcylXPF-Y4f2V6qBiVHmRf85vSPiJ43v9GnQPB2c/edit?usp=sharing" target="_blank" class="link-card c-sheet">
-            <span class="material-symbols-outlined">table_chart</span>
-            <span>♠️단독 상품성 분류</span>
+          <a href="https://docs.google.com/spreadsheets/d/1Ia3CcylXPF-Y4f2V6qBiVHmRf85vSPiJ43v9GnQPB2c/edit?usp=sharing" target="_blank" rel="noopener noreferrer" class="link-card">
+            <span class="material-symbols-outlined">table_chart</span><span>♠️단독 상품성 분류</span>
           </a>
-          <a href="https://admin.bizfit.kr/v1/admin/index.php" target="_blank" class="link-card c-admin">
-            <span class="material-symbols-outlined">admin_panel_settings</span>
-            <span>비즈핏 어드민</span>
+          <a href="https://admin.bizfit.kr/v1/admin/index.php" target="_blank" rel="noopener noreferrer" class="link-card">
+            <span class="material-symbols-outlined">admin_panel_settings</span><span>비즈핏 어드민</span>
           </a>
-          <a href="https://bizfit.co.kr/bfnew/partners/account/view/login.html" target="_blank" class="link-card c-store">
-            <span class="material-symbols-outlined">storefront</span>
-            <span>지사 페이지</span>
+          <a href="https://bizfit.co.kr/bfnew/partners/account/view/login.html" target="_blank" rel="noopener noreferrer" class="link-card">
+            <span class="material-symbols-outlined">storefront</span><span>지사 페이지</span>
           </a>
-          <a href="http://higherad.co.kr/bfnew/partners/account/view/login.html" target="_blank" class="link-card c-store">
-            <span class="material-symbols-outlined">store</span>
-            <span>광고주 페이지</span>
+          <a href="http://higherad.co.kr/bfnew/partners/account/view/login.html" target="_blank" rel="noopener noreferrer" class="link-card">
+            <span class="material-symbols-outlined">store</span><span>광고주 페이지</span>
           </a>
         </div>
-        <p style="color: #bbb; margin-top: 40px; font-size: 12px;">클라우드 동기화 중입니다. 로그인하면 어디서든 내 설정이 유지됩니다.</p>
+        <p style="color:#bbb; margin-top:40px; font-size:12px;">클라우드 동기화 중입니다. 로그인하면 어디서든 내 설정이 유지됩니다.</p>
       </div>
     </div>
   </div>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
-    import { getDatabase, ref, set, onValue, update } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-database.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyCRnAMy3PyD0zracrwyo17hEZ-R40pAvt4",
-      authDomain: "higherad-530c4.firebaseapp.com",
-      databaseURL: "https://higherad-530c4-default-rtdb.asia-southeast1.firebasedatabase.app",
-      projectId: "higherad-530c4",
-      storageBucket: "higherad-530c4.firebasestorage.app",
-      messagingSenderId: "1028078651420",
-      appId: "1:1028078651420:web:71c8b8c5e69f0772d637d9"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getDatabase(app);
-
-    const formatId = (id) => `${id.trim()}@higherad.com`;
-
-    window.toggleAuth = (isRegister) => {
-      document.getElementById('loginBox').style.display = isRegister ? 'none' : 'block';
-      document.getElementById('regBox').style.display = isRegister ? 'block' : 'none';
-    };
-
-    onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        document.body.style.display = 'flex'; 
-        document.getElementById('displayUser').textContent = user.email.split('@')[0] + "님";
-        
-        onValue(ref(db, 'users/' + user.uid), (snapshot) => {
-          if (snapshot.exists()) {
-            const data = snapshot.val();
-            if (data.toolDashboardState) {
-              localStorage.setItem("toolDashboardState", data.toolDashboardState);
-              renderAppFromServer(JSON.parse(data.toolDashboardState));
-            }
-          } else {
-            initApp();
-          }
-        });
-
-        updateClock();
-        setInterval(updateClock, 1000);
-        setupDragAndDrop();
-        setupTabDragAndDrop();
-      } else {
-        location.replace("login.html");
-      }
-    });
-
-    window.saveStateToServer = function(state) {
-      const user = auth.currentUser;
-      if (!user) return;
-      update(ref(db, 'users/' + user.uid), {
-        toolDashboardState: JSON.stringify(state)
-      });
-    };
-
-    window.handleLogin = async () => {
-      const id = document.getElementById('userId').value;
-      const pw = document.getElementById('userPw').value;
-      if(!id || !pw) return alert("아이디/비번을 입력하세요.");
-      try { await signInWithEmailAndPassword(auth, formatId(id), pw); } catch(e) { alert("계정 정보를 확인하세요."); }
-    };
-
-    window.handleRegister = async () => {
-      const id = document.getElementById('regId').value;
-      const pw = document.getElementById('regPw').value;
-      const pwC = document.getElementById('regPwConfirm').value;
-      if(!id || pw.length < 6) return alert("비밀번호는 6자 이상이어야 합니다.");
-      if(pw !== pwC) return alert("비밀번호가 일치하지 않습니다.");
-      try {
-        const userCredential = await createUserWithEmailAndPassword(auth, formatId(id), pw);
-        const user = userCredential.user;
-        const initialState = { fav: [], active: defaultTools.map(t => t.file), inactive: [] };
-        await set(ref(db, 'users/' + user.uid), {
-          toolDashboardState: JSON.stringify(initialState),
-          email: user.email,
-          createdAt: new Date().toISOString()
-        });
-        alert("가입 성공!"); window.toggleAuth(false);
-      } catch (e) { alert("가입 실패: " + e.message); }
-    };
-
-    window.handleLogout = () => { if(confirm("로그아웃 하시겠습니까?")) signOut(auth).then(()=>location.reload()); };
-  </script>
-
+  <!-- ① 전역 UI 로직 (모듈 스크립트보다 먼저 파싱되어야 함) -->
   <script>
-    const sections = ['favTools', 'activeTools', 'inactiveTools'].map(id => document.getElementById(id));
-    const welcome = document.getElementById('welcome');
-    const tabBar = document.getElementById('tabBar');
-    const iframeContainer = document.getElementById('iframeContainer');
-    let dragged = null;
-    let draggedTab = null;
-    let tabs = [];
-
+    // ── 도구 목록 ──
     const defaultTools = [
-      {file: "★/메모장.html", label: "⏰ 메모장"},
-      {file: "★/등급 확인.html", label: "🎖️ 등급 확인"},
-      {file: "★/URL 인코딩_디코딩.html", label: "🔗 URL 인코딩/디코딩"},
-      {file: "★/네이버 키워드 조합기.html", label: "🔑 네이버 키워드 조합기"},
-      {file: "★/키워드 쉼표 병합기.html", label: "⚡ 키워드 쉼표 병합기"},
-      {file: "★/플레이스 단가 계산기.html", label: "💰 플레이스 단가 계산기"},
-      {file: "★/플레이스 주소 정리.html", label: "🔧 플레이스 주소 정리"},
-      {file: "★/엑셀 시트 분리.html", label: "🗂️ 엑셀 시트 분리 도구"},
-      {file: "★/자동완성 체크.html", label: "✅ 자동완성 체크"},
-      {file: "★/10위 이내 키워드.html", label: "🔍 10위 이내 키워드"},
-      {file: "★/미션 진행 상황판.html", label: "📒 미션 진행 상황판"},
-      {file: "★/업체별 수량 관리.html", label: "📚 업체별 수량 관리"},
-      {file: "★/업무 관련 URL.html", label: "📍 업무 관련 URL"},
-      {file: "★/블로그 태그 검색.html", label: "🏷️ 블로그 태그 검색"},
-      {file: "★/진행중 중복 체크.html", label: "💻 진행중 중복 체크"},
+      {file:"★/메모장.html",             label:"⏰ 메모장"},
+      {file:"★/등급 확인.html",           label:"🎖️ 등급 확인"},
+      {file:"★/URL 인코딩_디코딩.html",   label:"🔗 URL 인코딩/디코딩"},
+      {file:"★/네이버 키워드 조합기.html", label:"🔑 네이버 키워드 조합기"},
+      {file:"★/키워드 쉼표 병합기.html",  label:"⚡ 키워드 쉼표 병합기"},
+      {file:"★/플레이스 단가 계산기.html", label:"💰 플레이스 단가 계산기"},
+      {file:"★/플레이스 주소 정리.html",  label:"🔧 플레이스 주소 정리"},
+      {file:"★/엑셀 시트 분리.html",      label:"🗂️ 엑셀 시트 분리 도구"},
+      {file:"★/자동완성 체크.html",       label:"✅ 자동완성 체크"},
+      {file:"★/10위 이내 키워드.html",    label:"🔍 10위 이내 키워드"},
+      {file:"★/미션 진행 상황판.html",    label:"📒 미션 진행 상황판"},
+      {file:"★/업체별 수량 관리.html",    label:"📚 업체별 수량 관리"},
+      {file:"★/업무 관련 URL.html",       label:"📍 업무 관련 URL"},
+      {file:"★/블로그 태그 검색.html",    label:"🏷️ 블로그 태그 검색"},
+      {file:"★/진행중 중복 체크.html",    label:"💻 진행중 중복 체크"},
     ];
 
-    const isMobile = () => window.innerWidth <= 768;
+    const sectionEls      = ['favTools','activeTools','inactiveTools'].map(id => document.getElementById(id));
+    const welcome         = document.getElementById('welcome');
+    const tabBar          = document.getElementById('tabBar');
+    const iframeContainer = document.getElementById('iframeContainer');
+    let dragged    = null;
+    let draggedTab = null;
+    let tabs       = [];
 
+    const isMobile  = () => window.innerWidth <= 768;
+    const getSafeId = (file) => 'frame_' + btoa(unescape(encodeURIComponent(file))).replace(/=/g,'');
+
+    // ── 렌더 ──
     function renderAppFromServer(state) {
       const render = (files, container) => {
         container.innerHTML = "";
@@ -423,133 +335,101 @@
           if (tool) container.appendChild(createButton(tool));
         });
       };
-      const allSavedFiles = [...(state.fav || []), ...(state.active || []), ...(state.inactive || [])];
-      const missingTools = defaultTools.filter(tool => !allSavedFiles.includes(tool.file));
-      if (missingTools.length > 0) {
-        missingTools.forEach(tool => { state.active.unshift(tool.file); });
-        if (window.saveStateToServer) window.saveStateToServer(state);
-        localStorage.setItem("toolDashboardState", JSON.stringify(state));
+      // 누락된 신규 도구 자동 추가
+      const allSaved = [...(state.fav||[]), ...(state.active||[]), ...(state.inactive||[])];
+      const missing  = defaultTools.filter(t => !allSaved.includes(t.file));
+      if (missing.length) {
+        missing.forEach(t => state.active.unshift(t.file));
+        saveCurrentState(state);
       }
-      render(state.fav, sections[0]);
-      render(state.active, sections[1]);
-      render(state.inactive, sections[2]);
+      render(state.fav,      sectionEls[0]);
+      render(state.active,   sectionEls[1]);
+      render(state.inactive, sectionEls[2]);
+      setupDragAndDrop(); // 렌더 완료 후 DnD 재설정
     }
 
     function initApp() {
       const saved = localStorage.getItem("toolDashboardState");
-      let state = saved ? JSON.parse(saved) : { fav: [], active: defaultTools.map(t => t.file), inactive: [] };
-      renderAppFromServer(state);
+      renderAppFromServer(saved ? JSON.parse(saved) : { fav:[], active: defaultTools.map(t=>t.file), inactive:[] });
     }
 
+    // ── 버튼 생성 (XSS 방지: textContent 사용) ──
     function createButton(tool) {
       const btn = document.createElement("div");
-      btn.className = "tool-button";
-      btn.draggable = true;
+      btn.className    = "tool-button";
+      btn.draggable    = true;
       btn.dataset.file = tool.file;
 
-      // [핵심] 복합 이모지(태그, 폴더 등)를 찢어지지 않게 덩어리째 분리
+      // Intl.Segmenter로 이모지 안전하게 분리
       const segmenter = new Intl.Segmenter('ko', { granularity: 'grapheme' });
-      const segments = Array.from(segmenter.segment(tool.label));
-      
-      const iconPart = segments[0].segment; // 첫 번째 덩어리(이모지)
-      const textPart = segments.slice(1).map(s => s.segment).join('').trim(); // 나머지
+      const segments  = Array.from(segmenter.segment(tool.label));
+      const iconPart  = segments[0].segment;
+      const textPart  = segments.slice(1).map(s => s.segment).join('').trim();
 
-      btn.innerHTML = `
-        <span class="tool-icon">${iconPart}</span>
-        <span class="tool-text">${textPart}</span>
-      `;
+      const iconEl = document.createElement('span');
+      iconEl.className   = 'tool-icon';
+      iconEl.textContent = iconPart;   // textContent → XSS 차단
 
-      btn.onclick = () => openTab(tool);
-      btn.ondragstart = () => { dragged = btn; };
+      const textEl = document.createElement('span');
+      textEl.className   = 'tool-text';
+      textEl.textContent = textPart;   // textContent → XSS 차단
+
+      btn.appendChild(iconEl);
+      btn.appendChild(textEl);
+      btn.addEventListener('click', () => openTab(tool));
+      btn.addEventListener('dragstart', () => { dragged = btn; });
       return btn;
     }
 
-    const getSafeId = (file) => 'frame_' + btoa(unescape(encodeURIComponent(file))).replace(/=/g, '');
-
+    // ── 탭 열기 ──
     function openTab(tool) {
       if (isMobile()) {
         document.querySelectorAll('.tool-button').forEach(b => b.classList.remove('active'));
-        const activeBtn = document.querySelector(`.tool-button[data-file="${tool.file}"]`);
-        if(activeBtn) activeBtn.classList.add('active');
-
+        document.querySelector(`.tool-button[data-file="${CSS.escape(tool.file)}"]`)?.classList.add('active');
         welcome.style.display = "none";
-        tabBar.style.display = "none";
-        
-        let mFrame = document.getElementById('mobileFrame');
-        if(!mFrame) {
-          mFrame = document.createElement('iframe');
-          mFrame.id = 'mobileFrame';
-          iframeContainer.appendChild(mFrame);
-        }
         document.querySelectorAll('#iframeContainer iframe').forEach(f => f.classList.remove('active'));
-        mFrame.classList.add('active');
+        let mFrame = document.getElementById('mobileFrame');
+        if (!mFrame) { mFrame = document.createElement('iframe'); mFrame.id = 'mobileFrame'; iframeContainer.appendChild(mFrame); }
         mFrame.src = tool.file;
-
+        mFrame.classList.add('active');
         if (!document.getElementById('sidebar').classList.contains('collapsed')) toggleSidebar();
         return;
       }
-
-      let existingTab = tabs.find(t => t.file === tool.file);
-      if (existingTab) {
-        activateTab(tool.file);
-        return;
-      }
+      if (tabs.find(t => t.file === tool.file)) { activateTab(tool.file); return; }
 
       const tabId = getSafeId(tool.file);
       tabs.push({ file: tool.file, label: tool.label, id: tabId });
 
-      const tabEl = document.createElement('div');
-      tabEl.className = 'tab';
-      tabEl.id = 'tab_' + tabId;
+      // 탭 엘리먼트 (innerHTML 미사용 → XSS 방지)
+      const tabEl   = document.createElement('div');
+      tabEl.className    = 'tab';
+      tabEl.id           = 'tab_' + tabId;
       tabEl.dataset.file = tool.file;
-      tabEl.draggable = true;
-      tabEl.innerHTML = `<span>${tool.label}</span><span class="material-symbols-outlined close-tab" onclick="closeTab(event, '${tool.file}')">close</span>`;
-      
-      tabEl.addEventListener('dragstart', (e) => {
-        draggedTab = tabEl;
-        tabEl.classList.add('dragging');
-      });
+      tabEl.draggable    = true;
 
-      tabEl.addEventListener('dragend', () => {
-        draggedTab = null;
-        tabEl.classList.remove('dragging');
-        updateTabsArrayOrder();
-      });
+      const tabLabel = document.createElement('span');
+      tabLabel.textContent = tool.label;
 
-      tabEl.onclick = () => activateTab(tool.file);
+      const closeBtn = document.createElement('span');
+      closeBtn.className   = 'material-symbols-outlined close-tab';
+      closeBtn.textContent = 'close';
+      closeBtn.addEventListener('click', (e) => closeTab(e, tool.file));
+
+      tabEl.appendChild(tabLabel);
+      tabEl.appendChild(closeBtn);
+      tabEl.addEventListener('click', () => activateTab(tool.file));
+      tabEl.addEventListener('dragstart', () => { draggedTab = tabEl; tabEl.classList.add('dragging'); });
+      tabEl.addEventListener('dragend',   () => { draggedTab = null;  tabEl.classList.remove('dragging'); updateTabsArrayOrder(); });
       tabBar.appendChild(tabEl);
 
       const ifrm = document.createElement('iframe');
-      ifrm.id = tabId;
-      ifrm.src = tool.file;
+      ifrm.id    = tabId;
+      ifrm.src   = tool.file;
+      // sandbox 속성: 필요한 권한만 허용 (스크립트 실행 + 동일 출처 허용)
+      ifrm.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-popups allow-downloads');
       iframeContainer.appendChild(ifrm);
 
       activateTab(tool.file);
-    }
-
-    function setupTabDragAndDrop() {
-      tabBar.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        if (!draggedTab) return;
-        const afterElement = getTabDragAfterElement(tabBar, e.clientX);
-        if (afterElement == null) tabBar.appendChild(draggedTab);
-        else tabBar.insertBefore(draggedTab, afterElement);
-      });
-    }
-
-    function getTabDragAfterElement(container, x) {
-      const draggableElements = [...container.querySelectorAll('.tab:not(.dragging)')];
-      return draggableElements.reduce((closest, child) => {
-        const box = child.getBoundingClientRect();
-        const offset = x - box.left - box.width / 2;
-        if (offset < 0 && offset > closest.offset) return { offset: offset, element: child };
-        else return closest;
-      }, { offset: Number.NEGATIVE_INFINITY }).element;
-    }
-
-    function updateTabsArrayOrder() {
-      const currentTabElements = [...tabBar.querySelectorAll('.tab')];
-      tabs = currentTabElements.map(el => tabs.find(t => t.file === el.dataset.file));
     }
 
     function activateTab(file) {
@@ -557,109 +437,224 @@
       const tid = getSafeId(file);
       document.querySelectorAll('.tab, #iframeContainer iframe, .tool-button').forEach(el => el.classList.remove('active'));
       welcome.style.display = "none";
-      tabBar.style.display = "flex";
-      const tBtn = document.getElementById('tab_' + tid);
-      const ifr = document.getElementById(tid);
-      const mBtn = document.querySelector(`.tool-button[data-file="${file}"]`);
-      if(tBtn) tBtn.classList.add('active');
-      if(ifr) ifr.classList.add('active');
-      if(mBtn) mBtn.classList.add('active');
+      tabBar.style.display  = "flex";
+      document.getElementById('tab_' + tid)?.classList.add('active');
+      document.getElementById(tid)?.classList.add('active');
+      document.querySelector(`.tool-button[data-file="${CSS.escape(file)}"]`)?.classList.add('active');
     }
 
     window.closeTab = function(e, file) {
       e.stopPropagation();
       const tid = getSafeId(file);
       tabs = tabs.filter(t => t.file !== file);
-      const targetTab = document.getElementById('tab_' + tid);
-      const targetIfr = document.getElementById(tid);
-      if(targetTab) targetTab.remove();
-      if(targetIfr) targetIfr.remove();
-      
-      if (tabs.length > 0) activateTab(tabs[tabs.length - 1].file);
-      else goHome();
+      document.getElementById('tab_' + tid)?.remove();
+      document.getElementById(tid)?.remove();
+      tabs.length > 0 ? activateTab(tabs[tabs.length - 1].file) : goHome();
     };
 
-    function goHome() {
+    window.goHome = function() {
       document.querySelectorAll('.tab, #iframeContainer iframe, .tool-button').forEach(el => el.classList.remove('active'));
-      tabBar.style.display = "none";
+      tabBar.style.display  = "none";
       welcome.style.display = "flex";
       const mf = document.getElementById('mobileFrame');
-      if(mf) mf.src = "";
-    }
+      if (mf) { mf.src = ""; mf.classList.remove('active'); }
+    };
 
+    // ── 드래그 앤 드롭 ──
     function setupDragAndDrop() {
-      sections.forEach(section => {
+      sectionEls.forEach(section => {
         section.ondragover = (e) => e.preventDefault();
         section.ondrop = (e) => {
           e.preventDefault();
           if (!dragged) return;
-          const afterElement = getDragAfterElement(section, e.clientY);
-          if (afterElement == null) section.appendChild(dragged);
-          else section.insertBefore(dragged, afterElement);
-          const state = {
-            fav: Array.from(sections[0].children).map(b => b.dataset.file),
-            active: Array.from(sections[1].children).map(b => b.dataset.file),
-            inactive: Array.from(sections[2].children).map(b => b.dataset.file)
-          };
-          if(window.saveStateToServer) window.saveStateToServer(state);
+          const after = getDragAfterElement(section, e.clientY);
+          if (after == null) section.appendChild(dragged);
+          else section.insertBefore(dragged, after);
+          saveCurrentState();
           dragged = null;
         };
       });
     }
 
     function getDragAfterElement(container, y) {
-      const draggableElements = [...container.querySelectorAll('.tool-button:not(.dragging)')];
-      return draggableElements.reduce((closest, child) => {
-        const box = child.getBoundingClientRect();
-        const offset = y - box.top - box.height / 2;
-        if (offset < 0 && offset > closest.offset) return { offset: offset, element: child };
-        else return closest;
+      return [...container.querySelectorAll('.tool-button:not(.dragging)')].reduce((closest, child) => {
+        const offset = y - child.getBoundingClientRect().top - child.getBoundingClientRect().height / 2;
+        return (offset < 0 && offset > closest.offset) ? { offset, element: child } : closest;
       }, { offset: Number.NEGATIVE_INFINITY }).element;
     }
 
-    function updateClock() {
-      const now = new Date();
-      const clock = document.getElementById('naverClock');
-      if(clock) clock.textContent = now.toTimeString().split(' ')[0];
-      const days = ['일','월','화','수','목','금','토'];
-      const disp = document.getElementById('todayDisplay');
-      if(disp) disp.textContent = `${now.getFullYear()}. ${now.getMonth()+1}. ${now.getDate()} (${days[now.getDay()]})`;
-    }
-
-    function getChosung(str) {
-      const cho = ["ㄱ","ㄲ","ㄴ","ㄷ","ㄸ","ㄹ","ㅁ","ㅂ","ㅃ","ㅅ","ㅆ","ㅇ","ㅈ","ㅉ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
-      let result = "";
-      for(let i=0; i<str.length; i++) {
-        const code = str.charCodeAt(i) - 44032;
-        if (code > -1 && code < 11172) result += cho[Math.floor(code / 588)];
-        else result += str.charAt(i);
-      }
-      return result;
-    }
-
-    function filterTools() {
-      const query = document.getElementById('toolSearch').value.toLowerCase().replace(/\s/g, "");
-      const queryChosung = getChosung(query);
-      document.querySelectorAll('.tool-button').forEach(btn => {
-        const label = btn.textContent.toLowerCase().replace(/\s/g, "");
-        const labelChosung = getChosung(label);
-        if (label.includes(query) || labelChosung.includes(query)) btn.style.display = "flex";
-        else btn.style.display = "none";
+    function setupTabDragAndDrop() {
+      tabBar.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        if (!draggedTab) return;
+        const after = [...tabBar.querySelectorAll('.tab:not(.dragging)')].reduce((closest, child) => {
+          const offset = e.clientX - child.getBoundingClientRect().left - child.getBoundingClientRect().width / 2;
+          return (offset < 0 && offset > closest.offset) ? { offset, element: child } : closest;
+        }, { offset: Number.NEGATIVE_INFINITY }).element;
+        if (after == null) tabBar.appendChild(draggedTab);
+        else tabBar.insertBefore(draggedTab, after);
       });
     }
 
-    window.toggleSidebar = function() {
-      const sb = document.getElementById('sidebar');
-      const isCollapsed = sb.classList.toggle('collapsed');
-      
-      // PC용 아이콘 변경
-      const pcIcon = document.getElementById('pcToggleIcon');
-      if(pcIcon) pcIcon.textContent = isCollapsed ? 'menu' : 'menu_open';
-
-      // 모바일용 아이콘 변경
-      const mobileIcon = document.getElementById('toggleIcon');
-      if(mobileIcon) mobileIcon.textContent = isCollapsed ? 'expand_more' : 'expand_less';
+    function updateTabsArrayOrder() {
+      tabs = [...tabBar.querySelectorAll('.tab')].map(el => tabs.find(t => t.file === el.dataset.file)).filter(Boolean);
     }
+
+    // ── 상태 저장 (localStorage + 서버 동기) ──
+    function saveCurrentState(stateOverride) {
+      const state = stateOverride || {
+        fav:      Array.from(sectionEls[0].children).map(b => b.dataset.file),
+        active:   Array.from(sectionEls[1].children).map(b => b.dataset.file),
+        inactive: Array.from(sectionEls[2].children).map(b => b.dataset.file),
+      };
+      localStorage.setItem("toolDashboardState", JSON.stringify(state));
+      window.saveStateToServer?.(state);
+    }
+
+    // ── 시계 ──
+    function updateClock() {
+      const now  = new Date();
+      const days = ['일','월','화','수','목','금','토'];
+      const clockEl = document.getElementById('naverClock');
+      const dispEl  = document.getElementById('todayDisplay');
+      if (clockEl) clockEl.textContent = now.toTimeString().split(' ')[0];
+      if (dispEl)  dispEl.textContent  = `${now.getFullYear()}. ${now.getMonth()+1}. ${now.getDate()} (${days[now.getDay()]})`;
+    }
+
+    // ── 초성 검색 ──
+    function getChosung(str) {
+      const cho = ["ㄱ","ㄲ","ㄴ","ㄷ","ㄸ","ㄹ","ㅁ","ㅂ","ㅃ","ㅅ","ㅆ","ㅇ","ㅈ","ㅉ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
+      return [...str].map(c => { const code = c.charCodeAt(0) - 44032; return (code > -1 && code < 11172) ? cho[Math.floor(code/588)] : c; }).join('');
+    }
+    window.filterTools = function() {
+      const q    = document.getElementById('toolSearch').value.toLowerCase().replace(/\s/g,'');
+      const qCho = getChosung(q);
+      document.querySelectorAll('.tool-button').forEach(btn => {
+        const label = btn.textContent.toLowerCase().replace(/\s/g,'');
+        btn.style.display = (label.includes(q) || getChosung(label).includes(qCho)) ? 'flex' : 'none';
+      });
+    };
+
+    // ── 사이드바 토글 ──
+    window.toggleSidebar = function() {
+      const collapsed = document.getElementById('sidebar').classList.toggle('collapsed');
+      document.getElementById('pcToggleIcon').textContent = collapsed ? 'menu'        : 'menu_open';
+      document.getElementById('toggleIcon').textContent   = collapsed ? 'expand_more' : 'expand_less';
+    };
+
+    // 즉시 실행
+    setupTabDragAndDrop();
+    updateClock();
+    setInterval(updateClock, 1000);
+  </script>
+
+  <!-- ② Firebase 모듈 -->
+  <script type="module">
+    import { initializeApp }
+      from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged,
+             signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut }
+      from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
+    import { getDatabase, ref, set, onValue, update }
+      from "https://www.gstatic.com/firebasejs/10.10.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey:            "AIzaSyCRnAMy3PyD0zracrwyo17hEZ-R40pAvt4",
+      authDomain:        "higherad-530c4.firebaseapp.com",
+      databaseURL:       "https://higherad-530c4-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId:         "higherad-530c4",
+      storageBucket:     "higherad-530c4.firebasestorage.app",
+      messagingSenderId: "1028078651420",
+      appId:             "1:1028078651420:web:71c8b8c5e69f0772d637d9"
+    };
+
+    const app  = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db   = getDatabase(app);
+
+    const sanitizeId = (id) => id.trim().toLowerCase().replace(/[^a-z0-9_\-]/g, '');
+    const formatId   = (id) => `${sanitizeId(id)}@higherad.com`;
+
+    // 서버 저장 전역 노출
+    window.saveStateToServer = (state) => {
+      const user = auth.currentUser;
+      if (!user) return;
+      update(ref(db, 'users/' + user.uid), { toolDashboardState: JSON.stringify(state) });
+    };
+
+    // 인증 상태 감지
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        document.getElementById('authOverlay').classList.add('hidden');
+        document.body.classList.add('ready');
+        document.getElementById('displayUser').textContent = user.email.split('@')[0] + "님";
+
+        // 서버 상태 1회 로드 (onlyOnce → 무한 재렌더 방지)
+        onValue(ref(db, 'users/' + user.uid), (snapshot) => {
+          if (snapshot.exists() && snapshot.val().toolDashboardState) {
+            const s = JSON.parse(snapshot.val().toolDashboardState);
+            localStorage.setItem("toolDashboardState", JSON.stringify(s));
+            renderAppFromServer(s);
+          } else {
+            initApp();
+          }
+        }, { onlyOnce: true });
+
+      } else {
+        // 미로그인 → 오버레이 표시
+        document.getElementById('authOverlay').classList.remove('hidden');
+        document.body.classList.remove('ready');
+      }
+    });
+
+    window.handleLogin = async () => {
+      const id = document.getElementById('userId').value.trim();
+      const pw = document.getElementById('userPw').value;
+      if (!id || !pw) return alert("아이디와 비밀번호를 입력하세요.");
+      // 아이디 형식 검증
+      if (!/^[a-zA-Z0-9_\-]+$/.test(id)) return alert("아이디는 영문, 숫자, -, _ 만 사용 가능합니다.");
+      try {
+        await signInWithEmailAndPassword(auth, formatId(id), pw);
+      } catch(e) {
+        const msg = e.code === 'auth/too-many-requests'
+          ? "로그인 시도가 너무 많습니다. 잠시 후 다시 시도하세요."
+          : "아이디 또는 비밀번호가 올바르지 않습니다.";
+        alert(msg);
+      }
+    };
+
+    window.handleRegister = async () => {
+      const id  = document.getElementById('regId').value.trim();
+      const pw  = document.getElementById('regPw').value;
+      const pwC = document.getElementById('regPwConfirm').value;
+      if (!id)          return alert("아이디를 입력하세요.");
+      if (!/^[a-zA-Z0-9_\-]+$/.test(id)) return alert("아이디는 영문, 숫자, -, _ 만 사용 가능합니다.");
+      if (pw.length < 6) return alert("비밀번호는 6자 이상이어야 합니다.");
+      if (pw !== pwC)    return alert("비밀번호가 일치하지 않습니다.");
+      try {
+        const { user } = await createUserWithEmailAndPassword(auth, formatId(id), pw);
+        const initial = { fav:[], active: defaultTools.map(t => t.file), inactive:[] };
+        await set(ref(db, 'users/' + user.uid), {
+          toolDashboardState: JSON.stringify(initial),
+          email: user.email,
+          createdAt: new Date().toISOString()
+        });
+        alert("가입 성공! 로그인해주세요.");
+        window.toggleAuth(false);
+      } catch(e) {
+        const msg = e.code === 'auth/email-already-in-use' ? "이미 사용 중인 아이디입니다." : "가입 실패: " + e.message;
+        alert(msg);
+      }
+    };
+
+    window.handleLogout = () => {
+      if (confirm("로그아웃 하시겠습니까?")) signOut(auth);
+    };
+
+    window.toggleAuth = (isRegister) => {
+      document.getElementById('loginBox').style.display = isRegister ? 'none'  : 'block';
+      document.getElementById('regBox').style.display   = isRegister ? 'block' : 'none';
+    };
   </script>
 </body>
 </html>
