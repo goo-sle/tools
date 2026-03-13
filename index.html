@@ -445,17 +445,19 @@
       btn.className = "tool-button";
       btn.draggable = true;
       btn.dataset.file = tool.file;
+
+      // [핵심] 복합 이모지(태그, 폴더 등)를 찢어지지 않게 덩어리째 분리
+      const segmenter = new Intl.Segmenter('ko', { granularity: 'grapheme' });
+      const segments = Array.from(segmenter.segment(tool.label));
       
-      // [중요] 이모지 깨짐 방지: 문자열을 배열로 변환하여 첫 글자만 추출
-      const labelArray = [...tool.label]; 
-      const iconPart = labelArray[0]; // 첫 번째 요소(이모지) 추출
-      const textPart = labelArray.slice(1).join('').trim(); // 나머지 텍스트 합치기
+      const iconPart = segments[0].segment; // 첫 번째 덩어리(이모지)
+      const textPart = segments.slice(1).map(s => s.segment).join('').trim(); // 나머지
 
       btn.innerHTML = `
         <span class="tool-icon">${iconPart}</span>
         <span class="tool-text">${textPart}</span>
       `;
-      
+
       btn.onclick = () => openTab(tool);
       btn.ondragstart = () => { dragged = btn; };
       return btn;
