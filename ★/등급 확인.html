@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>상품 등급 검색</title>
+  <title>키워드 실시간 검색 번호부</title>
   <style>
     body {
       font-family: "Noto Sans KR", sans-serif;
@@ -14,7 +14,6 @@
     }
     h1 { color: #2e7d32; margin-bottom: 20px; }
 
-    /* 검색창 영역 */
     .search-container {
       width: 90%;
       max-width: 1000px;
@@ -34,7 +33,6 @@
       box-sizing: border-box;
     }
 
-    /* 그리드 레이아웃 */
     .grid-container {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -54,34 +52,25 @@
       transition: all 0.2s;
       border-left: 4px solid transparent;
     }
-
     .item:not(.hidden):hover {
       background: #e9f5e9;
       transform: translateY(-2px);
       border-left: 4px solid #2e7d32;
     }
-
     .hidden { display: none; }
-
     .num { font-weight: bold; color: #2e7d32; width: 50px; font-size: 14px; }
     .name { flex-grow: 1; text-align: left; padding-left: 10px; color: #333; font-weight: 500; }
-
     .system { background: #fff3e0; border-left-color: #ff9800; }
   </style>
 </head>
 <body>
-
-  <h1>상품 등급 실시간 검색</h1>
-
+  <h1>키워드 실시간 검색</h1>
   <div class="search-container">
     <input type="text" id="searchInput" placeholder="번호, 단어, 또는 초성(예: ㅇㅍ)을 입력하세요...">
   </div>
-
-  <div class="grid-container" id="keywordGrid">
-    </div>
+  <div class="grid-container" id="keywordGrid"></div>
 
 <script>
-  // 전체 데이터 리스트 (순서 보장)
   const keywords = [
     {n: "11", k: "알파"}, {n: "12", k: "브라보"}, {n: "13", k: "찰리"}, {n: "14", k: "델타"}, {n: "15", k: "에코"},
     {n: "16", k: "폭스트롯"}, {n: "17", k: "골프"}, {n: "18", k: "호텔"}, {n: "19", k: "인디아"}, {n: "20", k: "줄리엣"},
@@ -102,13 +91,12 @@
     {n: "1000", k: "AI단독"}, {n: "1001", k: "AI가격비교"}
   ];
 
-  // 초성 추출 함수
   function getChosung(str) {
     const cho = ["ㄱ","ㄲ","ㄴ","ㄷ","ㄸ","ㄹ","ㅁ","ㅂ","ㅃ","ㅅ","ㅆ","ㅇ","ㅈ","ㅉ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
     let result = "";
-    for(let i=0; i<str.length; i++) {
+    for (let i = 0; i < str.length; i++) {
       let code = str.charCodeAt(i) - 44032;
-      if(code > -1 && code < 11172) result += cho[Math.floor(code/588)];
+      if (code > -1 && code < 11172) result += cho[Math.floor(code/588)];
       else result += str.charAt(i);
     }
     return result;
@@ -117,7 +105,7 @@
   const grid = document.getElementById('keywordGrid');
   const input = document.getElementById('searchInput');
 
-  // 화면 초기 그리기
+  // DOM API로 렌더링 (XSS 방지)
   function render() {
     keywords.forEach(item => {
       const div = document.createElement('div');
@@ -125,21 +113,27 @@
       div.setAttribute('data-num', item.n);
       div.setAttribute('data-name', item.k);
       div.setAttribute('data-cho', getChosung(item.k));
-      div.innerHTML = `<span class="num">${item.n}</span><span class="name">${item.k}</span>`;
+
+      const numSpan = document.createElement('span');
+      numSpan.className = 'num';
+      numSpan.textContent = item.n;   // textContent → XSS 차단
+
+      const nameSpan = document.createElement('span');
+      nameSpan.className = 'name';
+      nameSpan.textContent = item.k;  // textContent → XSS 차단
+
+      div.appendChild(numSpan);
+      div.appendChild(nameSpan);
       grid.appendChild(div);
     });
   }
 
-  // 검색 로직
   input.addEventListener('input', (e) => {
     const val = e.target.value.toLowerCase().replace(/\s/g, "");
-    const items = document.querySelectorAll('.item');
-
-    items.forEach(item => {
-      const num = item.getAttribute('data-num');
+    document.querySelectorAll('.item').forEach(item => {
+      const num  = item.getAttribute('data-num');
       const name = item.getAttribute('data-name').toLowerCase();
-      const cho = item.getAttribute('data-cho');
-
+      const cho  = item.getAttribute('data-cho');
       if (num.includes(val) || name.includes(val) || cho.includes(val)) {
         item.classList.remove('hidden');
       } else {
@@ -150,6 +144,5 @@
 
   render();
 </script>
-
 </body>
 </html>
