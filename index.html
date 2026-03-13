@@ -393,57 +393,59 @@
           if (tool) container.appendChild(createButton(tool));
         });
       };
-
       const allSavedFiles = [...(state.fav || []), ...(state.active || []), ...(state.inactive || [])];
       const missingTools = defaultTools.filter(tool => !allSavedFiles.includes(tool.file));
-      
       if (missingTools.length > 0) {
         missingTools.forEach(tool => { state.active.unshift(tool.file); });
         if (window.saveStateToServer) window.saveStateToServer(state);
         localStorage.setItem("toolDashboardState", JSON.stringify(state));
       }
-
       render(state.fav, sections[0]);
       render(state.active, sections[1]);
       render(state.inactive, sections[2]);
+    }
 
-      // [추가] 저장된 탭 목록이 있다면 순서대로 다시 열기
-      if (state.openedTabs && state.openedTabs.length > 0) {
-        // 기존 탭 배열 비우고 새로 세팅
-        tabs = []; 
-        state.openedTabs.forEach(tool => {
-          openTab(tool, false); // false: 저장 로직 중복 호출 방지
-        });
-      }
+    function initApp() {
+      const saved = localStorage.getItem("toolDashboardState");
+      let state = saved ? JSON.parse(saved) : { fav: [], active: defaultTools.map(t => t.file), inactive: [] };
+      renderAppFromServer(state);
+    }
+
+    function createButton(tool) {
+      const btn = document.createElement("div");
+      btn.className = "tool-button";
+      btn.draggable = true;
+      btn.dataset.file = tool.file;
+      btn.innerHTML = `<span>${tool.label}</span>`;
+      btn.onclick = () => openTab(tool);
+      btn.ondragstart = () => { dragged = btn; };
+      return btn;
     }
 
     // --- 탭 시스템 및 드래그 앤 드롭 ---
 
+    // 한글 파일명 대응 ID 생성 함수
     const getSafeId = (file) => 'frame_' + btoa(unescape(encodeURIComponent(file))).replace(/=/g, '');
 
-    // 탭 상태를 서버에 강제 저장하는 헬퍼 함수
-    function syncTabsToServer() {
-      const saved = localStorage.getItem("toolDashboardState");
-      if (!saved) return;
-      const state = JSON.parse(saved);
-      state.openedTabs = tabs.map(t => ({ file: t.file, label: t.label }));
-      if (window.saveStateToServer) window.saveStateToServer(state);
-      localStorage.setItem("toolDashboardState", JSON.stringify(state));
-    }
-
-    function openTab(tool, shouldSave = true) {
+    function openTab(tool) {
       if (isMobile()) {
         document.querySelectorAll('.tool-button').forEach(b => b.classList.remove('active'));
         const activeBtn = document.querySelector(`.tool-button[data-file="${tool.file}"]`);
         if(activeBtn) activeBtn.classList.add('active');
+
         welcome.style.display = "none";
         tabBar.style.display = "none";
-        let mFrame = document.getElementById('mobileFrame') || document.createElement('iframe');
-        mFrame.id = 'mobileFrame';
-        if(!mFrame.parentElement) iframeContainer.appendChild(mFrame);
+        
+        let mFrame = document.getElementById('mobileFrame');
+        if(!mFrame) {
+          mFrame = document.createElement('iframe');
+          mFrame.id = 'mobileFrame';
+          iframeContainer.appendChild(mFrame);
+        }
         document.querySelectorAll('#iframeContainer iframe').forEach(f => f.classList.remove('active'));
         mFrame.classList.add('active');
         mFrame.src = tool.file;
+
         if (!document.getElementById('sidebar').classList.contains('collapsed')) toggleSidebar();
         return;
       }
@@ -474,7 +476,6 @@
         draggedTab = null;
         tabEl.classList.remove('dragging');
         updateTabsArrayOrder();
-        syncTabsToServer(); // 순서 변경 후 저장
       });
 
       tabEl.onclick = () => activateTab(tool.file);
@@ -486,7 +487,6 @@
       iframeContainer.appendChild(ifrm);
 
       activateTab(tool.file);
-      if (shouldSave) syncTabsToServer(); // 새 탭 열 때 저장
     }
 
     function setupTabDragAndDrop() {
@@ -494,8 +494,11 @@
         e.preventDefault();
         if (!draggedTab) return;
         const afterElement = getTabDragAfterElement(tabBar, e.clientX);
-        if (afterElement == null) tabBar.appendChild(draggedTab);
-        else tabBar.insertBefore(draggedTab, afterElement);
+        if (afterElement == null) {
+          tabBar.appendChild(draggedTab);
+        } else {
+          tabBar.insertBefore(draggedTab, afterElement);
+        }
       });
     }
 
@@ -539,8 +542,6 @@
       
       if (tabs.length > 0) activateTab(tabs[tabs.length - 1].file);
       else goHome();
-      
-      syncTabsToServer(); // 탭 닫은 후 저장
     };
 
     function goHome() {
@@ -560,15 +561,12 @@
           const afterElement = getDragAfterElement(section, e.clientY);
           if (afterElement == null) section.appendChild(dragged);
           else section.insertBefore(dragged, afterElement);
-          
           const state = {
             fav: Array.from(sections[0].children).map(b => b.dataset.file),
             active: Array.from(sections[1].children).map(b => b.dataset.file),
-            inactive: Array.from(sections[2].children).map(b => b.dataset.file),
-            openedTabs: tabs.map(t => ({ file: t.file, label: t.label })) // 탭 목록 함께 유지
+            inactive: Array.from(sections[2].children).map(b => b.dataset.file)
           };
           if(window.saveStateToServer) window.saveStateToServer(state);
-          localStorage.setItem("toolDashboardState", JSON.stringify(state));
           dragged = null;
         };
       });
