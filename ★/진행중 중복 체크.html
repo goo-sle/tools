@@ -212,6 +212,10 @@
                     }).join('')}
                 </tr>`;
             }).join('');
+        } else {
+        // [추가된 부분] 결과가 없을 때 처리
+        resultArea.style.display = 'none'; // 이전 검색 결과가 있다면 숨김
+        alert("일치하는 MID 정보가 없습니다.");
         }
     }
 </script>
