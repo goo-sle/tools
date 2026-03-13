@@ -109,6 +109,7 @@
     }
     #sidebar.collapsed .section:empty::before { content: ""; border: none; }
 
+    /* 툴 버튼 기본 구조 */
     .tool-button {
       display: flex; align-items: center; padding: 10px 12px; font-size: 14px;
       cursor: pointer; background-color: #fff; border: 1px solid #eee; border-radius: 8px; transition: all 0.2s;
@@ -117,13 +118,29 @@
     .tool-button:hover { background-color: var(--hover-color); transform: translateX(3px); }
     .tool-button.active { background-color: var(--active-bg); border-color: #a0c4ff; font-weight: bold; }
 
-    /* 접혔을 때 버튼 중앙 정렬 및 이모지만 남기기 */
-    #sidebar.collapsed .tool-button {
-      justify-content: center; padding: 10px 0; width: 46px; height: 46px; margin: 0 auto 6px auto;
+    /* [추가] 아이콘과 텍스트 각각의 스타일 */
+    .tool-icon {
+      display: flex; align-items: center; justify-content: center;
+      min-width: 24px; font-size: 18px; flex-shrink: 0;
     }
-    #sidebar.collapsed .tool-button span {
-      font-size: 20px; text-align: center; width: 100%;
-      letter-spacing: 50px; margin-right: -50px; /* 첫 글자(이모지)만 남기고 밀기 */
+    .tool-text {
+      margin-left: 10px;
+    }
+
+    /* [수정] 접혔을 때: 텍스트는 숨기고 아이콘만 정중앙에 배치 */
+    #sidebar.collapsed .tool-button {
+      justify-content: center; padding: 0; width: 46px; height: 46px; margin: 0 auto 6px auto;
+    }
+    
+    /* 텍스트를 아예 제거해야 쏠림이 없습니다 */
+    #sidebar.collapsed .tool-text {
+      display: none;
+    }
+
+    /* 접혔을 때 아이콘 크기 살짝 키움 */
+    #sidebar.collapsed .tool-icon {
+      margin: 0;
+      font-size: 22px;
     }
 
     #tabBar {
@@ -428,7 +445,16 @@
       btn.className = "tool-button";
       btn.draggable = true;
       btn.dataset.file = tool.file;
-      btn.innerHTML = `<span>${tool.label}</span>`;
+      
+      // 첫 2글자(이모지)와 나머지 텍스트 분리
+      const iconPart = tool.label.substring(0, 2).trim();
+      const textPart = tool.label.substring(2).trim();
+
+      btn.innerHTML = `
+        <span class="tool-icon">${iconPart}</span>
+        <span class="tool-text">${textPart}</span>
+      `;
+      
       btn.onclick = () => openTab(tool);
       btn.ondragstart = () => { dragged = btn; };
       return btn;
