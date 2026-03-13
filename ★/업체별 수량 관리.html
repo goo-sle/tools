@@ -295,7 +295,7 @@
                 countValidRows() { return this.gridData.filter(row => row[0] && row[0].trim() !== '').length; },
                 processGridRegistration() {
                     const validItems = this.gridData.filter(row => row[0] && row[0].trim() !== '').map(row => ({
-                        id: Date.now() + Math.random(),
+                        id: String(Date.now() + Math.random()), 
                         branch: this.activeTab,
                         name: row[0],
                         url: row[1],
