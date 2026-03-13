@@ -601,9 +601,8 @@
         }, { onlyOnce: true });
 
       } else {
-        // 미로그인 → 오버레이 표시
-        document.getElementById('authOverlay').classList.remove('hidden');
-        document.body.classList.remove('ready');
+        // 미로그인 / 로그아웃 → 로그인 페이지로 이동
+        location.replace('login.html');
       }
     });
 
@@ -649,6 +648,7 @@
 
     window.handleLogout = () => {
       if (confirm("로그아웃 하시겠습니까?")) signOut(auth);
+      // signOut 완료 → onAuthStateChanged가 login.html로 자동 이동
     };
 
     window.toggleAuth = (isRegister) => {
