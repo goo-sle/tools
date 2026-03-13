@@ -24,166 +24,168 @@
 </head>
 <body class="bg-gray-100 font-sans" x-data="managementApp()" x-init="init()" @keydown.f2="startEditing(activeTab)">
 
-    <header class="bg-indigo-700 text-white p-4 shadow-md flex justify-between items-center">
-        <div class="flex items-center gap-2">
-            <i class="fas fa-layer-group text-2xl text-indigo-200"></i>
-            <h1 class="text-lg font-extrabold tracking-tight">HIGHER AD | 스마트 운영 관리</h1>
-        </div>
-        <div class="flex gap-2">
-            <button @click="showPasteModal = true" class="bg-white text-indigo-700 px-3 py-1.5 rounded-lg text-sm font-bold hover:bg-indigo-50 transition shadow-sm">
-                <i class="fas fa-paste mr-1"></i> 리스트 등록
-            </button>
-            <label class="bg-indigo-500 hover:bg-indigo-600 px-3 py-1.5 rounded-lg text-sm font-bold cursor-pointer transition shadow-sm">
-                <i class="fas fa-file-excel mr-1"></i> CSV 업로드
-                <input type="file" accept=".csv" class="hidden" @change="handleFileUpload($event)">
-            </label>
-            <button @click="resetCurrentTab()" class="bg-indigo-800 hover:bg-red-600 px-3 py-1.5 rounded-lg text-sm font-bold transition" title="현재 탭 데이터 초기화">
-                <i class="fas fa-sync-alt"></i>
-            </button>
-        </div>
-    </header>
+    <div x-show="isAuthorized" x-cloak>
+        <header class="bg-indigo-700 text-white p-4 shadow-md flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <i class="fas fa-layer-group text-2xl text-indigo-200"></i>
+                <h1 class="text-lg font-extrabold tracking-tight">HIGHER AD | 스마트 운영 관리</h1>
+            </div>
+            <div class="flex gap-2">
+                <button @click="showPasteModal = true" class="bg-white text-indigo-700 px-3 py-1.5 rounded-lg text-sm font-bold hover:bg-indigo-50 transition shadow-sm">
+                    <i class="fas fa-paste mr-1"></i> 리스트 등록
+                </button>
+                <label class="bg-indigo-500 hover:bg-indigo-600 px-3 py-1.5 rounded-lg text-sm font-bold cursor-pointer transition shadow-sm">
+                    <i class="fas fa-file-excel mr-1"></i> CSV 업로드
+                    <input type="file" accept=".csv" class="hidden" @change="handleFileUpload($event)">
+                </label>
+                <button @click="resetCurrentTab()" class="bg-indigo-800 hover:bg-red-600 px-3 py-1.5 rounded-lg text-sm font-bold transition" title="현재 탭 데이터 초기화">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </div>
+        </header>
 
-    <main class="p-6 max-w-7xl mx-auto">
-        <div class="flex items-center gap-1 mb-6 bg-white p-1 rounded-xl shadow-sm border border-gray-200 overflow-x-auto whitespace-nowrap">
-            <template x-for="(tab, index) in branches" :key="tab">
-                <div @dblclick="startEditing(tab)" class="relative group flex items-center rounded-lg transition-all" :class="activeTab === tab ? 'bg-indigo-50 text-indigo-700 font-bold' : 'text-gray-500 hover:bg-gray-50'">
-                    <button @click="activeTab = tab; selectedIds = []" class="px-6 py-2.5 flex items-center gap-2">
-                        <template x-if="editingTab !== tab"><span x-text="tab"></span></template>
-                        <template x-if="editingTab === tab">
-                            <input x-model="tempTabText" @blur="saveTabName(tab)" @keydown.enter="saveTabName(tab)" @keydown.escape="editingTab = null" class="tab-edit-input border-b-2 border-indigo-500" x-init="$el.focus()">
-                        </template>
-                        <span class="bg-indigo-100 text-indigo-600 text-[10px] px-1.5 py-0.5 rounded-full" x-text="items.filter(i => i.branch === tab).length"></span>
-                    </button>
-                </div>
-            </template>
-            <div class="flex items-center border-l ml-2 pl-2">
-                <button @click="addBranch()" class="p-2 text-gray-400 hover:text-indigo-500 transition"><i class="fas fa-plus-circle"></i></button>
-                <button @click="removeBranch()" class="p-2 text-gray-400 hover:text-red-500 transition"><i class="fas fa-minus-circle"></i></button>
-            </div>
-        </div>
-
-        <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6 text-center">
-            <div class="bg-white p-4 rounded-xl shadow-sm border-b-4 border-gray-400">
-                <p class="text-[10px] text-gray-400 font-bold mb-1 uppercase tracking-tighter" x-text="activeTab + ' 전체'"></p>
-                <p class="text-2xl font-black text-gray-800" x-text="filteredItems().length + '건'"></p>
-            </div>
-            <div class="bg-white p-4 rounded-xl shadow-sm border-b-4 border-blue-400">
-                <p class="text-[10px] text-gray-400 font-bold mb-1 uppercase tracking-tighter">접수</p>
-                <p class="text-2xl font-black text-blue-600" x-text="filteredItems().filter(i => i.status === '접수').length"></p>
-            </div>
-            <div class="bg-white p-4 rounded-xl shadow-sm border-b-4 border-orange-400">
-                <p class="text-[10px] text-gray-400 font-bold mb-1 uppercase tracking-tighter">정산대기</p>
-                <p class="text-2xl font-black text-orange-600" x-text="filteredItems().filter(i => i.status === '정산대기').length"></p>
-            </div>
-            <div class="bg-white p-4 rounded-xl shadow-sm border-b-4 border-green-500">
-                <p class="text-[10px] text-gray-400 font-bold mb-1 uppercase tracking-tighter">완료</p>
-                <p class="text-2xl font-black text-green-600" x-text="filteredItems().filter(i => i.status === '완료').length"></p>
-            </div>
-            <div class="bg-white p-4 rounded-xl shadow-sm border-b-4 border-indigo-500">
-                <p class="text-[10px] text-gray-400 font-bold mb-1 uppercase tracking-tighter">총 주문 수량</p>
-                <p class="text-2xl font-black text-indigo-600" x-text="calculateTotalQuantity().toLocaleString()"></p>
-            </div>
-        </div>
-
-        <div x-show="selectedIds.length > 0" x-cloak x-transition class="flex items-center justify-between bg-indigo-50 border border-indigo-200 p-4 rounded-xl mb-4 shadow-sm">
-            <div class="flex items-center gap-3">
-                <span class="text-sm font-bold text-indigo-700">
-                    <i class="fas fa-check-square mr-1"></i> <span x-text="selectedIds.length"></span>건 선택됨
-                </span>
-                <div class="h-4 w-[1px] bg-indigo-200 mx-2"></div>
-                <div class="flex gap-2 items-center">
-                    <span class="text-[11px] text-indigo-500 font-black uppercase">상태 일괄 변경:</span>
-                    <button @click="updateSelectedStatus('접수')" class="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-blue-700 transition shadow-sm">접수</button>
-                    <button @click="updateSelectedStatus('정산대기')" class="bg-orange-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-orange-600 transition shadow-sm">정산대기</button>
-                    <button @click="updateSelectedStatus('완료')" class="bg-green-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-green-700 transition shadow-sm">완료</button>
-                </div>
-            </div>
-            <button @click="removeSelectedItems()" class="text-red-500 hover:text-red-700 text-sm font-bold px-3 py-1.5">
-                <i class="fas fa-trash-alt mr-1"></i> 선택 삭제
-            </button>
-        </div>
-
-        <div class="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-200">
-            <table class="w-full text-center text-sm">
-                <thead class="bg-gray-50 border-b text-gray-600 font-bold">
-                    <tr>
-                        <th class="p-4 w-12"><input type="checkbox" @change="toggleAllSelection($event)" :checked="isAllSelected()" class="w-4 h-4 rounded border-gray-300"></th>
-                        <th class="p-4">업체 정보 (MID)</th>
-                        <th class="p-4">순위 키워드</th>
-                        <th class="p-4">기간 / 일수</th>
-                        <th class="p-4">일목표</th>
-                        <th class="p-4">상태</th>
-                        <th class="p-4">삭제</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-100 font-medium text-center">
-                    <template x-for="(item, index) in filteredItems()" :key="item.id">
-                        <tr class="hover:bg-indigo-50/30 transition duration-150" :class="selectedIds.includes(String(item.id)) ? 'bg-indigo-50/60' : ''">
-                            <td class="p-4 text-center"><input type="checkbox" :value="String(item.id)" x-model="selectedIds" class="w-4 h-4"></td>
-                            <td class="p-4">
-                                <div class="flex items-center justify-center gap-2">
-                                    <span class="font-bold text-gray-900 leading-tight" x-text="item.name"></span>
-                                    <template x-if="item.url"><a :href="item.url" target="_blank" class="text-gray-300 hover:text-indigo-600"><i class="fas fa-external-link-alt text-[10px]"></i></a></template>
-                                </div>
-                                <div class="text-[10px] text-indigo-500 mt-1 font-mono" x-text="item.mid"></div>
-                            </td>
-                            <td class="p-4">
-                                <a :href="'https://m.search.naver.com/search.naver?query=' + encodeURIComponent(item.keyword)" target="_blank" class="inline-flex items-center gap-1.5 bg-gray-100 border px-3 py-1 rounded text-gray-600 text-xs hover:bg-indigo-50 hover:text-indigo-700 transition">
-                                     <i class="fab fa-neos text-[10px] text-green-500"></i><span x-text="item.keyword"></span>
-                                </a>
-                            </td>
-                            <td class="p-4">
-                                <div class="font-bold text-gray-700" x-text="item.startDate"></div>
-                                <div class="text-[10px] text-gray-400 font-bold" x-text="item.days + ' Days'"></div>
-                            </td>
-                            <td class="p-4 font-mono font-black text-gray-800 text-base" x-text="item.goal"></td>
-                            <td class="p-4">
-                                <select x-model="item.status" @change="saveData()" :class="{'bg-blue-600 text-white': item.status === '접수','bg-orange-500 text-white': item.status === '정산대기','bg-green-600 text-white': item.status === '완료'}" class="text-[11px] font-black p-1.5 rounded-lg border-none cursor-pointer min-w-[85px]">
-                                    <option value="접수">접수</option><option value="정산대기">정산대기</option><option value="완료">완료</option>
-                                </select>
-                            </td>
-                            <td class="p-4 text-center">
-                                <button @click="removeItem(item)" class="text-gray-200 hover:text-red-500 transition px-2 py-1"><i class="fas fa-trash-alt text-lg"></i></button>
-                            </td>
-                        </tr>
-                    </template>
-                </tbody>
-            </table>
-        </div>
-    </main>
-
-    <div x-show="showPasteModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" x-cloak x-transition>
-        <div class="bg-white rounded-2xl w-full max-w-6xl shadow-2xl overflow-hidden">
-            <div class="p-5 border-b flex justify-between items-center bg-gray-50">
-                <h3 class="font-bold text-gray-800"><i class="fas fa-table mr-2 text-indigo-500"></i><span class="text-indigo-600" x-text="activeTab"></span> 스마트 시트 등록</h3>
-                <button @click="showPasteModal = false" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times-circle text-xl"></i></button>
-            </div>
-            <div class="p-6">
-                <div class="mb-4 text-center"><span class="text-xs text-gray-400 bg-gray-100 px-3 py-1 rounded-full">💡 팁: 시트의 데이터를 복사하여 첫 번째 칸에 붙여넣으세요.</span></div>
-                <div class="overflow-auto border rounded-lg max-h-[500px] bg-gray-50">
-                    <table class="w-full border-collapse table-fixed text-sm">
-                        <thead class="sticky top-0 bg-gray-100 shadow-sm z-10">
-                            <tr class="text-gray-600">
-                                <th class="w-40 p-2 border">업체명</th><th class="w-60 p-2 border">URL</th><th class="w-32 p-2 border">MID</th>
-                                <th class="w-40 p-2 border">순위키워드</th><th class="w-20 p-2 border">일수</th><th class="w-32 p-2 border">시작일</th><th class="w-20 p-2 border">일 목표</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <template x-for="(row, rIdx) in gridData" :key="rIdx">
-                                <tr class="bg-white">
-                                    <template x-for="(val, cIdx) in row" :key="cIdx">
-                                        <td class="border p-0"><input type="text" x-model="gridData[rIdx][cIdx]" @paste="handleGridPaste($event, rIdx, cIdx)" class="grid-input"></td>
-                                    </template>
-                                </tr>
+        <main class="p-6 max-w-7xl mx-auto">
+            <div class="flex items-center gap-1 mb-6 bg-white p-1 rounded-xl shadow-sm border border-gray-200 overflow-x-auto whitespace-nowrap">
+                <template x-for="(tab, index) in branches" :key="tab">
+                    <div @dblclick="startEditing(tab)" class="relative group flex items-center rounded-lg transition-all" :class="activeTab === tab ? 'bg-indigo-50 text-indigo-700 font-bold' : 'text-gray-500 hover:bg-gray-50'">
+                        <button @click="activeTab = tab; selectedIds = []" class="px-6 py-2.5 flex items-center gap-2">
+                            <template x-if="editingTab !== tab"><span x-text="tab"></span></template>
+                            <template x-if="editingTab === tab">
+                                <input x-model="tempTabText" @blur="saveTabName(tab)" @keydown.enter="saveTabName(tab)" @keydown.escape="editingTab = null" class="tab-edit-input border-b-2 border-indigo-500" x-init="$el.focus()">
                             </template>
-                        </tbody>
-                    </table>
+                            <span class="bg-indigo-100 text-indigo-600 text-[10px] px-1.5 py-0.5 rounded-full" x-text="items.filter(i => i.branch === tab).length"></span>
+                        </button>
+                    </div>
+                </template>
+                <div class="flex items-center border-l ml-2 pl-2">
+                    <button @click="addBranch()" class="p-2 text-gray-400 hover:text-indigo-500 transition"><i class="fas fa-plus-circle"></i></button>
+                    <button @click="removeBranch()" class="p-2 text-gray-400 hover:text-red-500 transition"><i class="fas fa-minus-circle"></i></button>
                 </div>
-                <div class="flex gap-3 mt-6">
-                    <button @click="processGridRegistration()" class="flex-grow bg-indigo-600 text-white font-black py-4 rounded-xl hover:bg-indigo-700 shadow-lg transition-all">
-                        검증 및 일괄 등록 (<span x-text="countValidRows()"></span>건)
-                    </button>
-                    <button @click="clearGrid()" class="px-6 bg-gray-100 text-gray-500 font-bold rounded-xl hover:bg-gray-200 transition">비우기</button>
+            </div>
+
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6 text-center">
+                <div class="bg-white p-4 rounded-xl shadow-sm border-b-4 border-gray-400">
+                    <p class="text-[10px] text-gray-400 font-bold mb-1 uppercase tracking-tighter" x-text="activeTab + ' 전체'"></p>
+                    <p class="text-2xl font-black text-gray-800" x-text="filteredItems().length + '건'"></p>
+                </div>
+                <div class="bg-white p-4 rounded-xl shadow-sm border-b-4 border-blue-400">
+                    <p class="text-[10px] text-gray-400 font-bold mb-1 uppercase tracking-tighter">접수</p>
+                    <p class="text-2xl font-black text-blue-600" x-text="filteredItems().filter(i => i.status === '접수').length"></p>
+                </div>
+                <div class="bg-white p-4 rounded-xl shadow-sm border-b-4 border-orange-400">
+                    <p class="text-[10px] text-gray-400 font-bold mb-1 uppercase tracking-tighter">정산대기</p>
+                    <p class="text-2xl font-black text-orange-600" x-text="filteredItems().filter(i => i.status === '정산대기').length"></p>
+                </div>
+                <div class="bg-white p-4 rounded-xl shadow-sm border-b-4 border-green-500">
+                    <p class="text-[10px] text-gray-400 font-bold mb-1 uppercase tracking-tighter">완료</p>
+                    <p class="text-2xl font-black text-green-600" x-text="filteredItems().filter(i => i.status === '완료').length"></p>
+                </div>
+                <div class="bg-white p-4 rounded-xl shadow-sm border-b-4 border-indigo-500">
+                    <p class="text-[10px] text-gray-400 font-bold mb-1 uppercase tracking-tighter">총 주문 수량</p>
+                    <p class="text-2xl font-black text-indigo-600" x-text="calculateTotalQuantity().toLocaleString()"></p>
+                </div>
+            </div>
+
+            <div x-show="selectedIds.length > 0" x-cloak x-transition class="flex items-center justify-between bg-indigo-50 border border-indigo-200 p-4 rounded-xl mb-4 shadow-sm">
+                <div class="flex items-center gap-3">
+                    <span class="text-sm font-bold text-indigo-700">
+                        <i class="fas fa-check-square mr-1"></i> <span x-text="selectedIds.length"></span>건 선택됨
+                    </span>
+                    <div class="h-4 w-[1px] bg-indigo-200 mx-2"></div>
+                    <div class="flex gap-2 items-center">
+                        <span class="text-[11px] text-indigo-500 font-black uppercase">상태 일괄 변경:</span>
+                        <button @click="updateSelectedStatus('접수')" class="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-blue-700 transition shadow-sm">접수</button>
+                        <button @click="updateSelectedStatus('정산대기')" class="bg-orange-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-orange-600 transition shadow-sm">정산대기</button>
+                        <button @click="updateSelectedStatus('완료')" class="bg-green-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-green-700 transition shadow-sm">완료</button>
+                    </div>
+                </div>
+                <button @click="removeSelectedItems()" class="text-red-500 hover:text-red-700 text-sm font-bold px-3 py-1.5">
+                    <i class="fas fa-trash-alt mr-1"></i> 선택 삭제
+                </button>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-200">
+                <table class="w-full text-center text-sm">
+                    <thead class="bg-gray-50 border-b text-gray-600 font-bold">
+                        <tr>
+                            <th class="p-4 w-12"><input type="checkbox" @change="toggleAllSelection($event)" :checked="isAllSelected()" class="w-4 h-4 rounded border-gray-300"></th>
+                            <th class="p-4">업체 정보 (MID)</th>
+                            <th class="p-4">순위 키워드</th>
+                            <th class="p-4">기간 / 일수</th>
+                            <th class="p-4">일목표</th>
+                            <th class="p-4">상태</th>
+                            <th class="p-4">삭제</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100 font-medium text-center">
+                        <template x-for="(item, index) in filteredItems()" :key="item.id">
+                            <tr class="hover:bg-indigo-50/30 transition duration-150" :class="selectedIds.includes(String(item.id)) ? 'bg-indigo-50/60' : ''">
+                                <td class="p-4 text-center"><input type="checkbox" :value="String(item.id)" x-model="selectedIds" class="w-4 h-4"></td>
+                                <td class="p-4">
+                                    <div class="flex items-center justify-center gap-2">
+                                        <span class="font-bold text-gray-900 leading-tight" x-text="item.name"></span>
+                                        <template x-if="item.url"><a :href="item.url" target="_blank" class="text-gray-300 hover:text-indigo-600"><i class="fas fa-external-link-alt text-[10px]"></i></a></template>
+                                    </div>
+                                    <div class="text-[10px] text-indigo-500 mt-1 font-mono" x-text="item.mid"></div>
+                                </td>
+                                <td class="p-4">
+                                    <a :href="'https://m.search.naver.com/search.naver?query=' + encodeURIComponent(item.keyword)" target="_blank" class="inline-flex items-center gap-1.5 bg-gray-100 border px-3 py-1 rounded text-gray-600 text-xs hover:bg-indigo-50 hover:text-indigo-700 transition">
+                                         <i class="fab fa-neos text-[10px] text-green-500"></i><span x-text="item.keyword"></span>
+                                    </a>
+                                </td>
+                                <td class="p-4">
+                                    <div class="font-bold text-gray-700" x-text="item.startDate"></div>
+                                    <div class="text-[10px] text-gray-400 font-bold" x-text="item.days + ' Days'"></div>
+                                </td>
+                                <td class="p-4 font-mono font-black text-gray-800 text-base" x-text="item.goal"></td>
+                                <td class="p-4">
+                                    <select x-model="item.status" @change="saveData()" :class="{'bg-blue-600 text-white': item.status === '접수', 'bg-orange-500 text-white': item.status === '정산대기', 'bg-green-600 text-white': item.status === '완료'}" class="text-[11px] font-black p-1.5 rounded-lg border-none cursor-pointer min-w-[85px]">
+                                        <option value="접수">접수</option><option value="정산대기">정산대기</option><option value="완료">완료</option>
+                                    </select>
+                                </td>
+                                <td class="p-4 text-center">
+                                    <button @click="removeItem(item)" class="text-gray-200 hover:text-red-500 transition px-2 py-1"><i class="fas fa-trash-alt text-lg"></i></button>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+        </main>
+
+        <div x-show="showPasteModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" x-cloak x-transition>
+            <div class="bg-white rounded-2xl w-full max-w-6xl shadow-2xl overflow-hidden">
+                <div class="p-5 border-b flex justify-between items-center bg-gray-50">
+                    <h3 class="font-bold text-gray-800"><i class="fas fa-table mr-2 text-indigo-500"></i><span class="text-indigo-600" x-text="activeTab"></span> 스마트 시트 등록</h3>
+                    <button @click="showPasteModal = false" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times-circle text-xl"></i></button>
+                </div>
+                <div class="p-6">
+                    <div class="mb-4 text-center"><span class="text-xs text-gray-400 bg-gray-100 px-3 py-1 rounded-full">💡 팁: 시트의 데이터를 복사하여 첫 번째 칸에 붙여넣으세요.</span></div>
+                    <div class="overflow-auto border rounded-lg max-h-[500px] bg-gray-50">
+                        <table class="w-full border-collapse table-fixed text-sm">
+                            <thead class="sticky top-0 bg-gray-100 shadow-sm z-10">
+                                <tr class="text-gray-600">
+                                    <th class="w-40 p-2 border">업체명</th><th class="w-60 p-2 border">URL</th><th class="w-32 p-2 border">MID</th>
+                                    <th class="w-40 p-2 border">순위키워드</th><th class="w-20 p-2 border">일수</th><th class="w-32 p-2 border">시작일</th><th class="w-20 p-2 border">일 목표</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template x-for="(row, rIdx) in gridData" :key="rIdx">
+                                    <tr class="bg-white">
+                                        <template x-for="(val, cIdx) in row" :key="cIdx">
+                                            <td class="border p-0"><input type="text" x-model="gridData[rIdx][cIdx]" @paste="handleGridPaste($event, rIdx, cIdx)" class="grid-input"></td>
+                                        </template>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="flex gap-3 mt-6">
+                        <button @click="processGridRegistration()" class="flex-grow bg-indigo-600 text-white font-black py-4 rounded-xl hover:bg-indigo-700 shadow-lg transition-all">
+                            검증 및 일괄 등록 (<span x-text="countValidRows()"></span>건)
+                        </button>
+                        <button @click="clearGrid()" class="px-6 bg-gray-100 text-gray-500 font-bold rounded-xl hover:bg-gray-200 transition">비우기</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -200,27 +202,29 @@
             appId: "1:1028078651420:web:71c8b8c5e69f0772d637d9"
         };
 
+        // [중요] 알림 중복 방지 플래그를 함수 외부(전역)로 이동합니다.
+        let isAlerted = false; 
+
         function managementApp() {
             if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
             const db = firebase.database();
 
             return {
+                isAuthorized: false,
                 items: [],
                 branches: ['A영업점', 'B영업점', 'C영업점'],
                 activeTab: 'A영업점',
                 editingTab: null,
                 tempTabText: '',
                 showPasteModal: false,
-                selectedIds: [], // 여기에 저장되는 ID는 모두 문자열로 통일됨
+                selectedIds: [],
                 gridData: Array.from({ length: 30 }, () => Array(7).fill('')),
 
                 async init() {
-                    // 알림창이 중복으로 뜨지 않게 방지하는 플래그
-                    let isAlerted = false;
+                    // 기존에 여기에 있던 let isAlerted = false; 는 지웠습니다.
 
                     firebase.auth().onAuthStateChanged(async (user) => {
                         if (user) {
-                            // 로그인 성공 시
                             this.userPath = `users/${user.uid}/higher_ad_v2`;
                             db.ref(this.userPath).on('value', (snapshot) => {
                                 const data = snapshot.val();
@@ -229,19 +233,21 @@
                                     this.branches = data.branches || ['A영업점', 'B영업점', 'C영업점'];
                                     if (!this.branches.includes(this.activeTab)) this.activeTab = this.branches[0];
                                 }
+                                this.isAuthorized = true;
                             });
                         } else {
-                            // 로그인이 안 되어 있을 때 (한 번만 띄움)
+                            this.isAuthorized = false;
+                            
+                            // 전역 플래그를 확인하여 딱 한 번만 실행
                             if (!isAlerted) {
                                 isAlerted = true; 
                                 alert("로그인이 필요합니다.");
-                                // 필요하다면 로그인 페이지로 리다이렉트
                                 // window.location.href = 'login.html'; 
                             }
                         }
                     });
                 },
-
+                // ... 나머지 함수들(saveData, updateSelectedStatus 등)은 그대로 두시면 됩니다.
                 saveData() {
                     if (!this.userPath) return;
                     db.ref(this.userPath).set({
@@ -249,8 +255,6 @@
                         branches: this.branches
                     });
                 },
-
-                // 일괄 변경 함수 (String 변환 비교 적용)
                 updateSelectedStatus(newStatus) {
                     if (this.selectedIds.length === 0) return;
                     this.items = this.items.map(item => {
@@ -260,21 +264,17 @@
                         return item;
                     });
                     this.saveData();
-                    const count = this.selectedIds.length;
-                    this.selectedIds = []; // 변경 완료 후 선택 해제
-                    alert(`${count}건의 상태가 [${newStatus}](으)로 변경되었습니다.`);
+                    this.selectedIds = [];
+                    alert(`상태가 [${newStatus}](으)로 변경되었습니다.`);
                 },
-
-                // 일괄 삭제 함수 (String 변환 비교 적용)
                 removeSelectedItems() {
                     if (this.selectedIds.length === 0) return;
-                    if (confirm(`선택한 ${this.selectedIds.length}건을 정말 삭제하시겠습니까?`)) {
+                    if (confirm(`선택한 항목을 정말 삭제하시겠습니까?`)) {
                         this.items = this.items.filter(item => !this.selectedIds.includes(String(item.id)));
                         this.selectedIds = [];
                         this.saveData();
                     }
                 },
-
                 handleGridPaste(e, rowIdx, colIdx) {
                     e.preventDefault();
                     const pastedText = (e.clipboardData || window.clipboardData).getData('text');
@@ -290,9 +290,7 @@
                         }
                     });
                 },
-
                 countValidRows() { return this.gridData.filter(row => row[0] && row[0].trim() !== '').length; },
-
                 processGridRegistration() {
                     const validItems = this.gridData.filter(row => row[0] && row[0].trim() !== '').map(row => ({
                         id: Date.now() + Math.random(),
@@ -313,12 +311,9 @@
                     this.clearGrid();
                     alert(`${validItems.length}건이 등록되었습니다.`);
                 },
-
                 clearGrid() { this.gridData = Array.from({ length: 30 }, () => Array(7).fill('')); },
                 filteredItems() { return this.items.filter(item => item.branch === this.activeTab); },
                 calculateTotalQuantity() { return this.filteredItems().reduce((acc, i) => acc + (Number(i.goal) * Number(i.days)), 0); },
-                
-                // 전체 선택 로직 (ID를 String으로 변환하여 저장)
                 toggleAllSelection(e) { 
                     const currentIds = this.filteredItems().map(i => String(i.id));
                     this.selectedIds = e.target.checked 
