@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Higher Ad | 실시간 순위 변동 대시보드</title>
+    <style>
+        :root { --primary-color: #202124; --up-color: #D93025; --down-color: #1967D2; --eq-color: #5F6368; }
+        body { font-family: 'Malgun Gothic', sans-serif; background-color: #f5f5f5; margin: 0; padding: 20px; }
+        .container { max-width: 1000px; margin: 0 auto; background: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        
+        /* Higher Ad 스타일 헤더 */
+        .header { border-bottom: 2px solid var(--primary-color); padding-bottom: 15px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+        .header h1 { font-size: 20px; color: var(--primary-color); margin: 0; }
+        
+        .controls { display: flex; gap: 10px; margin-bottom: 20px; }
+        select { padding: 8px; border: 1px solid #ddd; border-radius: 5px; outline: none; }
+
+        /* 탭 스타일 */
+        .tabs { display: flex; border-bottom: 1px solid #ddd; margin-bottom: 20px; overflow-x: auto; }
+        .tab-btn { padding: 10px 20px; border: none; background: none; cursor: pointer; font-weight: bold; color: #666; transition: 0.3s; white-space: nowrap; }
+        .tab-btn.active { color: #fff; background: var(--primary-color); border-radius: 5px 5px 0 0; }
+
+        /* 리스트 박스 */
+        .status-section { margin-bottom: 25px; }
+        .status-title { font-size: 14px; font-weight: bold; margin-bottom: 10px; padding-left: 5px; border-left: 4px solid #ccc; }
+        .list-container { background: #f9f9f9; border: 1px solid #eee; border-radius: 8px; max-height: 300px; overflow-y: auto; padding: 10px; }
+        .rank-item { font-size: 12px; padding: 6px 10px; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; }
+        .rank-item:last-child { border-bottom: none; }
+        
+        .badge { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; margin-right: 8px; color: #fff; }
+        .up { color: var(--up-color); }
+        .down { color: var(--down-color); }
+        .eq { color: var(--eq-color); }
+        
+        .loading { text-align: center; padding: 50px; font-weight: bold; color: #999; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>Higher Ad | 📊 순위 변동 분석 센터</h1>
+        <div id="lastUpdated" style="font-size: 11px; color: #888;">데이터 불러오는 중...</div>
+    </div>
+
+    <div class="controls">
+        <select id="branchFilter" onchange="renderData()">
+            <option value="all">전체 영업점 보기</option>
+        </select>
+        <button onclick="fetchData()" style="padding: 8px 15px; background: #eee; border: 1px solid #ccc; cursor: pointer; border-radius: 5px;">새로고침</button>
+    </div>
+
+    <div class="tabs" id="tabsArea">
+        </div>
+
+    <div id="contentArea">
+        <div class="loading">스프레드시트에서 데이터를 분석하고 있습니다...</div>
+    </div>
+</div>
+
+<script>
+    // 여기에 본인의 배포된 웹앱 URL을 넣으세요
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbz4tsGW2vcLM7Cmz7Yv21QDepe-qU5wugpUX-mFPEbY4ZUQ1cqIuO1Mne5MINAnOovU/exec";
+    
+    let rawData = { branchNames: [], results: [] };
+    let currentBucket = "전체";
+
+    const buckets = ["전체", "1-10위", "11-20위", "21-50위", "51-100위", "101-200위", "201-300위", "300위 밖"];
+
+    // 1. 데이터 가져오기
+    async function fetchData() {
+        document.getElementById('contentArea').innerHTML = '<div class="loading">데이터를 동기화 중입니다...</div>';
+        try {
+            const response = await fetch(`${GAS_URL}?action=getRankData`);
+            rawData = await response.json();
+            
+            // 영업점 필터 생성
+            const filter = document.getElementById('branchFilter');
+            filter.innerHTML = '<option value="all">전체 영업점 보기</option>';
+            rawData.branchNames.forEach(name => {
+                filter.innerHTML += `<option value="${name}">${name}</option>`;
+            });
+
+            document.getElementById('lastUpdated').innerText = "최근 업데이트: " + new Date().toLocaleTimeString();
+            renderTabs();
+            renderData();
+        } catch (e) {
+            document.getElementById('contentArea').innerHTML = '<div class="loading" style="color:red">데이터를 불러오지 못했습니다. 앱 배포 주소를 확인하세요.</div>';
+        }
+    }
+
+    // 2. 탭 렌더링
+    function renderTabs() {
+        const tabsArea = document.getElementById('tabsArea');
+        tabsArea.innerHTML = buckets.map(b => 
+            `<button class="tab-btn ${currentBucket === b ? 'active' : ''}" onclick="setBucket('${b}')">${b}</button>`
+        ).join('');
+    }
+
+    function setBucket(b) {
+        currentBucket = b;
+        renderTabs();
+        renderData();
+    }
+
+    // 3. 데이터 필터링 및 렌더링
+    function renderData() {
+        const selectedBranch = document.getElementById('branchFilter').value;
+        const contentArea = document.getElementById('contentArea');
+        
+        // 필터링 logic
+        let filtered = rawData.results.filter(item => {
+            const branchMatch = (selectedBranch === "all" || item.branch === selectedBranch);
+            let bucketMatch = false;
+            
+            if (currentBucket === "전체") bucketMatch = true;
+            else {
+                const r = item.rankNum;
+                if (currentBucket === "1-10위") bucketMatch = (r <= 10);
+                else if (currentBucket === "11-20위") bucketMatch = (r > 10 && r <= 20);
+                else if (currentBucket === "21-50위") bucketMatch = (r > 20 && r <= 50);
+                else if (currentBucket === "51-100위") bucketMatch = (r > 50 && r <= 100);
+                else if (currentBucket === "101-200위") bucketMatch = (r > 100 && r <= 200);
+                else if (currentBucket === "201-300위") bucketMatch = (r > 200 && r <= 300);
+                else if (currentBucket === "300위 밖") bucketMatch = (r > 300);
+            }
+            return branchMatch && bucketMatch;
+        });
+
+        const upList = filtered.filter(i => i.diff > 0);
+        const downList = filtered.filter(i => i.diff < 0);
+        const eqList = filtered.filter(i => i.diff === 0);
+
+        contentArea.innerHTML = `
+            ${renderSection("🚀 순위 상승", upList, "up")}
+            ${renderSection("🔻 순위 하락", downList, "down")}
+            ${renderSection("🔹 보합", eqList, "eq")}
+        `;
+    }
+
+    function renderSection(title, list, type) {
+        return `
+            <div class="status-section">
+                <div class="status-title" style="border-color: var(--${type}-color)">${title} (${list.length})</div>
+                <div class="list-container">
+                    ${list.length === 0 ? '<div style="font-size:11px; color:#999; text-align:center">데이터가 없습니다.</div>' : 
+                        list.map(i => `
+                            <div class="rank-item ${type}">
+                                <span class="badge" style="background: var(--${type}-color)">${i.branch}</span>
+                                <b>${i.company}</b> - ${i.keyword} 
+                                <span style="margin-left:auto">[현재: ${i.rank}] (${i.diff > 0 ? '↑'+i.diff : (i.diff < 0 ? '↓'+Math.abs(i.diff) : '-')})</span>
+                            </div>
+                        `).join('')
+                    }
+                </div>
+            </div>
+        `;
+    }
+
+    window.onload = fetchData;
+</script>
+
+</body>
+</html>
