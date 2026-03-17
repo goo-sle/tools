@@ -26,34 +26,16 @@
       box-shadow: 0 20px 40px rgba(0,0,0,0.06); 
     }
 
-    /* 로고 스타일 - 타이틀 삭제 후 더 강조 */
-    .logo-container {
-      margin-bottom: 50px; 
-    }
-    .logo-img {
-      width: 100%;
-      max-width: 380px; /* 로고 사이즈 대폭 상향 */
-      height: auto;
-      display: block;
-      margin: 0 auto;
-    }
+    .logo-container { margin-bottom: 50px; }
+    .logo-img { width: 100%; max-width: 380px; height: auto; display: block; margin: 0 auto; }
 
-    /* 타이틀 텍스트 삭제 */
-    .auth-card h3 { 
-      display: none; 
-    }
+    .auth-card h3 { display: none; }
 
     .auth-card input { 
-      width: 100%; 
-      padding: 16px; 
-      margin: 10px 0; 
-      border: 1px solid #e0e0e0; 
-      border-radius: 12px; 
-      outline: none; 
-      font-size: 16px; 
-      box-sizing: border-box; 
-      transition: all 0.2s ease;
-      background-color: #fafafa;
+      width: 100%; padding: 16px; margin: 10px 0; 
+      border: 1px solid #e0e0e0; border-radius: 12px; 
+      outline: none; font-size: 16px; box-sizing: border-box; 
+      transition: all 0.2s ease; background-color: #fafafa;
     }
     
     .auth-card input:focus {
@@ -62,18 +44,15 @@
       box-shadow: 0 0 0 4px rgba(46, 125, 50, 0.1);
     }
 
+    /* ✅ 1번 스타일: 버튼 애니메이션 기본 및 클래스 추가 */
     .auth-btn { 
-      width: 100%; 
-      padding: 16px; 
-      background: var(--primary-color); 
-      color: white; 
-      border: none; 
-      border-radius: 12px; 
-      cursor: pointer; 
-      margin-top: 20px; 
-      font-weight: 700; 
-      font-size: 17px;
-      transition: all 0.2s ease;
+      width: 100%; padding: 16px; 
+      background: var(--primary-color); color: white; 
+      border: none; border-radius: 12px; 
+      cursor: pointer; margin-top: 20px; 
+      font-weight: 700; font-size: 17px;
+      transition: all 0.1s ease; /* 애니메이션을 위해 0.1s로 조정 */
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     }
     
     .auth-btn:hover {
@@ -81,19 +60,20 @@
       transform: translateY(-1px);
     }
 
+    /* 마우스 클릭 시(:active)와 엔터키 입력 시(.is-active) 효과 */
+    .auth-btn:active,
+    .auth-btn.is-active {
+      transform: translateY(2px) scale(0.98);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      background: #1b5e20;
+    }
+
     .auth-footer { 
-      font-size: 14px; 
-      color: #888; 
-      margin-top: 30px; 
-      cursor: pointer; 
-      text-decoration: none;
-      display: inline-block;
+      font-size: 14px; color: #888; margin-top: 30px; 
+      cursor: pointer; text-decoration: none; display: inline-block;
     }
     
-    .auth-footer:hover {
-      color: var(--primary-color);
-      text-decoration: underline;
-    }
+    .auth-footer:hover { color: var(--primary-color); text-decoration: underline; }
   </style>
 </head>
 <body>
@@ -106,7 +86,7 @@
     <form onsubmit="handleLogin(); return false;">
       <input type="text" id="userId" placeholder="아이디">
       <input type="password" id="userPw" placeholder="비밀번호">
-      <button type="submit" class="auth-btn">로그인</button>
+      <button type="submit" id="loginBtn" class="auth-btn">로그인</button>
     </form>
     
     <p class="auth-footer" onclick="toggleAuth(true)">계정이 없으신가요? 회원가입</p>
@@ -117,10 +97,12 @@
       <img src="https://raw.githubusercontent.com/goo-sle/tools/main/%ED%95%98%EC%9D%B4%EC%96%B4%EC%95%A0%EB%93%9C_%EB%A1%9C%EA%B3%A0_1.png" alt="하이어애드 로고" class="logo-img">
     </div>
     
-    <input type="text" id="regId" placeholder="아이디 입력">
-    <input type="password" id="regPw" placeholder="비밀번호 (6자 이상)">
-    <input type="password" id="regPwConfirm" placeholder="비밀번호 확인">
-    <button class="auth-btn" style="background: #444;" onclick="handleRegister()">가입하기</button>
+    <form onsubmit="handleRegister(); return false;">
+      <input type="text" id="regId" placeholder="아이디 입력">
+      <input type="password" id="regPw" placeholder="비밀번호 (6자 이상)">
+      <input type="password" id="regPwConfirm" placeholder="비밀번호 확인">
+      <button type="submit" id="regBtn" class="auth-btn" style="background: #444;">가입하기</button>
+    </form>
     <p class="auth-footer" onclick="toggleAuth(false)">이미 계정이 있습니다</p>
   </div>
 
@@ -145,7 +127,15 @@
 
   const formatId = (id) => `${id.trim()}@higherad.com`;
 
-  // 로그인 시 자동 리다이렉트
+  // 애니메이션 효과 함수
+  const triggerBtnEffect = (btnId) => {
+    const btn = document.getElementById(btnId);
+    if(btn) {
+      btn.classList.add('is-active');
+      setTimeout(() => btn.classList.remove('is-active'), 150);
+    }
+  };
+
   onAuthStateChanged(auth, (user) => {
     if (user) {
       location.replace("index.html");
@@ -158,6 +148,7 @@
   };
 
   window.handleLogin = async () => {
+    triggerBtnEffect('loginBtn'); // ✅ 애니메이션 실행
     const id = document.getElementById('userId').value;
     const pw = document.getElementById('userPw').value;
     if(!id || !pw) return alert("아이디와 비밀번호를 입력해주세요.");
@@ -169,6 +160,7 @@
   };
 
   window.handleRegister = async () => {
+    triggerBtnEffect('regBtn'); // ✅ 애니메이션 실행
     const id = document.getElementById('regId').value;
     const pw = document.getElementById('regPw').value;
     const pwC = document.getElementById('regPwConfirm').value;
