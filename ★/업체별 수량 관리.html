@@ -75,6 +75,19 @@
 
     <div x-show="isAuthorized" x-cloak>
 
+        <!-- 로딩 오버레이 추가 -->
+        <div id="loading-screen" class="fixed inset-0 z-[999] bg-indigo-700 flex items-center justify-center">
+            <div class="text-center text-white">
+                <i class="fas fa-layer-group text-4xl text-indigo-200 mb-3 block"></i>
+                <p class="text-sm font-bold tracking-widest text-indigo-200">HIGHER AD</p>
+                <div class="mt-4 flex gap-1.5 justify-center">
+                    <span class="w-2 h-2 bg-white rounded-full animate-bounce" style="animation-delay:0s"></span>
+                    <span class="w-2 h-2 bg-white rounded-full animate-bounce" style="animation-delay:.15s"></span>
+                    <span class="w-2 h-2 bg-white rounded-full animate-bounce" style="animation-delay:.3s"></span>
+                </div>
+            </div>
+        </div>
+    
         <!-- 헤더 -->
         <header class="bg-indigo-700 text-white px-4 py-3 shadow-md flex justify-between items-center">
             <div class="flex items-center gap-2">
@@ -381,6 +394,7 @@
 
                 async init() {
                     firebase.auth().onAuthStateChanged(async (user) => {
+                        document.getElementById('loading-screen').style.display = 'none';                    
                         if (user) {
                             this.userPath = `users/${user.uid}/higher_ad_v2`;
                             db.ref(this.userPath).on('value', (snapshot) => {
