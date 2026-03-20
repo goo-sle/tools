@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>📊 플레이스 데이터 정밀 추출 도구</title>
+    <title>📊 플레이스 데이터 추출 도구</title>
     <style>
         :root {
             --primary: #2d7df4;
@@ -20,6 +20,7 @@
             font-family: 'Pretendard', system-ui, -apple-system, sans-serif;
             background: var(--bg); color: var(--text-main);
             margin: 0; padding: 40px 20px; line-height: 1.6;
+            scroll-behavior: smooth; /* 부드러운 스크롤 효과 */
         }
 
         .container { max-width: 1200px; margin: 0 auto; }
@@ -42,7 +43,7 @@
         .sheet-table td { border: 1px solid var(--border); height: 38px; padding: 0; background: #fff; text-align: center; }
 
         /* 컬럼 사이즈 최적화 */
-        .col-num { width: 20px; }
+        .col-num { width: 25px; }
         .col-name { width: 140px; }
         .col-url { width: 230px; }
         .col-mid { width: 115px; }
@@ -80,8 +81,8 @@
         <h1>플레이스 데이터 추출 도구</h1>
     </header>
 
-    <div class="card">
-        <label class="section-title">📥 데이터 입력 (URL 붙여넣기 시 MID 자동 추출)</label>
+    <div class="card" id="input-section">
+        <label class="section-title">📥 데이터 입력</label>
         <div class="sheet-wrapper">
             <table class="sheet-table">
                 <thead>
@@ -118,8 +119,8 @@
         </div>
     </div>
 
-    <!-- 결과 리스트 -->
-    <div class="card" x-show="outputGrid.length > 0" x-cloak>
+    <!-- 결과 리스트 (여기로 자동 스크롤) -->
+    <div class="card" id="result-section" x-show="outputGrid.length > 0" x-cloak>
         <label class="section-title">📊 추출 완료 리스트</label>
         <div class="sheet-wrapper">
             <table class="sheet-table">
@@ -154,8 +155,8 @@
         <button class="btn-main" style="width:100%; margin-top:15px; background:var(--white); color:var(--primary); border:2px solid var(--primary);" @click="copy()">📋 결과 복사</button>
     </div>
 
-    <!-- 불일치 항목 -->
-    <div class="card" style="border: 1px solid #ffcdd2; background: #fff8f8;" x-show="errorGrid.length > 0" x-cloak>
+    <!-- 불일치 항목 (결과가 없고 오류만 있을 때 여기로 스크롤) -->
+    <div class="card" id="error-section" style="border: 1px solid #ffcdd2; background: #fff8f8;" x-show="errorGrid.length > 0" x-cloak>
         <label class="section-title" style="color:var(--error)">⚠️ 불일치 및 누락 항목 (데이터 검토)</label>
         <div class="sheet-wrapper" style="border-color: #fecaca;">
             <table class="sheet-table">
@@ -203,17 +204,13 @@
             outputGrid: [],
             errorGrid: [],
 
-            // URL에서 MID 추출 및 URL 표준화 함수
             autoExtractMid(idx) {
                 let row = this.inputGrid[idx];
                 if (!row.url) return;
-                
                 const match = row.url.match(MID_EXTRACT_REGEX);
                 if (match) {
                     const mid = match[1];
-                    // MID가 비어있을 때만 자동 채우기
                     if (!row.mid) row.mid = mid;
-                    // URL을 모바일 표준 형태로 변환 (restaurant 기준)
                     if (!row.url.startsWith('https://m.place')) {
                         row.url = `https://m.place.naver.com/restaurant/${mid}`;
                     }
@@ -233,7 +230,6 @@
                         const cols = line.split('\t');
                         const fields = ['name', 'url', 'mid', 'keyword', 'days', 'startDate', 'skip', 'goal'];
                         const startPos = fields.indexOf(field);
-                        
                         cols.forEach((val, c) => {
                             const currentField = fields[startPos + c];
                             if (currentField && currentField !== 'skip') {
@@ -243,7 +239,6 @@
                     } else {
                         this.inputGrid[targetIdx][field] = line.trim();
                     }
-                    // 붙여넣기 후 해당 행의 MID 자동 추출 실행
                     this.autoExtractMid(targetIdx);
                 });
             },
@@ -255,7 +250,6 @@
                     if (!Object.values(row).some(v => v !== '')) return;
 
                     let rowErrors = [];
-                    // 분석 전 한 번 더 정규화 시도
                     const match = row.url.match(MID_EXTRACT_REGEX);
                     if (match) {
                         const mid = match[1];
@@ -275,6 +269,15 @@
                         this.outputGrid.push({...row});
                     }
                 });
+
+                // 추출 완료 시점 자동 스크롤 로직
+                this.$nextTick(() => {
+                    if (this.outputGrid.length > 0) {
+                        document.getElementById('result-section').scrollIntoView({ behavior: 'smooth' });
+                    } else if (this.errorGrid.length > 0) {
+                        document.getElementById('error-section').scrollIntoView({ behavior: 'smooth' });
+                    }
+                });
             },
 
             copy() {
@@ -286,6 +289,7 @@
                 this.inputGrid = [createRow(), createRow(), createRow()];
                 this.outputGrid = [];
                 this.errorGrid = [];
+                window.scrollTo({ top: 0, behavior: 'smooth' });
             }
         }
     }
