@@ -8,14 +8,11 @@
         body { font-family: 'Pretendard', sans-serif; background: var(--bg); color: var(--text-main); margin: 0; padding: 40px 20px; scroll-behavior: smooth; }
         .container { max-width: 1200px; margin: 0 auto; }
         .card { background: var(--white); padding: 25px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); border: 1px solid var(--border); margin-bottom: 25px; }
-        
         .sheet-wrapper { overflow-x: auto; border-radius: 8px; border: 1px solid var(--border); }
         .sheet-table { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; min-width: 1050px; }
         .sheet-table th { background: #f8f9fa; border: 1px solid var(--border); height: 36px; color: var(--text-sub); text-align: center; }
         .sheet-table td { border: 1px solid var(--border); height: 38px; padding: 0; text-align: center; vertical-align: middle; }
-        
         .col-num { width: 35px; background: #f8f9fa; color: #94a3b8; font-size: 12px; font-weight: 500; text-align: center !important; }
-        
         .grid-input {
             width: 100%; height: 100%; border: none; padding: 0 8px; outline: none;
             font-size: 13px; box-sizing: border-box; background: transparent; text-align: center;
@@ -24,17 +21,12 @@
         }
         .sheet-table td:active .grid-input,
         .sheet-table td:focus-within .grid-input { pointer-events: auto; background: var(--primary-light); }
-
-        /* 버튼 그룹 공통 스타일 */
         .btn-group { display: flex; gap: 10px; margin-top: 20px; }
         .btn-main { flex: 1; height: 52px; background: var(--primary); color: white; border: none; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 15px; transition: 0.2s; }
         .btn-main:hover { background: #1e63c9; }
         .btn-reset { width: 100px; height: 52px; background: #f1f5f9; color: var(--text-sub); border: 1px solid var(--border); border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 14px; }
-        
-        /* 결과 전용 복사 버튼 (너비 꽉 차게 수정) */
         .btn-copy { width: 100%; margin-top: 15px; background: #fff; color: var(--primary); border: 2px solid var(--primary); }
         .btn-copy:hover { background: var(--primary-light); }
-        
         .res-cell { padding: 0 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 38px; text-align: center; }
         [x-cloak] { display: none !important; }
     </style>
@@ -42,7 +34,6 @@
 <body>
 
 <div class="container" x-data="extractorApp()">
-    <!-- 데이터 입력 섹션 -->
     <div class="card" @keydown.enter="process()">
         <div class="sheet-wrapper">
             <table class="sheet-table">
@@ -76,7 +67,6 @@
         </div>
     </div>
 
-    <!-- 추출 결과 섹션 -->
     <div class="card" x-show="outputGrid.length > 0" x-cloak>
         <div class="sheet-wrapper">
             <table class="sheet-table">
@@ -103,7 +93,6 @@
                 </tbody>
             </table>
         </div>
-        <!-- 수정된 복사 버튼 -->
         <button class="btn-main btn-copy" @click="copy()">📋 결과 복사</button>
     </div>
 </div>
@@ -113,8 +102,9 @@
     function extractorApp() {
         const createRow = () => ({ name: '', url: '', mid: '', keyword: '', days: '', startDate: '', goal: '' });
         return {
-            inputGrid: Array.from({length: 5}, () => createRow()),
+            inputGrid: Array.from({length: 10}, () => createRow()),
             outputGrid: [],
+            
             autoExtractMid(idx) {
                 const match = this.inputGrid[idx].url.match(/\/(?:restaurant|hospital|place|hairshop|nailshop)\/([0-9]+)/);
                 if (match) {
@@ -124,6 +114,41 @@
                     }
                 }
             },
+
+            normalizeDate(dateStr) {
+                if (!dateStr) return '';
+                let clean = dateStr.replace(/\s+/g, '').trim();
+                let now = new Date();
+                let year = now.getFullYear();
+                let month, day;
+
+                if (clean.includes('월')) {
+                    const m = clean.match(/(\d+)월(\d+)일?/);
+                    if (m) { month = m[1]; day = m[2]; }
+                } 
+                else if (/[-./]/.test(clean)) {
+                    const parts = clean.split(/[-./]/).filter(p => p !== '');
+                    if (parts.length === 3) {
+                        year = parts[0].length === 2 ? '20' + parts[0] : parts[0];
+                        month = parts[1]; day = parts[2];
+                    } else if (parts.length === 2) {
+                        month = parts[0]; day = parts[1];
+                    }
+                }
+                else if (/^\d{4}$/.test(clean)) {
+                    month = clean.substring(0, 2); day = clean.substring(2, 4);
+                } else if (/^\d{6}$/.test(clean)) {
+                    year = '20' + clean.substring(0, 2); month = clean.substring(2, 4); day = clean.substring(4, 6);
+                } else if (/^\d{8}$/.test(clean)) {
+                    year = clean.substring(0, 4); month = clean.substring(4, 6); day = clean.substring(6, 8);
+                }
+
+                if (month && day) {
+                    return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                }
+                return dateStr;
+            },
+
             handlePaste(e, rowIdx, field) {
                 e.preventDefault();
                 const data = (e.clipboardData || window.clipboardData).getData('text');
@@ -143,16 +168,22 @@
                     this.autoExtractMid(targetIdx);
                 });
             },
+
             process() {
-                this.outputGrid = this.inputGrid.filter(r => Object.values(r).some(v => v !== ''));
+                this.inputGrid.forEach((row, i) => {
+                    if (row.startDate) this.inputGrid[i].startDate = this.normalizeDate(row.startDate);
+                });
+                this.outputGrid = JSON.parse(JSON.stringify(this.inputGrid.filter(r => Object.values(r).some(v => v !== ''))));
                 this.$nextTick(() => { window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }); });
             },
+
             copy() {
                 const text = this.outputGrid.map(r => Object.values(r).join('\t')).join('\n');
                 navigator.clipboard.writeText(text).then(() => alert('복사되었습니다.'));
             },
+
             reset() {
-                this.inputGrid = Array.from({length: 5}, () => createRow());
+                this.inputGrid = Array.from({length: 10}, () => createRow());
                 this.outputGrid = [];
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             }
