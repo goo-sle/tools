@@ -8,13 +8,12 @@
         :root {
             --primary: #2d7df4; --primary-light: #e3f2fd; --bg: #f8fafc;
             --white: #ffffff; --border: #e2e8f0; --text-main: #1e293b;
-            --text-sub: #64748b;
+            --text-sub: #64748b; --error: #ef4444; --error-light: #fef2f2;
         }
         body {
             font-family: 'Pretendard', system-ui, -apple-system, sans-serif;
             background: var(--bg); color: var(--text-main);
-            margin: 0; padding: 40px 20px; line-height: 1.6;
-            scroll-behavior: smooth;
+            margin: 0; padding: 40px 20px; line-height: 1.6; scroll-behavior: smooth;
         }
         .container { max-width: 1200px; margin: 0 auto; }
         header { text-align: center; margin-bottom: 30px; }
@@ -25,28 +24,22 @@
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08); border: 1px solid var(--border); margin-bottom: 25px;
         }
         .section-title { font-size: 14px; font-weight: 700; margin-bottom: 15px; color: var(--primary); display: flex; align-items: center; gap: 6px; }
+        .section-title.err { color: var(--error); }
 
         .sheet-wrapper { overflow-x: auto; border-radius: 8px; border: 1px solid var(--border); }
         .sheet-table { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; min-width: 1050px; }
         .sheet-table th { background: #f8f9fa; border: 1px solid var(--border); height: 36px; color: var(--text-sub); text-align: center; }
         .sheet-table td { border: 1px solid var(--border); height: 38px; padding: 0; background: #fff; text-align: center; position: relative; }
 
-        /* [핵심 수정] 평상시에는 마우스 이벤트를 무시하여 스크롤 방해 금지 */
+        /* [스크롤 방지] 클릭 전엔 이벤트를 통과시켜 페이지 스크롤 방해 금지 */
         .grid-input {
             width: 100%; height: 100%; border: none; padding: 0 8px; outline: none;
             font-size: 13px; box-sizing: border-box; background: transparent; text-align: center;
-            overflow: hidden !important; 
-            white-space: nowrap; 
-            text-overflow: clip;
-            pointer-events: none; /* 핵심: 클릭 전까지는 마우스 이벤트를 통과시킴 */
+            overflow: hidden !important; white-space: nowrap; text-overflow: clip;
+            pointer-events: none;
         }
-
-        /* 셀을 클릭하거나 포커스가 가면 그때만 입력 가능하도록 변경 */
         .sheet-table td:active .grid-input,
-        .sheet-table td:focus-within .grid-input {
-            pointer-events: auto;
-            background: var(--primary-light);
-        }
+        .sheet-table td:focus-within .grid-input { pointer-events: auto; background: var(--primary-light); }
 
         .col-num { width: 25px !important; background: #f8f9fa; color: #94a3b8; font-size: 11px; }
         .btn-group { display: flex; gap: 10px; margin-top: 20px; }
@@ -59,6 +52,7 @@
         .btn-reset { width: 90px; background: #f1f5f9; color: var(--text-sub); border: 1px solid var(--border); border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 13px; }
 
         .res-cell { padding: 0 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 38px; text-align: center; }
+        .error-text { color: var(--error); font-size: 11px; font-weight: 700; }
         [x-cloak] { display: none !important; }
     </style>
 </head>
@@ -82,28 +76,13 @@
                     <template x-for="(row, rIdx) in inputGrid" :key="rIdx">
                         <tr>
                             <td class="col-num" x-text="rIdx + 1"></td>
-                            <!-- td 클릭 시 자식 input에 포커스를 줘서 pointer-events가 풀리게 함 -->
-                            <td @click="$el.querySelector('input').focus()">
-                                <input type="text" class="grid-input" x-model="row.name" @paste="handlePaste($event, rIdx, 'name')">
-                            </td>
-                            <td @click="$el.querySelector('input').focus()">
-                                <input type="text" class="grid-input" x-model="row.url" @paste="handlePaste($event, rIdx, 'url')" @input="autoExtractMid(rIdx)">
-                            </td>
-                            <td @click="$el.querySelector('input').focus()">
-                                <input type="text" class="grid-input" x-model="row.mid" @paste="handlePaste($event, rIdx, 'mid')">
-                            </td>
-                            <td @click="$el.querySelector('input').focus()">
-                                <input type="text" class="grid-input" x-model="row.keyword" @paste="handlePaste($event, rIdx, 'keyword')">
-                            </td>
-                            <td @click="$el.querySelector('input').focus()">
-                                <input type="text" class="grid-input" x-model="row.days" @paste="handlePaste($event, rIdx, 'days')">
-                            </td>
-                            <td @click="$el.querySelector('input').focus()">
-                                <input type="text" class="grid-input" x-model="row.startDate" @paste="handlePaste($event, rIdx, 'startDate')">
-                            </td>
-                            <td @click="$el.querySelector('input').focus()">
-                                <input type="text" class="grid-input" x-model="row.goal" @paste="handlePaste($event, rIdx, 'goal')">
-                            </td>
+                            <td @click="$el.querySelector('input').focus()"><input type="text" class="grid-input" x-model="row.name" @paste="handlePaste($event, rIdx, 'name')" @wheel.prevent></td>
+                            <td @click="$el.querySelector('input').focus()"><input type="text" class="grid-input" x-model="row.url" @paste="handlePaste($event, rIdx, 'url')" @input="autoExtractMid(rIdx)" @wheel.prevent></td>
+                            <td @click="$el.querySelector('input').focus()"><input type="text" class="grid-input" x-model="row.mid" @paste="handlePaste($event, rIdx, 'mid')" @wheel.prevent></td>
+                            <td @click="$el.querySelector('input').focus()"><input type="text" class="grid-input" x-model="row.keyword" @paste="handlePaste($event, rIdx, 'keyword')" @wheel.prevent></td>
+                            <td @click="$el.querySelector('input').focus()"><input type="text" class="grid-input" x-model="row.days" @paste="handlePaste($event, rIdx, 'days')" @wheel.prevent></td>
+                            <td @click="$el.querySelector('input').focus()"><input type="text" class="grid-input" x-model="row.startDate" @paste="handlePaste($event, rIdx, 'startDate')" @wheel.prevent></td>
+                            <td @click="$el.querySelector('input').focus()"><input type="text" class="grid-input" x-model="row.goal" @paste="handlePaste($event, rIdx, 'goal')" @wheel.prevent></td>
                         </tr>
                     </template>
                 </tbody>
@@ -115,7 +94,6 @@
         </div>
     </div>
 
-    <!-- 결과 섹션 -->
     <div class="card" x-show="outputGrid.length > 0" x-cloak>
         <label class="section-title">✅ 정제 완료 리스트</label>
         <div class="sheet-wrapper">
@@ -145,39 +123,77 @@
         </div>
         <button class="btn-main" style="width:100%; margin-top:15px; background:#fff; color:var(--primary); border:2px solid var(--primary);" @click="copy()">📋 결과 복사</button>
     </div>
+
+    <div class="card" x-show="errorGrid.length > 0" x-cloak style="border-color: var(--error);">
+        <label class="section-title err">⚠️ 확인이 필요한 리스트 (항목 누락/형식 불일치)</label>
+        <div class="sheet-wrapper">
+            <table class="sheet-table">
+                <thead>
+                    <tr>
+                        <th class="col-num">#</th>
+                        <th style="width:140px">업체명</th><th style="width:230px">URL</th><th style="width:200px">제외 사유</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <template x-for="(row, idx) in errorGrid" :key="idx">
+                        <tr style="background: var(--error-light);">
+                            <td class="col-num" x-text="row.originIdx"></td>
+                            <td class="res-cell" x-text="row.name || '(미입력)'"></td>
+                            <td class="res-cell" x-text="row.url || '(미입력)'"></td>
+                            <td class="res-cell error-text" x-text="row.reason"></td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
 
 <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
 <script>
     function extractorApp() {
+        const MID_EXTRACT_REGEX = /(?:place\.naver\.com|m\.place\.naver\.com)\/(restaurant|hospital|place|hairshop|nailshop)\/([0-9]+)/;
         const createRow = () => ({ name: '', url: '', mid: '', keyword: '', days: '', startDate: '', goal: '' });
-        return {
-            inputGrid: Array.from({length: 5}, () => createRow()),
-            outputGrid: [],
 
+        return {
+            inputGrid: [createRow(), createRow(), createRow(), createRow(), createRow()],
+            outputGrid: [],
+            errorGrid: [],
+
+            // 한글 날짜 처리 및 연도 보정
             formatDate(val) {
                 if (!val) return '';
                 const today = new Date();
                 const currentYear = today.getFullYear();
                 let nums = val.replace(/[^0-9]/g, '-').split('-').filter(v => v !== '');
+                
                 let y, m, d;
-                if (nums.length === 2) { y = currentYear; m = nums[0]; d = nums[1]; }
-                else if (nums.length === 3) { 
-                    y = nums[0].length === 2 ? "20" + nums[0] : nums[0]; 
-                    m = nums[1]; d = nums[2]; 
-                }
-                else return val;
-                return `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                if (nums.length === 2) {
+                    y = currentYear; m = nums[0]; d = nums[1];
+                } else if (nums.length === 3) {
+                    y = nums[0].length === 2 ? "20" + nums[0] : nums[0];
+                    m = nums[1]; d = nums[2];
+                } else return val;
+
+                const result = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+                return isNaN(Date.parse(result)) ? val : result;
             },
 
             autoExtractMid(idx) {
                 let row = this.inputGrid[idx];
                 if (!row.url) return;
+                
                 let cleanUrl = row.url.split('?')[0].trim();
-                const match = cleanUrl.match(/\/(?:restaurant|hospital|place|hairshop|nailshop)\/([0-9]+)/);
+                const match = cleanUrl.match(MID_EXTRACT_REGEX);
+                
                 if (match) {
-                    row.mid = match[1];
-                    row.url = `https://m.place.naver.com/restaurant/${match[1]}`;
+                    row.mid = match[2];
+                    // 표준 모바일 주소로 정규화 (선택 사항이나 보기에 깔끔함)
+                    if (!row.url.startsWith('https://m.place')) {
+                        row.url = `https://m.place.naver.com/restaurant/${match[2]}`;
+                    } else {
+                        row.url = cleanUrl;
+                    }
                 } else {
                     row.url = cleanUrl;
                 }
@@ -205,24 +221,55 @@
 
             process() {
                 this.outputGrid = [];
-                this.inputGrid.forEach((row) => {
-                    if (row.name.trim() !== '' && row.url.includes('naver.com')) {
-                        row.startDate = this.formatDate(row.startDate);
-                        this.autoExtractMid(this.inputGrid.indexOf(row)); 
-                        this.outputGrid.push({...row});
+                this.errorGrid = [];
+
+                this.inputGrid.forEach((row, i) => {
+                    // 완전히 비어있는 행 무시
+                    if (!Object.values(row).some(v => v.trim() !== '')) return;
+
+                    let reasons = [];
+                    let currentUrl = row.url.split('?')[0].trim();
+                    let match = currentUrl.match(MID_EXTRACT_REGEX);
+
+                    // [전 항목 전수 검사]
+                    if (!row.name.trim()) reasons.push("업체명 누락");
+                    if (!currentUrl) reasons.push("URL 누락");
+                    else if (!match) reasons.push("URL 형식/오타 오류");
+                    if (!row.keyword.trim()) reasons.push("키워드 누락");
+                    if (!row.days.trim()) reasons.push("일 수 누락");
+                    if (!row.startDate.trim()) reasons.push("시작일 누락");
+                    if (!row.goal.trim()) reasons.push("일 목표 누락");
+
+                    if (reasons.length === 0) {
+                        // 모든 항목 통과 시 정제 완료 리스트행
+                        this.outputGrid.push({
+                            ...row,
+                            url: currentUrl,
+                            mid: match[2],
+                            startDate: this.formatDate(row.startDate)
+                        });
+                    } else {
+                        // 하나라도 누락 시 에러 리스트행
+                        this.errorGrid.push({
+                            ...row,
+                            url: currentUrl,
+                            originIdx: i + 1,
+                            reason: reasons.join(' / ')
+                        });
                     }
                 });
-                this.$nextTick(() => { if(this.outputGrid.length > 0) window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }); });
+                this.$nextTick(() => { window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }); });
             },
 
             copy() {
                 const text = this.outputGrid.map(r => Object.values(r).join('\t')).join('\n');
-                navigator.clipboard.writeText(text).then(() => alert('복사 완료!'));
+                navigator.clipboard.writeText(text).then(() => alert('정상 데이터가 클립보드에 복사되었습니다.'));
             },
 
             reset() {
-                this.inputGrid = Array.from({length: 5}, () => createRow());
+                this.inputGrid = [createRow(), createRow(), createRow(), createRow(), createRow()];
                 this.outputGrid = [];
+                this.errorGrid = [];
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             }
         }
