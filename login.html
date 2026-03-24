@@ -180,7 +180,7 @@
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, formatId(id), pw);
       const user = userCredential.user;
-      const initialState = { fav: [], active: ["★/메모장.html"], inactive: [] };
+      const initialState = { fav: [], active: ["tools/메모장.html"], inactive: [] };
       await set(ref(db, 'users/' + user.uid), {
         toolDashboardState: JSON.stringify(initialState),
         email: user.email,

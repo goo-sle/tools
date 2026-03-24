@@ -436,23 +436,25 @@
     let draggedTab = null;
     let tabs = [];
 
+    const normalizeToolFile = (file) => (file || "").replace(/^★\//, "tools/");
+
     const defaultTools = [
-      {file: "★/메모장.html", label: "⏰ 메모장"},
-      {file: "★/등급 확인.html", label: "🎖️ 등급 확인"},
-      {file: "★/URL 인코딩_디코딩.html", label: "🔗 URL 인코딩/디코딩"},
-      {file: "★/네이버 키워드 조합기.html", label: "🔑 네이버 키워드 조합기"},
-      {file: "★/키워드 쉼표 병합기.html", label: "⚡ 키워드 쉼표 병합기"},
-      {file: "★/플레이스 단가 계산기.html", label: "💰 플레이스 단가 계산기"},
-      {file: "★/플레이스 주소 정리.html", label: "🔧 플레이스 주소 정리"},
-      {file: "★/엑셀 시트 분리.html", label: "🗂️ 엑셀 시트 분리 도구"},
-      {file: "★/자동완성 체크.html", label: "✅ 자동완성 체크"},
-      {file: "★/10위 이내 키워드.html", label: "🔍 10위 이내 키워드"},
-      {file: "★/미션 진행 상황판.html", label: "📒 미션 진행 상황판"},
-      {file: "★/업체별 수량 관리.html", label: "📚 업체별 수량 관리"},
-      {file: "★/업무 관련 URL.html", label: "📍 업무 관련 URL"},
-      {file: "★/블로그 태그 검색.html", label: "🏷️ 블로그 태그 검색"},
-      {file: "★/진행중 중복 체크.html", label: "💻 진행중 중복 체크"},
-      {file: "★/영업점 순위 비교.html", label: "📊 영업점 순위 비교"},
+      {file: "tools/메모장.html", label: "⏰ 메모장"},
+      {file: "tools/등급 확인.html", label: "🎖️ 등급 확인"},
+      {file: "tools/URL 인코딩_디코딩.html", label: "🔗 URL 인코딩/디코딩"},
+      {file: "tools/네이버 키워드 조합기.html", label: "🔑 네이버 키워드 조합기"},
+      {file: "tools/키워드 쉼표 병합기.html", label: "⚡ 키워드 쉼표 병합기"},
+      {file: "tools/플레이스 단가 계산기.html", label: "💰 플레이스 단가 계산기"},
+      {file: "tools/플레이스 주소 정리.html", label: "🔧 플레이스 주소 정리"},
+      {file: "tools/엑셀 시트 분리.html", label: "🗂️ 엑셀 시트 분리 도구"},
+      {file: "tools/자동완성 체크.html", label: "✅ 자동완성 체크"},
+      {file: "tools/10위 이내 키워드.html", label: "🔍 10위 이내 키워드"},
+      {file: "tools/미션 진행 상황판.html", label: "📒 미션 진행 상황판"},
+      {file: "tools/업체별 수량 관리.html", label: "📚 업체별 수량 관리"},
+      {file: "tools/업무 관련 URL.html", label: "📍 업무 관련 URL"},
+      {file: "tools/블로그 태그 검색.html", label: "🏷️ 블로그 태그 검색"},
+      {file: "tools/진행중 중복 체크.html", label: "💻 진행중 중복 체크"},
+      {file: "tools/영업점 순위 비교.html", label: "📊 영업점 순위 비교"},
     ];
 
     const isMobile = () => window.innerWidth <= 768;
@@ -460,12 +462,16 @@
     function renderAppFromServer(state) {
       const render = (files, container) => {
         container.innerHTML = "";
-        (files || []).forEach(file => {
+        (files || []).map(normalizeToolFile).forEach(file => {
           const tool = defaultTools.find(t => t.file === file);
           if (tool) container.appendChild(createButton(tool));
         });
       };
-      const allSavedFiles = [...(state.fav || []), ...(state.active || []), ...(state.inactive || [])];
+      const allSavedFiles = [
+        ...(state.fav || []),
+        ...(state.active || []),
+        ...(state.inactive || [])
+      ].map(normalizeToolFile);
       const missingTools = defaultTools.filter(tool => !allSavedFiles.includes(tool.file));
       if (missingTools.length > 0) {
         missingTools.forEach(tool => { state.active.unshift(tool.file); });
