@@ -5,10 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>트래픽/길찾기 통합 계산기</title>
 
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-
 <link rel="icon" href="data:image/svg+xml,
 <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>
   <text y='.9em' font-size='90'>💵</text>
@@ -220,22 +216,7 @@
 
 <script>
 (() => {  
-  // --- [Firebase 설정] ---
-  const firebaseConfig = {
-    apiKey:            "AIzaSyAF-Rn7tzIjQeyUDJKnvKTRNccsXUVsIjo",
-    authDomain:        "higherad-b9d62.firebaseapp.com",
-    databaseURL:       "https://higherad-b9d62-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId:         "higherad-b9d62",
-    storageBucket:     "higherad-b9d62.firebasestorage.app",
-    messagingSenderId: "938928195180",
-    appId:             "1:938928195180:web:8209b1e02a8caabe643a49",
-    measurementId:     "G-01T4L4ZGVV"
-  };
-
-  if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-  const db = firebase.database();
-  
-  let userPath = "";
+  // ✅ 키워드 조합기와 동일한 방식: 부모 창(index.html)의 Firebase 함수 사용
   let clients = []; 
   let editIndex = -1;
 
@@ -245,30 +226,27 @@
   const fmtInt = n => n.toLocaleString();
   const fmtWon = n => n.toLocaleString() + "원";
 
-  // 인증 상태 감시 및 데이터 로드 (로컬 저장 없이 서버 데이터만 기준)
-  firebase.auth().onAuthStateChanged((user) => {
-    if (user) {
-      userPath = `users/${user.uid}/clients`;
-      // 서버 데이터 실시간 리스너 연결
-      db.ref(userPath).on('value', (snapshot) => {
-        const data = snapshot.val();
-        clients = data || [];
-        renderClientList($("#clientSearch").value);
-      });
-    } else {
-        clients = [];
-        renderClientList();
-    }
-  });
-
+  // ✅ 저장: 부모 창의 saveClientsData 호출
   function saveClients() {
-    if (!userPath) return;
-    // 서버에 저장 (로컬 저장은 수행하지 않음)
-    db.ref(userPath).set(clients).then(() => {
-        console.log("서버 저장 완료");
-    }).catch(err => console.error("서버 저장 실패:", err));
+    if (window.parent && window.parent.saveClientsData) {
+      window.parent.saveClientsData(clients);
+    }
   }
 
+  // ✅ 서버 데이터를 부모로부터 받아 화면에 적용 (부모에서 호출됨)
+  window.applyClientsData = function(data) {
+    clients = Array.isArray(data) ? data : (data ? Object.values(data) : []);
+    renderClientList($("#clientSearch").value);
+  };
+
+  // ✅ 페이지 로드 시 부모에게 데이터 요청
+  window.onload = () => {
+    if (window.parent && window.parent.loadClientsData) {
+      window.parent.loadClientsData();
+    }
+  };
+
+  // --- CSV 업로드 ---
   $("#uploadCsvBtn").onclick = () => $("#csvFileInput").click();
   $("#csvFileInput").onchange = (e) => {
     const file = e.target.files[0];
@@ -297,6 +275,7 @@
     saveClients();
   }
 
+  // --- 초성 검색 ---
   function getChosung(str) {
     const cho = ["ㄱ","ㄲ","ㄴ","ㄷ","ㄸ","ㄹ","ㅁ","ㅂ","ㅃ","ㅅ","ㅆ","ㅇ","ㅈ","ㅉ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
     let result = "";
@@ -308,10 +287,12 @@
     return result;
   }
 
+  // --- 업체 목록 렌더링 ---
   function renderClientList(filter = "") {
     const area = $("#clientListArea");
     area.innerHTML = "";
     const filtered = clients.filter(c => {
+      if (!c || !c.name) return false;
       const target = c.name.toLowerCase();
       const search = filter.toLowerCase();
       return target.includes(search) || getChosung(target).includes(search);
@@ -351,10 +332,9 @@
     if(!name) return alert("업체명을 입력해주세요.");
     if(editIndex > -1) { clients[editIndex] = {name, tp, rp}; editIndex = -1; $("#addClientBtn").textContent = "추가"; $("#addClientBtn").style.background = "var(--accent)"; }
     else { clients.push({name, tp, rp}); }
-    $("#newClientName").value = "";      // 업체명 리셋
-    $("#newClientTraffic").value = "";   // 트래픽 단가 리셋
-    $("#newClientRoute").value = "";     // 길찾기 단가 리셋
-    
+    $("#newClientName").value = "";
+    $("#newClientTraffic").value = "";
+    $("#newClientRoute").value = "";
     saveClients();
   };
 
@@ -362,6 +342,7 @@
   $("#openClientModal").onclick = () => { $("#modalOverlay").style.display = "flex"; $("#clientSearch").value=""; renderClientList(); };
   $("#closeModal").onclick = () => { $("#modalOverlay").style.display = "none"; };
 
+  // --- 날짜 계산 ---
   function getDiffDays() {
     const d1 = $("#ref_today").value;
     const d2 = $("#ref_endDate").value;
@@ -382,6 +363,7 @@
     return `${d.getMonth()+1}/${d.getDate()}(${["일","월","화","수","목","금","토"][d.getDay()]})`;
   }
 
+  // --- 견적/환불 블록 ---
   function createBlock(isRefund = false) {
     const el = document.createElement("div");
     el.className = "blk";

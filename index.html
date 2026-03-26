@@ -441,6 +441,29 @@
       }
     };
 
+    // 5. 단가 계산기 업체 목록 저장 (플레이스_단가_계산기.html에서 호출)
+    window.saveClientsData = function(clients) {
+      if (!currentUserId) return;
+      const clientsRef = ref(db, `users/${currentUserId}/clients`);
+      set(clientsRef, clients)
+        .then(() => console.log("업체 목록 저장 완료"))
+        .catch(err => console.error("업체 목록 저장 실패:", err));
+    };
+
+    // 6. 단가 계산기 업체 목록 로드 (플레이스_단가_계산기.html에서 호출)
+    window.loadClientsData = function() {
+      if (!currentUserId) return;
+      const clientsRef = ref(db, `users/${currentUserId}/clients`);
+      onValue(clientsRef, (snapshot) => {
+        const data = snapshot.val();
+        // 현재 활성화된 iframe에 데이터 전달
+        const activeFrame = document.querySelector('#iframeContainer iframe.active, #mobileFrame');
+        if (activeFrame && activeFrame.contentWindow && activeFrame.contentWindow.applyClientsData) {
+          activeFrame.contentWindow.applyClientsData(data);
+        }
+      }, { onlyOnce: false });
+    };
+
     // 기타 기존 함수 유지용 가상 auth 객체 (에러 방지)
     window.auth = { currentUser: { uid: currentUserId } };
   </script>
