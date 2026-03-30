@@ -185,12 +185,12 @@ input[type=date]:focus{border-color:var(--acc);}
 <div class="wrap">
 
   <div class="notice ni">
-    💡 <span><strong>접수_날짜.xlsx</strong> 업로드 시 자동 매핑됩니다. <strong>대행사명이 여러 개</strong>이면 대행사별로 분리하여 각각 다운로드할 수 있습니다.</span>
+    💡 <span><strong>접수_날짜.xlsx</strong> 업로드 시 자동 매핑됩니다. <strong>B열 대행사명이 여러 개</strong>이면 대행사별로 분리하여 각각 다운로드할 수 있습니다.</span>
   </div>
 
   <!-- Upload -->
   <div class="panel">
-    <div class="ph"><span>📂</span><h2>접수 양식 업로드</h2><span class="m">접수일시·대행사·업체명·URL·MID·순위키워드·일 수·시작일·일 목표·검색키워드</span></div>
+    <div class="ph"><span>📂</span><h2>접수 양식 업로드</h2><span class="m">접수일시·대행사·업체명·URL·PID·순위키워드·일 수·시작일·일 목표·검색키워드</span></div>
     <div class="pb">
       <div class="upz" id="upz">
         <input type="file" id="fi" accept=".xlsx,.xls"/>
@@ -248,8 +248,8 @@ input[type=date]:focus{border-color:var(--acc);}
       <div class="tw">
         <table>
           <thead><tr>
-            <th>#</th><th>접수일시</th><th>대행사</th><th>업체명</th><th>URL</th>
-            <th>MID</th><th>순위키워드</th><th>일수</th><th>시작일</th><th>일목표</th>
+            <th>#</th><th>접수일시</th><th>대행사</th><th>업체명</th><th>업체 URL</th>
+            <th>PID번호</th><th>순위키워드</th><th>일수</th><th>시작일</th><th>일목표</th>
             <th>검색키워드</th><th>상품 배정</th><th></th>
           </tr></thead>
           <tbody id="tbody"></tbody>
@@ -292,14 +292,14 @@ input[type=date]:focus{border-color:var(--acc);}
 <script>
 // ── Product defaults ──
 let prods = [
-  {id:'p1',name:'블랙',   color:'#3b82f6',active:true,  ver:'ver.5.0/3.2', ratio:50},
-  {id:'p2',name:'올리브', color:'#8b5cf6',active:true,  ver:'ver.5.0/3.2', ratio:50},
-  {id:'p3',name:'X3',     color:'#10b981',active:false, ver:'ver.5.0/3.2', ratio:100},
-  {id:'p4',name:'X4',     color:'#f97316',active:false, ver:'ver.5.0/3.2', ratio:100},
-  {id:'p5',name:'X5',     color:'#cbd5e1',active:false, ver:'ver.5.0/3.2', ratio:100},
-  {id:'p6',name:'X6',     color:'#84cc16',active:false, ver:'ver.5.0/3.2', ratio:100},
-  {id:'p7',name:'X7',     color:'#ec4899',active:false, ver:'ver.5.0/3.2', ratio:100},
-  {id:'p8',name:'X8',     color:'#eab308',active:false, ver:'ver.5.0/3.2', ratio:100},
+  {id:'p1',name:'블랙',   color:'#3b82f6',active:true,  ver:'ver.5.1/3.2', ratio:50},
+  {id:'p2',name:'올리브', color:'#8b5cf6',active:true,  ver:'ver.5.1/3.2', ratio:50},
+  {id:'p3',name:'X3',     color:'#10b981',active:false, ver:'ver.5.1/3.2', ratio:100},
+  {id:'p4',name:'X4',     color:'#f97316',active:false, ver:'ver.5.1/3.2', ratio:100},
+  {id:'p5',name:'X5',     color:'#cbd5e1',active:false, ver:'ver.5.1/3.2', ratio:100},
+  {id:'p6',name:'X6',     color:'#84cc16',active:false, ver:'ver.5.1/3.2', ratio:100},
+  {id:'p7',name:'X7',     color:'#ec4899',active:false, ver:'ver.5.1/3.2', ratio:100},
+  {id:'p8',name:'X8',     color:'#eab308',active:false, ver:'ver.5.1/3.2', ratio:100},
 ];
 
 let rows = [], rid = 0;
@@ -327,50 +327,8 @@ function rowsByAgency(ag){
   return rows.filter(r=>r.name.trim() && (r.agency.trim()||'(대행사 미지정)')===ag);
 }
 
-// ── Firebase 연동 (index.html 부모 창 방식) ──
-
-// 저장: 부모 창의 saveSlotData 호출
-function saveToServer() {
-  if (window.parent && window.parent.saveSlotData) {
-    window.parent.saveSlotData({ prods, rows });
-  }
-}
-
-// 불러오기: 부모 창에서 이 함수를 직접 호출해줌
-window.applySlotData = function(data) {
-  if (!data) return;
-  if (data.prods && Array.isArray(data.prods)) {
-    prods = data.prods;
-  }
-  if (data.rows && Array.isArray(data.rows)) {
-    rows = data.rows;
-    // rid를 기존 최대 id+1로 맞춤 (새 행 id 충돌 방지)
-    if (rows.length > 0) {
-      rid = Math.max(...rows.map(r => r.id ?? 0)) + 1;
-    }
-  }
-  renderPS();
-  renderTable();
-  refreshUI();
-};
-
-// 저장 트리거: 상품/행 변경 시 자동 저장 (debounce)
-let _saveTimer = null;
-function scheduleSave() {
-  clearTimeout(_saveTimer);
-  _saveTimer = setTimeout(saveToServer, 800);
-}
-
 // ── Init ──
-window.onload = () => {
-  renderPS();
-  addRow(); addRow(); addRow();
-  setupUpload();
-  // 부모 창에게 데이터 요청
-  if (window.parent && window.parent.loadSlotData) {
-    window.parent.loadSlotData();
-  }
-};
+window.onload = () => { renderPS(); addRow(); addRow(); addRow(); setupUpload(); };
 
 // ── Product settings ──
 function renderPS() {
@@ -439,7 +397,6 @@ function saveModal() {
   closeModal();
   rows.forEach(r => { const c=document.getElementById(`tags-${r.id}`); if(c) c.innerHTML=tagsHtml(r); });
   renderPS(); renderTable(); refreshUI();
-  scheduleSave();
 }
 
 function renameP(id, name) {
@@ -452,9 +409,8 @@ function renameP(id, name) {
 function toggleP(id) {
   const p = prods.find(x=>x.id===id); if(!p) return;
   p.active = !p.active;
-  if (!p.active) rows.forEach(r => { r.products=r.products.filter(mid=>mid!==id); });
+  if (!p.active) rows.forEach(r => { r.products=r.products.filter(pid=>pid!==id); });
   renderPS(); renderTable(); refreshUI();
-  scheduleSave();
 }
 
 
@@ -488,7 +444,7 @@ function loadFile(file) {
         agency: ci('대행사'),
         name:  ci('업체명'),
         url:   ci('URL')>=0?ci('URL'):ci('url'),
-        mid:   ci('MID'),
+        pid:   ci('PID'),
         kw:    ci('순위키워드'),
         days:  ci('일 수')>=0?ci('일 수'):ci('일수'),
         sdate: ci('시작일'),
@@ -516,7 +472,7 @@ function loadFile(file) {
           agency: C.agency>=0?String(r[C.agency]||'').trim():'',
           name: nm,
           url: C.url>=0?String(r[C.url]||'').trim():'',
-          mid: C.mid>=0?String(r[C.mid]||'').trim():'',
+          pid: C.pid>=0?String(r[C.pid]||'').trim():'',
           keyword: C.kw>=0?String(r[C.kw]||'').trim():'',
           days: parseInt(C.days>=0?r[C.days]:'')||7,
           startDate: C.sdate>=0?parseDate(r[C.sdate]):today(),
@@ -531,7 +487,6 @@ function loadFile(file) {
         const z=document.getElementById('upz');
         z.classList.add('ok');
         z.querySelector('h3').textContent=`✅ ${file.name} — ${newRows.length}개 업체 로드됨`;
-        scheduleSave();
       } else { alert('데이터를 찾을 수 없습니다. 헤더 행을 확인하세요.'); }
     } catch(err){ alert('파일 오류: '+err.message); }
   };
@@ -540,21 +495,21 @@ function loadFile(file) {
 
 // ── Rows ──
 function addRow(){
-  rows.push({id:rid++,receiptDate:today(),agency:'',name:'',url:'',mid:'',keyword:'',days:7,startDate:today(),dailyTarget:125,searchKeywords:'',products:ap().map(p=>p.id)});
+  rows.push({id:rid++,receiptDate:today(),agency:'',name:'',url:'',pid:'',keyword:'',days:7,startDate:today(),dailyTarget:125,searchKeywords:'',products:ap().map(p=>p.id)});
   renderTable();
 }
-function removeRow(id){ rows=rows.filter(r=>r.id!==id); renderTable(); refreshUI(); scheduleSave(); }
+function removeRow(id){ rows=rows.filter(r=>r.id!==id); renderTable(); refreshUI(); }
 function clearAll(){
   if(rows.filter(r=>r.name).length>0&&!confirm('모든 데이터를 초기화할까요?')) return;
-  rows=[]; addRow(); addRow(); addRow(); refreshUI(); scheduleSave();
+  rows=[]; addRow(); addRow(); addRow(); refreshUI();
 }
-function upd(id,f,v){ const r=rows.find(x=>x.id===id); if(r){r[f]=v; updateStats(); refreshUI(); scheduleSave();} }
-function togProd(rowId,mid,checked){
+function upd(id,f,v){ const r=rows.find(x=>x.id===id); if(r){r[f]=v; updateStats(); refreshUI();} }
+function togProd(rowId,pid,checked){
   const r=rows.find(x=>x.id===rowId); if(!r) return;
-  if(checked&&!r.products.includes(mid)) r.products.push(mid);
-  if(!checked) r.products=r.products.filter(p=>p!==mid);
+  if(checked&&!r.products.includes(pid)) r.products.push(pid);
+  if(!checked) r.products=r.products.filter(p=>p!==pid);
   const c=document.getElementById(`tags-${rowId}`); if(c) c.innerHTML=tagsHtml(r);
-  updateStats(); refreshUI(); scheduleSave();
+  updateStats(); refreshUI();
 }
 
 // ── Render table ──
@@ -569,8 +524,8 @@ function renderTable(){
       <td><input type="text" value="${esc(row.agency)}" placeholder="영업점" style="min-width:95px;" oninput="upd(${row.id},'agency',this.value)"/></td>
       <td><input type="text" value="${esc(row.name)}" placeholder="업체명" style="min-width:135px;" oninput="upd(${row.id},'name',this.value)"/></td>
       <td><input type="text" value="${esc(row.url)}" placeholder="https://m.place.naver.com/..." style="min-width:200px;" oninput="upd(${row.id},'url',this.value)"/></td>
-      <td><input type="text" value="${esc(row.mid)}" placeholder="MID" style="min-width:95px;" oninput="upd(${row.id},'mid',this.value)"/></td>
-      <td><input type="text" value="${esc(row.keyword)}" placeholder="순위키워드" style="min-width:95px;" oninput="upd(${row.id},'keyword',this.value)"/></td>
+      <td><input type="text" value="${esc(row.pid)}" placeholder="PID" style="min-width:95px;" oninput="upd(${row.id},'pid',this.value)"/></td>
+      <td><input type="text" value="${esc(row.keyword)}" placeholder="지역 맛집" style="min-width:95px;" oninput="upd(${row.id},'keyword',this.value)"/></td>
       <td><input type="number" value="${row.days}" min="1" style="min-width:50px;max-width:60px;" oninput="upd(${row.id},'days',parseInt(this.value)||7)"/></td>
       <td><input type="date" value="${row.startDate}" oninput="upd(${row.id},'startDate',this.value)" style="min-width:115px;"/></td>
       <td><input type="number" value="${row.dailyTarget}" min="1" style="min-width:62px;max-width:75px;" oninput="upd(${row.id},'dailyTarget',parseInt(this.value)||0)"/></td>
@@ -598,7 +553,7 @@ function updateStats(){
   const f=rows.filter(r=>r.name.trim());
   document.getElementById('rcMeta').textContent=`${f.length}개 업체`;
   const cnt={}; ap().forEach(p=>cnt[p.id]=0);
-  f.forEach(r=>r.products.forEach(mid=>{if(cnt[mid]!==undefined)cnt[mid]++;}));
+  f.forEach(r=>r.products.forEach(pid=>{if(cnt[pid]!==undefined)cnt[pid]++;}));
   let h=`업체 <span class="sv">${f.length}</span>`;
   ap().filter(p=>cnt[p.id]>0).forEach(p=>{
     h+=` &nbsp;·&nbsp; <span style="color:${p.color};font-weight:700">${esc(p.name)}</span> <span class="sv">${cnt[p.id]}</span>`;
@@ -660,7 +615,7 @@ function renderPreview(agencies){
   // 각 대행사별 콘텐츠
   consEl.innerHTML=agencies.map((ag,i)=>{
     const agRows=rowsByAgency(ag);
-    const usedIds=new Set(); agRows.forEach(r=>r.products.forEach(mid=>usedIds.add(mid)));
+    const usedIds=new Set(); agRows.forEach(r=>r.products.forEach(pid=>usedIds.add(pid)));
     const pSheets=ap().filter(p=>usedIds.has(p.id));
     const sheetNames=['접수',...pSheets.map(p=>p.name)];
 
@@ -735,7 +690,7 @@ async function dlSheetForAgency(ag, label){
 async function downloadAllForAgency(ag){
   const f=rowsByAgency(ag);
   if(!f.length){alert('해당 대행사의 데이터가 없습니다.');return;}
-  const usedIds=new Set(); f.forEach(r=>r.products.forEach(mid=>usedIds.add(mid)));
+  const usedIds=new Set(); f.forEach(r=>r.products.forEach(pid=>usedIds.add(pid)));
   const pSheets=ap().filter(p=>usedIds.has(p.id));
   const realAg=ag==='(대행사 미지정)'?'':ag;
 
@@ -769,14 +724,14 @@ async function downloadAll(){
     let totalFiles=0;
     agencies.forEach(ag=>{
       const f=rowsByAgency(ag);
-      const usedIds=new Set(); f.forEach(r=>r.products.forEach(mid=>usedIds.add(mid)));
+      const usedIds=new Set(); f.forEach(r=>r.products.forEach(pid=>usedIds.add(pid)));
       totalFiles+=1+ap().filter(p=>usedIds.has(p.id)).length;
     });
 
     let done=0;
     for(const ag of agencies){
       const f=rowsByAgency(ag);
-      const usedIds=new Set(); f.forEach(r=>r.products.forEach(mid=>usedIds.add(mid)));
+      const usedIds=new Set(); f.forEach(r=>r.products.forEach(pid=>usedIds.add(pid)));
       const pSheets=ap().filter(p=>usedIds.has(p.id));
       const realAg=ag==='(대행사 미지정)'?'':ag;
 
@@ -804,36 +759,51 @@ async function downloadAll(){
 // ── XLSX: 접수 sheet ──
 function sc(ws,r,c,v,s={}){
   const addr=XLSX.utils.encode_cell({r,c});
+  // 날짜 문자열(YYYY-MM-DD)이면 숫자 시리얼로 변환
+  let t = typeof v==='number'?'n':'s';
+  let val = v;
+  if(s.date && typeof v==='string' && /^\d{4}-\d{2}-\d{2}$/.test(v)){
+    const [yr,mo,dy]=v.split('-').map(Number);
+    // Excel 날짜 시리얼: 1900-01-01=1 기준 (leap year bug 포함)
+    const base=new Date(1899,11,30);
+    const target=new Date(yr,mo-1,dy);
+    val=Math.round((target-base)/86400000);
+    t='n';
+  }
   ws[addr]={
-    t:typeof v==='number'?'n':'s', v,
+    t, v:val,
     s:{
       font:{name:'맑은 고딕',sz:10,...s.font},
       alignment:{horizontal:s.align||'center',vertical:'center',wrapText:false},
       ...(s.fill?{fill:{fgColor:{rgb:s.fill},patternType:'solid'}}:{}),
+      ...(s.date?{numFmt:'YYYY-MM-DD'}:{}),
       ...(s.nb?{}:{border:{
         top:{style:'thin',color:{rgb:'D0D0D0'}},bottom:{style:'thin',color:{rgb:'D0D0D0'}},
         left:{style:'thin',color:{rgb:'D0D0D0'}},right:{style:'thin',color:{rgb:'D0D0D0'}}
       }})
     }
   };
+  if(s.date) ws[addr].z='YYYY-MM-DD';
 }
 
 function buildJusuSheet(wb,f){
   const ws={};
   const totalGil=f.reduce((s,r)=>s+r.dailyTarget*r.days,0);
 
-  sc(ws,0,0,'총 일 목표 합계',{font:{bold:true,color:{rgb:'FFFFFF'}},fill:'111827'});
-  sc(ws,1,0,totalGil,    {font:{bold:true},fill:'F3F4F6'});
+  sc(ws,0,0,'트-총 수량',{font:{bold:true,color:{rgb:'FFFFFF'}},fill:'111827'});
+  sc(ws,0,1,'길-총 수량',{font:{bold:true,color:{rgb:'FFFFFF'}},fill:'111827'});
+  sc(ws,1,0,0,           {font:{bold:true},fill:'F3F4F6'});
+  sc(ws,1,1,totalGil,    {font:{bold:true},fill:'F3F4F6'});
 
   const AP=ap();
-  const baseH=['업체명','URL','MID','순위키워드','일수','시작일','일 목표','분류','검색키워드'];
+  const baseH=['업체명','업체URL','업체PID번호','순위키워드','일수','시작일','트래픽 수량','분류','길찾기 수량','분류','키워드'];
   const prodH=AP.map(p=>p.name);
-  const tailH=['합계'];
+  const tailH=['트-합계','길-합계'];
   const headers=[...baseH,...prodH,...tailH];
 
   headers.forEach((h,ci)=>{
     const prod=AP.find(p=>p.name===h);
-    const fill=prod?prod.color.replace('#',''):(ci<9?'D97706':'374151'); // ci 기준 11 -> 9로 변경
+    const fill=prod?prod.color.replace('#',''):(ci<11?'D97706':'374151');
     sc(ws,3,ci,h,{font:{bold:true,color:{rgb:'FFFFFF'}},fill,align:'center'});
   });
 
@@ -841,23 +811,24 @@ function buildJusuSheet(wb,f){
     const rowIdx=4+ri;
     const asgn=AP.filter(p=>r.products.includes(p.id));
     const totalRatio=asgn.reduce((s,p)=>s+p.ratio,0)||1;
-    const base=[r.name,r.url,r.mid,r.keyword,r.days,r.startDate,r.dailyTarget,asgn.length,r.searchKeywords];
+    const base=[r.name,r.url,r.pid,r.keyword,r.days,r.startDate,'','',r.dailyTarget,asgn.length,r.searchKeywords];
     const pv=AP.map(p=>r.products.includes(p.id)?Math.round(r.dailyTarget*(p.ratio/totalRatio)):'');
-    const tail=[r.dailyTarget*r.days];
+    const tail=['',r.dailyTarget*r.days];
     const row=[...base,...pv,...tail];
     row.forEach((v,ci)=>{
       if(v===''||v===undefined) return;
-      const pi=ci-9; const isProd=ci>=9&&ci<9+AP.length&&pv[pi]!=='';
+      const pi=ci-11; const isProd=ci>=11&&ci<11+AP.length&&pv[pi]!=='';
       const fc=isProd?AP[pi].color.replace('#',''):null;
       sc(ws,rowIdx,ci,v,{
         align:[0,1,3,10].includes(ci)?'left':'center',
-        font:fc?{color:{rgb:fc},bold:true}:{}
+        font:fc?{color:{rgb:fc},bold:true}:{},
+        date: ci===5
       });
     });
     ws['!ref']=XLSX.utils.encode_range({s:{r:0,c:0},e:{r:rowIdx,c:headers.length-1}});
   });
   if(!ws['!ref']) ws['!ref']=XLSX.utils.encode_range({s:{r:0,c:0},e:{r:4,c:headers.length-1}});
-  ws['!cols']=[{wch:22},{wch:44},{wch:14},{wch:18},{wch:6},{wch:13},{wch:12},{wch:6},{wch:44},...AP.map(()=>({wch:10})),{wch:10}];
+  ws['!cols']=[{wch:22},{wch:44},{wch:14},{wch:18},{wch:6},{wch:13},{wch:10},{wch:6},{wch:12},{wch:6},{wch:44},...AP.map(()=>({wch:8})),{wch:8},{wch:9}];
   XLSX.utils.book_append_sheet(wb,ws,'접수');
 }
 
@@ -868,7 +839,7 @@ function buildProdSheet(wb,f,prod){
 
   sc(ws,0,0,prod.ver||'',{font:{bold:true,color:{rgb:'DC2626'}},nb:true});
 
-  const headers=['상품등급명','업체명','URL','MID','순위키워드','일 목표','일 수','예약일','검색키워드'];
+  const headers=['상품등급명','업체명','업체URL','업체PID번호','순위키워드','일 목표','일 수','예약일','검색키워드'];
   headers.forEach((h,ci)=>{
     sc(ws,1,ci,h,{font:{bold:true,color:{rgb:'FFFFFF'}},fill:h==='검색키워드'?'DC2626':'1F2937'});
   });
@@ -877,8 +848,11 @@ function buildProdSheet(wb,f,prod){
     const asgn=ap().filter(p=>r.products.includes(p.id));
     const totalRatio=asgn.reduce((s,p)=>s+p.ratio,0)||1;
     const pp=Math.round(r.dailyTarget*(prod.ratio/totalRatio));
-    const row=[prod.name,r.name,r.url,r.mid,r.keyword,pp,r.days,r.startDate,r.searchKeywords];
-    row.forEach((v,ci)=>sc(ws,2+ri,ci,v,{align:[0,1,2,4,8].includes(ci)?'left':'center'}));
+    const row=[prod.name,r.name,r.url,r.pid,r.keyword,pp,r.days,r.startDate,r.searchKeywords];
+    row.forEach((v,ci)=>sc(ws,2+ri,ci,v,{
+      align:[0,1,2,4,8].includes(ci)?'left':'center',
+      date: ci===7
+    }));
   });
 
   const lr=Math.max(1,pRows.length+1);
@@ -893,9 +867,9 @@ function buildJusuPrev(f){
     const asgn=ap().filter(p=>r.products.includes(p.id));
     const totalRatio=asgn.reduce((s,p)=>s+p.ratio,0)||1;
     const pc={}; ap().forEach(p=>{pc[p.name]=r.products.includes(p.id)?Math.round(r.dailyTarget*(p.ratio/totalRatio)):'';});
-    return {'업체명':r.name,'URL':r.url,'MID':r.mid,'순위키워드':r.keyword,
-      '일수':r.days,'시작일':r.startDate,'일 목표':r.dailyTarget,'분류':asgn.length,
-      '검색키워드':r.searchKeywords,...pc,'합계':r.dailyTarget*r.days};
+    return {'업체명':r.name,'업체URL':r.url,'PID':r.pid,'순위키워드':r.keyword,
+      '일수':r.days,'시작일':r.startDate,'길찾기수량':r.dailyTarget,'분류':asgn.length,
+      '검색키워드':r.searchKeywords,...pc,'길-합계':r.dailyTarget*r.days};
   });
 }
 function buildProdPrev(f, pname){
@@ -904,7 +878,7 @@ function buildProdPrev(f, pname){
     const asgn=ap().filter(p=>r.products.includes(p.id));
     const totalRatio=asgn.reduce((s,p)=>s+p.ratio,0)||1;
     const pp=Math.round(r.dailyTarget*(prod.ratio/totalRatio));
-    return {'상품등급명':pname,'업체명':r.name,'URL':r.url,'MID':r.mid,
+    return {'상품등급명':pname,'업체명':r.name,'업체URL':r.url,'업체PID번호':r.pid,
       '순위키워드':r.keyword,'일 목표':pp,'일 수':r.days,'예약일':r.startDate,'검색키워드':r.searchKeywords};
   });
 }
