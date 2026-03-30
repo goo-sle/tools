@@ -249,7 +249,7 @@ input[type=date]:focus{border-color:var(--acc);}
         <table>
           <thead><tr>
             <th>#</th><th>접수일시</th><th>대행사</th><th>업체명</th><th>업체 URL</th>
-            <th>MID번호</th><th>순위키워드</th><th>일수</th><th>시작일</th><th>일목표</th>
+            <th>MID</th><th>순위키워드</th><th>일수</th><th>시작일</th><th>일목표</th>
             <th>검색키워드</th><th>상품 배정</th><th></th>
           </tr></thead>
           <tbody id="tbody"></tbody>
@@ -826,7 +826,7 @@ function buildJusuSheet(wb,f){
   sc(ws,1,0,totalGil,    {font:{bold:true},fill:'F3F4F6'});
 
   const AP=ap();
-  const baseH=['업체명','업체URL','업체MID번호','순위키워드','일수','시작일','일 목표','분류','검색키워드'];
+  const baseH=['업체명','URL','MID','순위키워드','일수','시작일','일 목표','분류','검색키워드'];
   const prodH=AP.map(p=>p.name);
   const tailH=['합계'];
   const headers=[...baseH,...prodH,...tailH];
@@ -868,7 +868,7 @@ function buildProdSheet(wb,f,prod){
 
   sc(ws,0,0,prod.ver||'',{font:{bold:true,color:{rgb:'DC2626'}},nb:true});
 
-  const headers=['상품등급명','업체명','업체URL','업체MID번호','순위키워드','일 목표','일 수','예약일','검색키워드'];
+  const headers=['상품등급명','업체명','URL','MID','순위키워드','일 목표','일 수','예약일','검색키워드'];
   headers.forEach((h,ci)=>{
     sc(ws,1,ci,h,{font:{bold:true,color:{rgb:'FFFFFF'}},fill:h==='검색키워드'?'DC2626':'1F2937'});
   });
