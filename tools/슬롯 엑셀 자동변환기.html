@@ -248,7 +248,7 @@ input[type=date]:focus{border-color:var(--acc);}
       <div class="tw">
         <table>
           <thead><tr>
-            <th>#</th><th>접수일시</th><th>대행사</th><th>업체명</th><th>업체 URL</th>
+            <th>#</th><th>접수일시</th><th>대행사</th><th>업체명</th><th>URL</th>
             <th>MID</th><th>순위키워드</th><th>일수</th><th>시작일</th><th>일목표</th>
             <th>검색키워드</th><th>상품 배정</th><th></th>
           </tr></thead>
@@ -893,7 +893,7 @@ function buildJusuPrev(f){
     const asgn=ap().filter(p=>r.products.includes(p.id));
     const totalRatio=asgn.reduce((s,p)=>s+p.ratio,0)||1;
     const pc={}; ap().forEach(p=>{pc[p.name]=r.products.includes(p.id)?Math.round(r.dailyTarget*(p.ratio/totalRatio)):'';});
-    return {'업체명':r.name,'업체URL':r.url,'MID':r.mid,'순위키워드':r.keyword,
+    return {'업체명':r.name,'URL':r.url,'MID':r.mid,'순위키워드':r.keyword,
       '일수':r.days,'시작일':r.startDate,'일 목표':r.dailyTarget,'분류':asgn.length,
       '검색키워드':r.searchKeywords,...pc,'합계':r.dailyTarget*r.days};
   });
