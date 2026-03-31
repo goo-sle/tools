@@ -11,7 +11,7 @@
         body { font-family: 'Pretendard', 'Malgun Gothic', sans-serif; background-color: #f4f6f9; margin: 0; padding: 20px; color: var(--gray-800); }
         .app-container { max-width: 1100px; margin: 0 auto; }
         
-        /* 슬롯 매니저 스타일 */
+        /* 캠페인 매니저 스타일 */
         .save-manager { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 25px; }
         .save-header { display: flex; align-items: center; gap: 10px; font-weight: bold; margin-bottom: 15px; font-size: 16px; }
         .slot-grid { display: flex; gap: 12px; margin-bottom: 0; }
@@ -68,7 +68,7 @@
 
 <div class="app-container">
     <div class="save-manager">
-        <div class="save-header">📁 저장 슬롯 (서버 동기화)</div>
+        <div class="save-header">📁 저장 캠페인 (서버 동기화)</div>
         <div id="slot-grid" class="slot-grid"></div>
     </div>
 
@@ -129,7 +129,7 @@ labels.forEach((L, i) => {
     </div>`;
 });
 
-// 2. 슬롯 생성
+// 2. 캠페인 생성
 function createSlots() {
     const grid = document.getElementById('slot-grid');
     grid.innerHTML = '';
@@ -137,7 +137,7 @@ function createSlots() {
         grid.innerHTML += `
         <div class="slot-box">
             <button id="slot_btn_${i}" class="slot-btn" onclick="switchSlot(${i})">${i}</button>
-            <input type="text" id="slot_name_${i}" class="slot-name" value="슬롯 ${i}" oninput="autoSave()" placeholder="이름">
+            <input type="text" id="slot_name_${i}" class="slot-name" value="캠페인 ${i}" oninput="autoSave()" placeholder="이름">
         </div>`;
     }
 }
@@ -166,7 +166,7 @@ function autoSave() {
     }
 }
 
-// 4. 슬롯 전환 (서버 데이터 요청)
+// 4. 캠페인 전환 (서버 데이터 요청)
 function switchSlot(slotNum) {
     currentSlot = slotNum;
     document.querySelectorAll('.slot-btn').forEach(btn => btn.classList.remove('active'));
@@ -302,7 +302,7 @@ document.addEventListener('keydown', function(e) {
     }
 });
 
-// 초기화: 슬롯 UI 생성 및 1번 슬롯 로드 요청
+// 초기화: 캠페인 UI 생성 및 1번 캠페인 로드 요청
 window.onload = () => { 
     createSlots(); 
     document.getElementById('slot_btn_1').classList.add('active');

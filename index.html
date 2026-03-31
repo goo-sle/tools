@@ -475,16 +475,16 @@
       }, { onlyOnce: false });
     };
 
-    // 7. 슬롯 엑셀 변환기 데이터 저장 (슬롯_엑셀_자동변환기.html에서 호출)
+    // 7. 캠페인 엑셀 변환기 데이터 저장 (캠페인_엑셀_자동변환기.html에서 호출)
     window.saveSlotData = function(data) {
       if (!currentUserId) return;
       const slotRef = ref(db, `users/${currentUserId}/slotConverter`);
       set(slotRef, data)
-        .then(() => console.log("슬롯 변환기 데이터 저장 완료"))
-        .catch(err => console.error("슬롯 변환기 저장 실패:", err));
+        .then(() => console.log("캠페인 변환기 데이터 저장 완료"))
+        .catch(err => console.error("캠페인 변환기 저장 실패:", err));
     };
 
-    // 8. 슬롯 엑셀 변환기 데이터 로드 (슬롯_엑셀_자동변환기.html에서 호출)
+    // 8. 캠페인 엑셀 변환기 데이터 로드 (캠페인_엑셀_자동변환기.html에서 호출)
     window.loadSlotData = function() {
       if (!currentUserId) return;
       const slotRef = ref(db, `users/${currentUserId}/slotConverter`);
