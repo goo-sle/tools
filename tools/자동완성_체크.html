@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>대량 키워드 연관어 체커</title>
+    <title>대량 키워드 자동완성 체커</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
     <style>
         :root { --main: #03c75a; --bg: #f8f9fa; }
@@ -28,7 +28,7 @@
 <body>
 
 <div class="container">
-    <h2>📋 대량 키워드 연관어 체커</h2>
+    <h2>📋 대량 키워드 자동완성 체커</h2>
     <p style="font-size:13px; color:#666; margin-bottom:10px;">* 분석할 키워드를 한 줄에 하나씩 입력해 주세요.</p>
     <textarea id="keywordList" placeholder="홍대맛집&#10;강남카페&#10;제주도여행"></textarea>
     
@@ -44,9 +44,9 @@
             <tr>
                 <th>번호</th>
                 <th>키워드</th>
-                <th>연관어 유무</th>
+                <th>자동완성 유무</th>
                 <th>개수</th>
-                <th>추출된 연관어 (상위 5개)</th>
+                <th>자동완성(전체)</th>
             </tr>
         </thead>
         <tbody id="resultBody"></tbody>
@@ -98,7 +98,7 @@
         
         const hasRelated = items.length > 0;
         const count = items.length;
-        const topRelated = items.slice(0, 5).map(i => i[0]).join(', ');
+        const topRelated = items.map(i => i[0]).join(', ');
 
         const row = `
             <tr>
@@ -119,7 +119,7 @@
 
     function copyTable() {
         // 테이블 내용을 텍스트 형식으로 복사 (엑셀 붙여넣기용)
-        let text = "번호\t키워드\t유무\t개수\t연관어\n";
+        let text = "번호\t키워드\t유무\t개수\t자동완성\n";
         const rows = document.querySelectorAll("#resultBody tr");
         rows.forEach(row => {
             const cols = row.querySelectorAll("td");
