@@ -6,6 +6,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
 import { getAuth }        from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
 import { getDatabase }    from "https://www.gstatic.com/firebasejs/10.10.0/firebase-database.js";
+
 const firebaseConfig = {
   apiKey:            "AIzaSyAF-Rn7tzIjQeyUDJKnvKTRNccsXUVsIjo",
   authDomain:        "higherad-b9d62.firebaseapp.com",
