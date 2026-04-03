@@ -140,7 +140,7 @@ input[type=date]:focus{border-color:var(--acc);}
 .stab{padding:8px 15px;font-size:11px;font-weight:700;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;color:var(--txd);transition:all .15s;border-right:1px solid var(--brd);}
 .stab:hover{color:var(--tx);}
 .stab.on{color:var(--acc);border-bottom-color:var(--acc);background:rgba(0,229,255,.04);}
-.scon{padding:14px;display:none;}
+.scon{padding:14px;display:none;max-height:320px;overflow-y:auto;}
 .scon.on{display:block;}
 
 /* agency preview tabs */
@@ -184,13 +184,10 @@ input[type=date]:focus{border-color:var(--acc);}
 
 <div class="wrap">
 
-  <div class="notice ni">
-    💡 <span><strong>접수_날짜.xlsx</strong> 업로드 시 자동 매핑됩니다. <strong>대행사명이 여러곳</strong>이면 대행사별로 분리하여 각각 다운로드할 수 있습니다.</span>
-  </div>
 
   <!-- Upload -->
   <div class="panel">
-    <div class="ph"><span>📂</span><h2>접수 양식 업로드</h2><span class="m">접수일시·대행사·업체명·URL·MID·순위키워드·일 수·시작일·일 목표·검색키워드</span></div>
+    <div class="ph"><span>📂</span><h2>접수 양식 업로드</h2><span class="m" style="margin-left:auto;"></span><div style="display:flex;gap:8px;margin-left:auto;"><button class="btn btn-d" style="font-size:11px;padding:5px 11px;" onclick="clearAll()">🗑 초기화</button><button class="btn btn-p btn-glow" style="font-size:11px;padding:5px 13px;" onclick="downloadAll()" id="dlAllBtn2">⚡ 전체 다운로드</button></div></div>
     <div class="pb">
       <div class="upz" id="upz">
         <input type="file" id="fi" accept=".xlsx,.xls"/>
@@ -203,7 +200,7 @@ input[type=date]:focus{border-color:var(--acc);}
 
   <!-- Product type settings -->
   <div class="panel">
-    <div class="ph"><span>🏷️</span><h2>상품 유형 설정</h2><span class="m">클릭하면 상품명·버전·분배 비율 설정 가능</span></div>
+    <div class="ph"><span>🏷️</span><h2>상품 유형 설정</h2><span class="m">클릭하면 상품명·버전·고정 비율 설정 가능</span></div>
     <div class="pb">
       <div class="ps-wrap" id="psWrap"></div>
     </div>
@@ -229,7 +226,7 @@ input[type=date]:focus{border-color:var(--acc);}
           </div>
         </div>
         <div class="mf">
-          <label>분배 비율 <span style="font-weight:400;text-transform:none;letter-spacing:0;">(활성화된 상품 간 일 목표 분배 — 합계가 100이 되도록 설정)</span></label>
+          <label>분배 비율 <span style="font-weight:400;text-transform:none;letter-spacing:0;">(활성화된 상품 간 일 목표 분배 — 합계가 10이 되도록 설정)</span></label>
           <div class="ratio-grid" id="ratioGrid"></div>
           <div class="ratio-note" id="ratioNote">합계: 0</div>
         </div>
@@ -245,7 +242,7 @@ input[type=date]:focus{border-color:var(--acc);}
   <div class="panel">
     <div class="ph"><span>📋</span><h2>업체 데이터</h2><span class="m" id="rcMeta">0개 업체</span></div>
     <div style="padding:0">
-      <div class="tw">
+      <div class="tw" id="tbWrap" style="max-height:none;overflow-y:auto;transition:max-height .2s;">
         <table>
           <thead><tr>
             <th>#</th><th>접수일시</th><th>대행사</th><th>업체명</th><th>URL</th>
@@ -259,8 +256,6 @@ input[type=date]:focus{border-color:var(--acc);}
     </div>
     <div class="ab">
       <div class="stats" id="statsEl"></div>
-      <div class="sp"></div>
-      <button class="btn btn-d" style="font-size:11px;padding:6px 11px;" onclick="clearAll()">🗑 전체 초기화</button>
     </div>
   </div>
 
@@ -280,11 +275,6 @@ input[type=date]:focus{border-color:var(--acc);}
     <div class="stabs" id="stabs"></div>
     <div id="scons"></div>
 
-    <div class="ab">
-      <button class="btn btn-s" style="font-size:11px;padding:6px 11px;" onclick="refreshUI()">🔄 미리보기 갱신</button>
-      <div class="sp"></div>
-      <button class="btn btn-p btn-glow" onclick="downloadAll()" id="dlAllBtn">⚡ 전체 일괄 다운로드</button>
-    </div>
   </div>
 
 </div>
@@ -292,14 +282,14 @@ input[type=date]:focus{border-color:var(--acc);}
 <script>
 // ── Product defaults ──
 let prods = [
-  {id:'p1',name:'블랙',   color:'#3b82f6',active:true,  ver:'ver.5.0/3.2', ratio:50},
-  {id:'p2',name:'올리브', color:'#8b5cf6',active:true,  ver:'ver.5.0/3.2', ratio:50},
-  {id:'p3',name:'X3',     color:'#10b981',active:false, ver:'ver.5.0/3.2', ratio:100},
-  {id:'p4',name:'X4',     color:'#f97316',active:false, ver:'ver.5.0/3.2', ratio:100},
-  {id:'p5',name:'X5',     color:'#cbd5e1',active:false, ver:'ver.5.0/3.2', ratio:100},
-  {id:'p6',name:'X6',     color:'#84cc16',active:false, ver:'ver.5.0/3.2', ratio:100},
-  {id:'p7',name:'X7',     color:'#ec4899',active:false, ver:'ver.5.0/3.2', ratio:100},
-  {id:'p8',name:'X8',     color:'#eab308',active:false, ver:'ver.5.0/3.2', ratio:100},
+  {id:'p1',name:'블랙',   color:'#3b82f6',active:true,  ver:'ver.5.0/3.2', ratio:5},
+  {id:'p2',name:'올리브', color:'#8b5cf6',active:true,  ver:'ver.5.0/3.2', ratio:5},
+  {id:'p3',name:'X3',     color:'#10b981',active:false, ver:'ver.5.0/3.2', ratio:5},
+  {id:'p4',name:'X4',     color:'#f97316',active:false, ver:'ver.5.0/3.2', ratio:5},
+  {id:'p5',name:'X5',     color:'#cbd5e1',active:false, ver:'ver.5.0/3.2', ratio:5},
+  {id:'p6',name:'X6',     color:'#84cc16',active:false, ver:'ver.5.0/3.2', ratio:5},
+  {id:'p7',name:'X7',     color:'#ec4899',active:false, ver:'ver.5.0/3.2', ratio:5},
+  {id:'p8',name:'X8',     color:'#eab308',active:false, ver:'ver.5.0/3.2', ratio:5},
 ];
 
 let rows = [], rid = 0;
@@ -401,7 +391,7 @@ function openModal(id) {
     <div class="ratio-item">
       <div class="ri-dot" style="background:${q.color}"></div>
       <span class="ri-name" style="color:${q.color}">${esc(q.name)}</span>
-      <input type="number" min="0" max="100" value="${q.ratio}" id="ratio-${q.id}"
+      <input type="number" min="1" max="10" step="1" value="${Math.min(10,Math.max(1,q.ratio))}" id="ratio-${q.id}"
         oninput="updateRatioNote()" />
     </div>`).join('');
 
@@ -417,7 +407,7 @@ function updateRatioNote() {
   }, 0);
   const note = document.getElementById('ratioNote');
   note.textContent = `합계: ${sum}`;
-  note.className = 'ratio-note ' + (sum===100?'ok':'ng');
+  note.className = 'ratio-note ' + (sum===10?'ok':'ng');
 }
 
 function closeModal() {
@@ -433,7 +423,7 @@ function saveModal() {
   // 비율 저장
   ap().forEach(q=>{
     const el = document.getElementById(`ratio-${q.id}`);
-    if(el) q.ratio = Math.max(0, parseInt(el.value)||0);
+    if(el) q.ratio = Math.min(10, Math.max(1, parseInt(el.value)||1));
   });
 
   closeModal();
@@ -581,6 +571,9 @@ function renderTable(){
     tb.appendChild(tr);
   });
   updateStats();
+  // 5개 초과 시 스크롤
+  const wrap = document.getElementById('tbWrap');
+  if(wrap) wrap.style.maxHeight = rows.length > 5 ? '320px' : 'none';
 }
 
 function tagsHtml(row){
@@ -695,7 +688,7 @@ function prevTable(data){
   if(!data||!data.length) return `<div class="empty"><div class="ico">📭</div><p>배정된 업체가 없습니다</p></div>`;
   const cols=Object.keys(data[0]);
   return `<div class="tw"><table>
-    <thead><tr>${cols.map(c=>`<th>${c}</th>`).join('')}</tr></thead>
+    <thead style="position:sticky;top:0;z-index:1;"><tr>${cols.map(c=>`<th>${c}</th>`).join('')}</tr></thead>
     <tbody>${data.map(row=>`<tr>${cols.map(c=>{
       const v=row[c]??'';
       const prod=prods.find(p=>p.name===c);
@@ -762,8 +755,8 @@ async function downloadAllForAgency(ag){
 async function downloadAll(){
   const agencies=getAgencies();
   if(!agencies.length){alert('데이터를 입력해주세요.');return;}
-  const btn=document.getElementById('dlAllBtn');
-  btn.disabled=true;
+  const btn=document.getElementById('dlAllBtn2');
+  if(btn) btn.disabled=true;
 
   try{
     let totalFiles=0;
@@ -798,7 +791,7 @@ async function downloadAll(){
     setPG(true,100,`전체 ${agencies.length}개 대행사 · ${totalFiles}개 파일 다운로드 완료 ✅`);
     await sleep(1500);
   }catch(e){alert('오류: '+e.message);}
-  finally{btn.disabled=false; setPG(false);}
+  finally{if(btn) btn.disabled=false; setPG(false);}
 }
 
 // ── XLSX: 접수 sheet ──
@@ -864,9 +857,9 @@ function buildJusuSheet(wb,f){
   f.forEach((r,ri)=>{
     const rowIdx=4+ri;
     const asgn=AP.filter(p=>r.products.includes(p.id));
-    const totalRatio=asgn.reduce((s,p)=>s+p.ratio,0)||1;
+    const alloc=allocate(asgn, r.dailyTarget);
     const base=[r.name,r.url,r.mid,r.keyword,r.days,null,r.dailyTarget,asgn.length,r.searchKeywords];
-    const pv=AP.map(p=>r.products.includes(p.id)?Math.round(r.dailyTarget*(p.ratio/totalRatio)):'');
+    const pv=AP.map(p=>r.products.includes(p.id)?(alloc[p.id]??0):'');
     const tail=[r.dailyTarget*r.days];
     const row=[...base,...pv,...tail];
     row.forEach((v,ci)=>{
@@ -900,8 +893,8 @@ function buildProdSheet(wb,f,prod){
 
   pRows.forEach((r,ri)=>{
     const asgn=ap().filter(p=>r.products.includes(p.id));
-    const totalRatio=asgn.reduce((s,p)=>s+p.ratio,0)||1;
-    const pp=Math.round(r.dailyTarget*(prod.ratio/totalRatio));
+    const alloc=allocate(asgn, r.dailyTarget);
+    const pp=alloc[prod.id]??0;
     const row=[prod.name,r.name,r.url,r.mid,r.keyword,pp,r.days,null,r.searchKeywords];
     row.forEach((v,ci)=>{
       if(ci===7){ scDate(ws,2+ri,7,r.startDate); return; }
@@ -915,12 +908,36 @@ function buildProdSheet(wb,f,prod){
   XLSX.utils.book_append_sheet(wb,ws,prod.name);
 }
 
+// ── 분배 계산 (B안: 각 상품 고정값 먼저 차감, 나머지를 나머지 상품이 비율로 분배) ──
+// asgn: 켜진 상품 배열, target: 일 목표, prod: 계산할 상품
+// 방식: 라벤더=2면 2 고정 차감 → 잔여를 블랙:올리브 5:5로 분배
+// 즉, 각 상품의 몫 = prod.ratio / 전체ratio합 * target (단순 비율, B안 본질은 이것과 동일)
+// → "자기 ratio만큼 target에서 떼온다"는 건 사실 ratio/sum*target과 같으므로
+// B안의 핵심: 합이 target이 되도록 Largest Remainder로 보정
+function allocate(asgn, target) {
+  if (!asgn.length) return {};
+  const totalW = asgn.reduce((s,p)=>s+p.ratio, 0) || 1;
+  // 각 상품의 정확한 몫 (소수)
+  const exact = asgn.map(p => target * p.ratio / totalW);
+  // floor 값과 나머지
+  let floors = exact.map(v => Math.floor(v));
+  const remainders = exact.map((v,i) => v - floors[i]);
+  // 남은 수량을 나머지 큰 순서대로 배분 (Largest Remainder)
+  let leftover = target - floors.reduce((s,v)=>s+v, 0);
+  const order = remainders.map((_,i)=>i).sort((a,b)=>remainders[b]-remainders[a]);
+  for (let i = 0; i < leftover; i++) floors[order[i]]++;
+  // id→값 맵 반환
+  const map = {};
+  asgn.forEach((p,i) => { map[p.id] = floors[i]; });
+  return map;
+}
+
 // ── Preview builders (특정 행 배열 기준) ──
 function buildJusuPrev(f){
   return f.map(r=>{
     const asgn=ap().filter(p=>r.products.includes(p.id));
-    const totalRatio=asgn.reduce((s,p)=>s+p.ratio,0)||1;
-    const pc={}; ap().forEach(p=>{pc[p.name]=r.products.includes(p.id)?Math.round(r.dailyTarget*(p.ratio/totalRatio)):'';});
+    const alloc=allocate(asgn, r.dailyTarget);
+    const pc={}; ap().forEach(p=>{pc[p.name]=r.products.includes(p.id)?(alloc[p.id]??0):'';});
     return {'업체명':r.name,'URL':r.url,'MID':r.mid,'순위키워드':r.keyword,
       '일수':r.days,'시작일':r.startDate,'일 목표':r.dailyTarget,'분류':asgn.length,
       '검색키워드':r.searchKeywords,...pc,'합계':r.dailyTarget*r.days};
@@ -930,8 +947,8 @@ function buildProdPrev(f, pname){
   const prod=prods.find(p=>p.name===pname); if(!prod) return [];
   return f.filter(r=>r.products.includes(prod.id)).map(r=>{
     const asgn=ap().filter(p=>r.products.includes(p.id));
-    const totalRatio=asgn.reduce((s,p)=>s+p.ratio,0)||1;
-    const pp=Math.round(r.dailyTarget*(prod.ratio/totalRatio));
+    const alloc=allocate(asgn, r.dailyTarget);
+    const pp=alloc[prod.id]??0;
     return {'상품등급명':pname,'업체명':r.name,'URL':r.url,'MID':r.mid,
       '순위키워드':r.keyword,'일 목표':pp,'일 수':r.days,'예약일':r.startDate,'검색키워드':r.searchKeywords};
   });
