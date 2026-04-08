@@ -536,16 +536,25 @@ input[readonly]{background:#f3f4f6;color:var(--muted);cursor:not-allowed}
   }
 
   function buildCopyMsg(totalCamp, totalG, uPrice, totalA, totalD, totalRefund, vat=10){
-  const header =
-    `• 캠페인 수: ${totalCamp}건\n` +
-    `• 전체 목표: ${fmt(totalG)}개\n\n` +
-    `• 단가: ${fmt(uPrice)}원\n`;
-
-  const amtPart =
-    `• 금액: ${won(totalA)} (VAT 별도)\n\n` +
-    `• 입금액: ${won(totalD)} (VAT 포함)`;
-
-  return header + amtPart + "\n\n주식회사 하이어애드\n318-085637-04-018\nIBK기업은행\n\n확인 후 입금 부탁드립니다.";
+    const header =
+      `• 캠페인 수: ${totalCamp}건\n` +
+      `• 전체 목표: ${fmt(totalG)}개\n\n` +
+      `• 단가: ${fmt(uPrice)}원\n`;
+    let amtPart;
+    if(totalRefund > 0){
+      const net    = totalA - totalRefund;
+      const netDep = Math.ceil(net*(100+vat)/100);
+      amtPart =
+        `• 환불 금액: -${won(totalRefund)}\n` +
+        `• 금액: ${won(net)} (VAT 별도)\n\n` +
+        `• 입금액: ${won(netDep)} (VAT 포함)`;
+    } else {
+      amtPart =
+        `• 금액: ${won(totalA)} (VAT 별도)\n\n` +
+        `• 입금액: ${won(totalD)} (VAT 포함)`;
+    }
+    return header + amtPart + "\n\n주식회사 하이어애드\n318-085637-04-018\nIBK기업은행\n\n확인 후 입금 부탁드립니다.";
+  }
 
   function renderAgencies(rows){
     const order = [], groups = {};
