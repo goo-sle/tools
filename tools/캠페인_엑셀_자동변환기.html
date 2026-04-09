@@ -420,8 +420,21 @@ function saveModal() {
   p.name = document.getElementById('mName').value.trim() || p.name;
   p.ver  = document.getElementById('mVer').value.trim();
 
+  // 비율 합계 검증
+  const actives = ap();
+  const sum = actives.reduce((s,q)=>{
+    const el = document.getElementById(`ratio-${q.id}`);
+    return s + (el ? (parseInt(el.value)||0) : q.ratio);
+  }, 0);
+  if (sum > 10) {
+    const note = document.getElementById('ratioNote');
+    note.textContent = `합계: ${sum} — 합계가 10을 초과할 수 없습니다`;
+    note.className = 'ratio-note ng';
+    return;
+  }
+
   // 비율 저장
-  ap().forEach(q=>{
+  actives.forEach(q=>{
     const el = document.getElementById(`ratio-${q.id}`);
     if(el) q.ratio = Math.min(10, Math.max(1, parseInt(el.value)||1));
   });
