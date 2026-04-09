@@ -613,7 +613,10 @@ function updateStats(){
 }
 
 // ── filename helper ──
-function fname(agency, label){ return agency ? `${agency}-${label}.xlsx` : `${shortD()}-${label}.xlsx`; }
+function fname(agency, label){
+  if(label==='접수') return agency ? `${label}-${agency}.xlsx` : `${label}-${shortD()}.xlsx`;
+  return agency ? `${agency}-${label}.xlsx` : `${shortD()}-${label}.xlsx`;
+}
 
 // ── Refresh UI ──
 function refreshUI(){
