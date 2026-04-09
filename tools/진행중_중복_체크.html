@@ -206,6 +206,41 @@
             border: 1px solid #e0e7ff;
         }
 
+        .grade-filter-bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            flex-shrink: 0;
+        }
+        .grade-filter-bar label {
+            font-size: 12px;
+            font-weight: 700;
+            color: #666;
+            white-space: nowrap;
+        }
+        .grade-select {
+            height: 30px;
+            padding: 0 10px;
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            font-size: 12px;
+            font-family: inherit;
+            color: #333;
+            background: white;
+            cursor: pointer;
+            outline: none;
+            transition: border-color 0.2s;
+            min-width: 130px;
+        }
+        .grade-select:focus { border-color: var(--dark-blue); }
+        .grade-filter-count {
+            font-size: 12px;
+            color: #999;
+            margin-left: 4px;
+        }
+        .grade-filter-count strong { color: var(--dark-blue); }
+
         /* 테이블 카드: flex: 1로 남은 공간 전부, overflow로 스크롤 */
         .main-table-card {
             flex: 1;
@@ -313,7 +348,14 @@
 <div class="table-area">
 
     <div id="sectionA" class="master-section active">
-        <div class="table-title">블랙/올리브 현황</div>
+        <div class="table-title">블랙/올리브 필터 <span id="countBadgeA" class="count-badge">0건</span></div>
+        <div class="grade-filter-bar">
+            <label>등급 필터</label>
+            <select id="gradeSelectA" class="grade-select" onchange="applyGradeFilter('A')">
+                <option value="">전체</option>
+            </select>
+            <span class="grade-filter-count">표시: <strong id="gradeCountA">0</strong>건</span>
+        </div>
         <div class="main-table-card">
             <table class="data-table">
                 <thead id="masterHeaderA"></thead>
@@ -323,7 +365,14 @@
     </div>
 
     <div id="sectionB" class="master-section">
-        <div class="table-title">기타등급 현황</div>
+        <div class="table-title">기타등급 필터 <span id="countBadgeB" class="count-badge">0건</span></div>
+        <div class="grade-filter-bar">
+            <label>등급 필터</label>
+            <select id="gradeSelectB" class="grade-select" onchange="applyGradeFilter('B')">
+                <option value="">전체</option>
+            </select>
+            <span class="grade-filter-count">표시: <strong id="gradeCountB">0</strong>건</span>
+        </div>
         <div class="main-table-card">
             <table class="data-table">
                 <thead id="masterHeaderB"></thead>
@@ -358,6 +407,8 @@
 
             updateCountBadge('countA', window.dbA.length);
             updateCountBadge('countB', window.dbB.length);
+            updateCountBadge('countBadgeA', window.dbA.length);
+            updateCountBadge('countBadgeB', window.dbB.length);
             renderAll();
             alert("동기화 완료!");
         } catch (e) {
@@ -372,10 +423,59 @@
         document.getElementById(id).innerText = count + "건";
     }
 
+    function getGradeColumn(headers) {
+        return headers.find(h => h === '등급') || null;
+    }
+
+    function populateGradeSelect(selectId, db, headers, countId) {
+        const gradeCol = getGradeColumn(headers);
+        const select = document.getElementById(selectId);
+        const current = select.value;
+        select.innerHTML = '<option value="">전체</option>';
+        if (gradeCol) {
+            const grades = [...new Set(db.map(item => (item.data[gradeCol] || '').trim()).filter(Boolean))].sort();
+            grades.forEach(g => {
+                const opt = document.createElement('option');
+                opt.value = g;
+                opt.textContent = g;
+                select.appendChild(opt);
+            });
+        }
+        // 이전 선택 유지
+        if ([...select.options].some(o => o.value === current)) select.value = current;
+        // 카운트 표시
+        document.getElementById(countId).innerText = db.length;
+    }
+
+    function applyGradeFilter(section) {
+        const selectId = 'gradeSelect' + section;
+        const bodyId = 'masterBody' + section;
+        const countId = 'gradeCount' + section;
+        const headers = section === 'A' ? window.headersA : window.headersB;
+        const gradeCol = getGradeColumn(headers);
+        const selected = document.getElementById(selectId).value;
+
+        let count = 0;
+        document.querySelectorAll('#' + bodyId + ' tr').forEach(row => {
+            if (!selected) {
+                row.classList.remove('hidden-row');
+                count++;
+            } else {
+                const grade = row.getAttribute('data-grade') || '';
+                const show = grade.includes(selected);
+                row.classList.toggle('hidden-row', !show);
+                if (show) count++;
+            }
+        });
+        document.getElementById(countId).innerText = count;
+    }
+
     function renderAll() {
         renderHeader('masterHeaderA', window.headersA);
         renderHeader('masterHeaderB', window.headersB);
         renderMaster();
+        populateGradeSelect('gradeSelectA', window.dbA, window.headersA, 'gradeCountA');
+        populateGradeSelect('gradeSelectB', window.dbB, window.headersB, 'gradeCountB');
     }
 
     function renderHeader(id, hList) {
@@ -403,7 +503,9 @@
         if (!db || !headers || headers.length === 0)
             return '<tr><td colspan="20" style="padding:40px; color:#bbb; text-align:center;">데이터를 불러와주세요.</td></tr>';
 
+        const gradeCol = getGradeColumn(headers);
         return db.map(item => {
+            const grade = gradeCol ? (item.data[gradeCol] || '') : '';
             const cells = headers.map(h => {
                 const raw = item.data[h] || '-';
                 const dv = formatDisplayValue(h, raw);
@@ -414,7 +516,7 @@
                 return `<td title="${dv}" style="${style}">${dv}</td>`;
             }).join('');
             const prefix = listType ? `<td style="background:#f9f9f9; font-weight:700; color:var(--dark-blue)">${listType}</td>` : '';
-            return `<tr data-listtype="${listType || ''}">${prefix}${cells}</tr>`;
+            return `<tr data-listtype="${listType || ''}" data-grade="${grade}">${prefix}${cells}</tr>`;
         }).join('');
     }
 
