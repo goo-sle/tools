@@ -274,8 +274,17 @@
             font-weight: 700;
             white-space: nowrap;
             box-shadow: 0 2px 0 #c7cde0;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.15s;
         }
+        .data-table th:hover { background: #eaecf5; }
         .data-table th:last-child { border-right: 1px solid var(--border); }
+        .sort-icon { display: inline-block; margin-left: 5px; font-size: 10px; opacity: 0.3; transition: opacity 0.15s; }
+        .data-table th.sort-asc  { background: #eef2ff; color: var(--dark-blue); }
+        .data-table th.sort-desc { background: #eef2ff; color: var(--dark-blue); }
+        .data-table th.sort-asc  .sort-icon,
+        .data-table th.sort-desc .sort-icon { opacity: 1; }
         .data-table td {
             border-top: 1px solid var(--border);
             border-left: 1px solid var(--border);
@@ -388,6 +397,13 @@
     window.dbB = [];
     window.headersA = [];
     window.headersB = [];
+    window.origDbA = [];
+    window.origDbB = [];
+    window.origSearchRows = [];
+    window.searchHList = [];
+    window.sortStateA = { colIndex: -1, state: 0 };
+    window.sortStateB = { colIndex: -1, state: 0 };
+    window.sortStateSearch = { colIndex: -1, state: 0 };
 
     async function syncWithGoogleSheet() {
         const btn = document.querySelector('.btn-sync');
@@ -402,6 +418,10 @@
             window.headersB = (json.headersB || []).slice(0, 16);
             window.dbA = json.listA || [];
             window.dbB = json.listB || [];
+            window.origDbA = [...window.dbA];
+            window.origDbB = [...window.dbB];
+            window.sortStateA = { colIndex: -1, state: 0 };
+            window.sortStateB = { colIndex: -1, state: 0 };
 
             updateCountBadge('countA', window.dbA.length);
             updateCountBadge('countB', window.dbB.length);
@@ -467,16 +487,124 @@
     }
 
     function renderAll() {
-        renderHeader('masterHeaderA', window.headersA);
-        renderHeader('masterHeaderB', window.headersB);
+        renderHeader('masterHeaderA', window.headersA, 'A');
+        renderHeader('masterHeaderB', window.headersB, 'B');
         renderMaster();
         populateGradeSelect('gradeSelectA', window.dbA, window.headersA, 'gradeCountA');
         populateGradeSelect('gradeSelectB', window.dbB, window.headersB, 'gradeCountB');
     }
 
-    function renderHeader(id, hList) {
+    function renderHeader(id, hList, section) {
         if (!hList || hList.length === 0) return;
-        document.getElementById(id).innerHTML = `<tr>${hList.map(h => `<th>${h}</th>`).join('')}</tr>`;
+        const cells = hList.map((h, i) =>
+            `<th onclick="sortMasterTable('${section}',${i})">${h}<span class="sort-icon">⇅</span></th>`
+        ).join('');
+        document.getElementById(id).innerHTML = `<tr>${cells}</tr>`;
+    }
+
+    function sortMasterTable(section, colIndex) {
+        const s = section === 'A' ? window.sortStateA : window.sortStateB;
+        const origDb  = section === 'A' ? window.origDbA  : window.origDbB;
+        const headers = section === 'A' ? window.headersA : window.headersB;
+        const headerId = 'masterHeader' + section;
+        const bodyId   = 'masterBody'   + section;
+
+        s.state = (s.colIndex === colIndex) ? (s.state + 1) % 3 : 1;
+        s.colIndex = colIndex;
+
+        // 헤더 아이콘 초기화
+        document.getElementById(headerId).querySelectorAll('th').forEach((th, i) => {
+            th.classList.remove('sort-asc', 'sort-desc');
+            const icon = th.querySelector('.sort-icon');
+            if (icon) icon.textContent = '⇅';
+        });
+
+        let sorted;
+        if (s.state === 0) {
+            sorted = [...origDb];
+        } else {
+            const h  = headers[colIndex];
+            const th = document.getElementById(headerId).querySelectorAll('th')[colIndex];
+            const icon = th.querySelector('.sort-icon');
+            sorted = [...origDb].sort((a, b) => {
+                const va = a.data[h] || '', vb = b.data[h] || '';
+                const na = parseFloat(va), nb = parseFloat(vb);
+                const cmp = (!isNaN(na) && !isNaN(nb)) ? na - nb : String(va).localeCompare(String(vb), 'ko');
+                return s.state === 1 ? cmp : -cmp;
+            });
+            if (s.state === 1) { th.classList.add('sort-asc');  if (icon) icon.textContent = '▲'; }
+            else               { th.classList.add('sort-desc'); if (icon) icon.textContent = '▼'; }
+        }
+
+        if (section === 'A') window.dbA = sorted;
+        else                 window.dbB = sorted;
+
+        document.getElementById(bodyId).innerHTML = buildRows(sorted, headers, '');
+        applyGradeFilter(section);
+    }
+
+    function sortSearchTable(colIndex) {
+        const s = window.sortStateSearch;
+        const hList = window.searchHList;
+
+        s.state = (s.colIndex === colIndex) ? (s.state + 1) % 3 : 1;
+        s.colIndex = colIndex;
+
+        // 헤더 아이콘 초기화
+        document.getElementById('searchHeader').querySelectorAll('th').forEach(th => {
+            th.classList.remove('sort-asc', 'sort-desc');
+            const icon = th.querySelector('.sort-icon');
+            if (icon) icon.textContent = '⇅';
+        });
+
+        let sorted;
+        if (s.state === 0) {
+            sorted = [...window.origSearchRows];
+        } else {
+            const th   = document.getElementById('searchHeader').querySelectorAll('th')[colIndex];
+            const icon = th ? th.querySelector('.sort-icon') : null;
+            // colIndex 0 = 구분, 1~ = hList
+            sorted = [...window.origSearchRows].sort((a, b) => {
+                let va, vb;
+                if (colIndex === 0) { va = a.listType || ''; vb = b.listType || ''; }
+                else { const h = hList[colIndex - 1]; va = a.data[h] || ''; vb = b.data[h] || ''; }
+                const na = parseFloat(va), nb = parseFloat(vb);
+                const cmp = (!isNaN(na) && !isNaN(nb)) ? na - nb : String(va).localeCompare(String(vb), 'ko');
+                return s.state === 1 ? cmp : -cmp;
+            });
+            if (s.state === 1) { if (th) th.classList.add('sort-asc');  if (icon) icon.textContent = '▲'; }
+            else               { if (th) th.classList.add('sort-desc'); if (icon) icon.textContent = '▼'; }
+        }
+
+        // 검색 결과 다시 그리기 (현재 필터 상태 유지)
+        const activeFilter = document.querySelector('.filter-btn.active');
+        const filterType   = activeFilter ? activeFilter.id : 'filterAll';
+        const currentType  = filterType === 'filterBlack' ? '블랙/올리브' : filterType === 'filterOther' ? '기타등급' : '전체';
+
+        document.getElementById('searchResultBody').innerHTML = sorted.map(item => {
+            const cells = hList.map(h => {
+                const raw = item.data[h] || '-';
+                const dv  = formatDisplayValue(h, raw);
+                let style = '';
+                if (h === 'MID') style = 'color:red; font-weight:700;';
+                if (String(dv).includes('▲')) style = 'color:#e53935; font-weight:700;';
+                else if (String(dv).includes('▼')) style = 'color:var(--dark-blue); font-weight:700;';
+                return `<td title="${dv}" style="${style}">${dv}</td>`;
+            }).join('');
+            return `<tr data-listtype="${item.listType}">
+                <td style="font-weight:700; color:var(--dark-blue)">${item.listType}</td>
+                ${cells}
+            </tr>`;
+        }).join('');
+
+        // 필터 재적용
+        let count = 0;
+        document.querySelectorAll('#searchResultBody tr').forEach(row => {
+            const show = currentType === '전체' || row.getAttribute('data-listtype') === currentType;
+            row.classList.toggle('hidden-row', !show);
+            if (show) count++;
+        });
+        document.getElementById('visibleCount').innerText = count;
     }
 
     function switchType(type) {
@@ -562,8 +690,12 @@
         document.getElementById('visibleCount').innerText = foundRows.length;
 
         const hList = window.headersA.length > 0 ? window.headersA : window.headersB;
+        window.searchHList = hList;
+        window.origSearchRows = [...foundRows];
+        window.sortStateSearch = { colIndex: -1, state: 0 };
+
         document.getElementById('searchHeader').innerHTML =
-            `<tr><th style="width:80px;">구분</th>${hList.map(h => `<th>${h}</th>`).join('')}</tr>`;
+            `<tr><th onclick="sortSearchTable(0)" style="width:80px;">구분<span class="sort-icon">⇅</span></th>${hList.map((h, i) => `<th onclick="sortSearchTable(${i + 1})">${h}<span class="sort-icon">⇅</span></th>`).join('')}</tr>`;
 
         document.getElementById('searchResultBody').innerHTML = foundRows.map(item => {
             const cells = hList.map(h => {
