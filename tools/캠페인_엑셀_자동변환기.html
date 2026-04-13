@@ -177,7 +177,7 @@ input[type=date]:focus{border-color:var(--acc);}
   <div class="hdr-icon">📊</div>
   <div>
     <h1>캠페인 엑셀 자동 변환기</h1>
-    <p>접수 양식 업로드 → 대행사별 시트 개별 다운로드</p>
+    <p>접수 양식 업로드 → 대행사별 접수+주문 시트 다운로드</p>
   </div>
 
 </div>
@@ -187,7 +187,7 @@ input[type=date]:focus{border-color:var(--acc);}
 
   <!-- Upload -->
   <div class="panel">
-    <div class="ph"><span>📂</span><h2>접수 양식 업로드</h2><span class="m" style="margin-left:auto;"></span><div style="display:flex;gap:8px;margin-left:auto;"><button class="btn btn-d" style="font-size:11px;padding:5px 11px;" onclick="clearAll()">🗑 초기화</button><button class="btn btn-p btn-glow" style="font-size:11px;padding:5px 13px;" onclick="downloadAll()" id="dlAllBtn2">⚡ 전체 다운로드</button></div></div>
+    <div class="ph"><span>📂</span><h2>접수 양식 업로드</h2><span class="m" style="margin-left:auto;"></span><div style="display:flex;gap:8px;margin-left:auto;"><button class="btn btn-d" style="font-size:11px;padding:5px 11px;" onclick="clearAll()">🗑 초기화</button><button class="btn btn-s" style="font-size:11px;padding:5px 13px;" onclick="downloadAllSplit()" id="dlSplitBtn">📂 개별 다운로드</button><button class="btn btn-p btn-glow" style="font-size:11px;padding:5px 13px;" onclick="downloadAll()" id="dlAllBtn2">⚡ 전체 다운로드</button></div></div>
     <div class="pb">
       <div class="upz" id="upz">
         <input type="file" id="fi" accept=".xlsx,.xls"/>
@@ -261,7 +261,7 @@ input[type=date]:focus{border-color:var(--acc);}
 
   <!-- Download & Preview -->
   <div class="panel">
-    <div class="ph"><span>⬇️</span><h2>대행사별 개별 다운로드</h2><span class="m" id="agMeta">대행사 미설정</span></div>
+    <div class="ph"><span>⬇️</span><h2>대행사별 다운로드</h2><span class="m" id="agMeta">대행사 미설정</span></div>
 
     <div class="pgw" id="pgw">
       <div class="pgb"><div class="pgf" id="pgf"></div></div>
@@ -634,7 +634,7 @@ function refreshUI(){
   renderPreview(agencies);
 }
 
-// ── Download cards (대행사별 전체 다운로드 버튼 가로 나열) ──
+// ── Download cards (대행사별 개별/전체 다운로드 버튼) ──
 function renderDlCards(agencies){
   const el=document.getElementById('dlArea');
   const f=rows.filter(r=>r.name.trim());
@@ -642,10 +642,14 @@ function renderDlCards(agencies){
     el.innerHTML=`<div class="empty"><div class="ico">📭</div><p>데이터를 입력하면 대행사별 다운로드 버튼이 생성됩니다</p></div>`;
     return;
   }
-  const btns=agencies.map(ag=>`
-    <button class="ag-dl-all" style="font-size:12px;padding:8px 18px;" onclick="downloadAllForAgency('${escAttr(ag)}')">⚡ ${esc(ag)} 전체 다운로드</button>
+  const groups=agencies.map(ag=>`
+    <div style="display:flex;align-items:center;gap:6px;background:var(--sur2);border:1px solid var(--brd);border-radius:8px;padding:6px 10px;">
+      <span style="font-size:12px;font-weight:700;color:var(--tx);margin-right:2px;">${esc(ag)}</span>
+      <button class="ag-dl-all" style="font-size:11px;padding:5px 13px;" onclick="downloadForAgencySplit('${escAttr(ag)}')">📂 개별</button>
+      <button class="ag-dl-all" style="font-size:11px;padding:5px 13px;background:rgba(0,229,255,.18);border-color:rgba(0,229,255,.5);" onclick="downloadAllForAgency('${escAttr(ag)}')">⚡ 전체</button>
+    </div>
   `).join('');
-  el.innerHTML=`<div style="padding:14px;display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-start;">${btns}</div>`;
+  el.innerHTML=`<div style="padding:14px;display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-start;">${groups}</div>`;
 }
 
 function escAttr(s){ return String(s).replace(/'/g,"\\'"); }
@@ -666,21 +670,20 @@ function renderPreview(agencies){
     `<div class="stab ${i===0?'on':''}" onclick="switchAgTab('${escAttr(ag)}')" data-ag="${escAttr(ag)}">🏢 ${esc(ag)}</div>`
   ).join('');
 
-  // 각 대행사별 콘텐츠
+  // 각 대행사별 콘텐츠 (접수 + 주문 탭만)
   consEl.innerHTML=agencies.map((ag,i)=>{
     const agRows=rowsByAgency(ag);
-    const usedIds=new Set(); agRows.forEach(r=>r.products.forEach(mid=>usedIds.add(mid)));
-    const pSheets=ap().filter(p=>usedIds.has(p.id));
-    const sheetNames=['접수',...pSheets.map(p=>p.name)];
+    const sheetNames=['접수','주문'];
 
     const innerTabs=sheetNames.map((n,j)=>
-      `<div class="ag-ptab ${j===0?'on':''}" onclick="switchPTab('${escAttr(ag)}','${escAttr(n)}')" data-pt="${escAttr(n)}" data-ag-pt="${escAttr(ag)}">${n==='접수'?'📋 접수':'📄 '+n}</div>`
+      `<div class="ag-ptab ${j===0?'on':''}" onclick="switchPTab('${escAttr(ag)}','${escAttr(n)}')" data-pt="${escAttr(n)}" data-ag-pt="${escAttr(ag)}">${n==='접수'?'📋 접수':'📦 주문'}</div>`
     ).join('');
 
-    const innerCons=sheetNames.map((n,j)=>{
-      const d=n==='접수'?buildJusuPrev(agRows):buildProdPrev(agRows,n);
-      return `<div class="scon ${j===0?'on':''}" id="sc-${escAttr(ag)}-${escAttr(n)}" data-ag-con="${escAttr(ag)}">${prevTable(d)}</div>`;
-    }).join('');
+    const jumuData=buildJumuPrev(agRows);
+    const innerCons=[
+      `<div class="scon on" id="sc-${escAttr(ag)}-접수" data-ag-con="${escAttr(ag)}">${prevTable(buildJusuPrev(agRows))}</div>`,
+      `<div class="scon" id="sc-${escAttr(ag)}-주문" data-ag-con="${escAttr(ag)}">${prevTable(jumuData)}</div>`
+    ].join('');
 
     return `<div id="agcon-${i}" class="agcon" style="display:${i===0?'block':'none'}">
       <div class="ag-tabs-wrap"><div class="ag-ptabs" id="ptabs-${escAttr(ag)}">${innerTabs}</div></div>
@@ -721,8 +724,8 @@ function setPG(show,pct=0,lbl=''){
   document.getElementById('pgl').textContent=lbl;
 }
 
-// ── 개별 시트 다운로드 (대행사별) ──
-async function dlSheetForAgency(ag, label){
+// ── 개별 다운로드 (대행사별, 접수+주문 1파일) ──
+async function dlSheetForAgency(ag){
   const f=rowsByAgency(ag);
   if(!f.length){alert('해당 대행사의 데이터가 없습니다.');return;}
   setPG(true,20,'생성 중...');
@@ -730,18 +733,40 @@ async function dlSheetForAgency(ag, label){
   try{
     const wb=XLSX.utils.book_new();
     const realAg=ag==='(대행사 미지정)'?'':ag;
-    if(label==='접수') buildJusuSheet(wb,f);
-    else{ const p=prods.find(x=>x.name===label); if(p) buildProdSheet(wb,f,p); }
+    buildJusuSheet(wb,f);
+    buildJumuSheet(wb,f);
     setPG(true,85,'저장 중...');
     await sleep(40);
-    XLSX.writeFile(wb, fname(realAg, label));
+    XLSX.writeFile(wb, realAg ? `${realAg}-주문서.xlsx` : `주문서-${shortD()}.xlsx`);
     setPG(true,100,'완료 ✅'); await sleep(700);
   }catch(e){alert('오류: '+e.message);}
   finally{setPG(false);}
 }
 
-// ── 대행사별 전체 다운로드 ──
+// ── 대행사별 전체 다운로드 (접수+주문 시트 1개 파일) ──
 async function downloadAllForAgency(ag){
+  const f=rowsByAgency(ag);
+  if(!f.length){alert('해당 대행사의 데이터가 없습니다.');return;}
+  const realAg=ag==='(대행사 미지정)'?'':ag;
+
+  try{
+    setPG(true,20,`[${ag}] 접수 시트 생성 중...`);
+    await sleep(60);
+    const wb=XLSX.utils.book_new();
+    buildJusuSheet(wb,f);
+    setPG(true,60,`[${ag}] 주문 시트 생성 중...`);
+    await sleep(60);
+    buildJumuSheet(wb,f);
+    setPG(true,90,'저장 중...');
+    await sleep(40);
+    XLSX.writeFile(wb, realAg ? `${realAg}-주문서.xlsx` : `주문서-${shortD()}.xlsx`);
+    setPG(true,100,`[${ag}] 완료 ✅`); await sleep(1000);
+  }catch(e){alert('오류: '+e.message);}
+  finally{setPG(false);}
+}
+
+// ── 대행사별 개별 다운로드 (접수 + 상품별 파일 분리) ──
+async function downloadForAgencySplit(ag){
   const f=rowsByAgency(ag);
   if(!f.length){alert('해당 대행사의 데이터가 없습니다.');return;}
   const usedIds=new Set(); f.forEach(r=>r.products.forEach(mid=>usedIds.add(mid)));
@@ -767,11 +792,11 @@ async function downloadAllForAgency(ag){
   finally{setPG(false);}
 }
 
-// ── 전체 일괄 다운로드 (모든 대행사) ──
-async function downloadAll(){
+// ── 전체 개별 다운로드 (모든 대행사, 상품별 파일 분리) ──
+async function downloadAllSplit(){
   const agencies=getAgencies();
   if(!agencies.length){alert('데이터를 입력해주세요.');return;}
-  const btn=document.getElementById('dlAllBtn2');
+  const btn=document.getElementById('dlSplitBtn');
   if(btn) btn.disabled=true;
 
   try{
@@ -805,6 +830,33 @@ async function downloadAll(){
       }
     }
     setPG(true,100,`전체 ${agencies.length}개 대행사 · ${totalFiles}개 파일 다운로드 완료 ✅`);
+    await sleep(1500);
+  }catch(e){alert('오류: '+e.message);}
+  finally{if(btn) btn.disabled=false; setPG(false);}
+}
+
+// ── 전체 일괄 다운로드 (모든 대행사, 대행사당 1파일) ──
+async function downloadAll(){
+  const agencies=getAgencies();
+  if(!agencies.length){alert('데이터를 입력해주세요.');return;}
+  const btn=document.getElementById('dlAllBtn2');
+  if(btn) btn.disabled=true;
+
+  try{
+    for(let i=0;i<agencies.length;i++){
+      const ag=agencies[i];
+      const f=rowsByAgency(ag);
+      const realAg=ag==='(대행사 미지정)'?'':ag;
+
+      setPG(true,Math.round(100*i/agencies.length),`[${ag}] 생성 중...`);
+      await sleep(60);
+      const wb=XLSX.utils.book_new();
+      buildJusuSheet(wb,f);
+      buildJumuSheet(wb,f);
+      XLSX.writeFile(wb, realAg ? `${realAg}-주문서.xlsx` : `주문서-${shortD()}.xlsx`);
+      await sleep(300);
+    }
+    setPG(true,100,`전체 ${agencies.length}개 대행사 · ${agencies.length}개 파일 완료 ✅`);
     await sleep(1500);
   }catch(e){alert('오류: '+e.message);}
   finally{if(btn) btn.disabled=false; setPG(false);}
@@ -895,7 +947,7 @@ function buildJusuSheet(wb,f){
   XLSX.utils.book_append_sheet(wb,ws,'접수');
 }
 
-// ── XLSX: product sheet ──
+// ── XLSX: product sheet (개별 다운로드용 — 상품별 1파일) ──
 function buildProdSheet(wb,f,prod){
   const ws={};
   const pRows=f.filter(r=>r.products.includes(prod.id));
@@ -922,6 +974,47 @@ function buildProdSheet(wb,f,prod){
   ws['!ref']=XLSX.utils.encode_range({s:{r:0,c:0},e:{r:lr,c:8}});
   ws['!cols']=[{wch:10},{wch:22},{wch:44},{wch:14},{wch:18},{wch:8},{wch:6},{wch:13},{wch:52}];
   XLSX.utils.book_append_sheet(wb,ws,prod.name);
+}
+
+// ── XLSX: 주문 sheet (헤더 1개 + 상품별 행 누적) ──
+function buildJumuSheet(wb,f){
+  const ws={};
+  const AP=ap();
+  const usedIds=new Set(); f.forEach(r=>r.products.forEach(id=>usedIds.add(id)));
+  const pList=AP.filter(p=>usedIds.has(p.id));
+
+  const headers=['상품등급명','업체명','URL','MID','순위키워드','일 목표','일 수','예약일','검색키워드'];
+
+  // 헤더 행 (row 0)
+  headers.forEach((h,ci)=>{
+    const fill=h==='검색키워드'?'DC2626':'1F2937';
+    sc(ws,0,ci,h,{font:{bold:true,color:{rgb:'FFFFFF'}},fill});
+  });
+
+  let curRow=1;
+  pList.forEach((prod)=>{
+    const pRows=f.filter(r=>r.products.includes(prod.id));
+    pRows.forEach((r)=>{
+      const asgn=ap().filter(p=>r.products.includes(p.id));
+      const alloc=allocate(asgn, r.dailyTarget);
+      const pp=alloc[prod.id]??0;
+      const prodColor=prod.color.replace('#','');
+      const row=[prod.name,r.name,r.url,r.mid,r.keyword,pp,r.days,null,r.searchKeywords];
+      row.forEach((v,ci)=>{
+        if(ci===7){ scDate(ws,curRow,7,r.startDate); return; }
+        sc(ws,curRow,ci,v,{
+          align:[0,1,2,4,8].includes(ci)?'left':'center',
+          font:ci===0?{color:{rgb:prodColor},bold:true}:{}
+        });
+      });
+      curRow++;
+    });
+  });
+
+  if(curRow<2) curRow=2;
+  ws['!ref']=XLSX.utils.encode_range({s:{r:0,c:0},e:{r:curRow-1,c:8}});
+  ws['!cols']=[{wch:10},{wch:22},{wch:44},{wch:14},{wch:18},{wch:8},{wch:6},{wch:13},{wch:52}];
+  XLSX.utils.book_append_sheet(wb,ws,'주문');
 }
 
 // ── 분배 계산 (B안: 각 상품 고정값 먼저 차감, 나머지를 나머지 상품이 비율로 분배) ──
@@ -968,6 +1061,23 @@ function buildProdPrev(f, pname){
     return {'상품등급명':pname,'업체명':r.name,'URL':r.url,'MID':r.mid,
       '순위키워드':r.keyword,'일 목표':pp,'일 수':r.days,'예약일':r.startDate,'검색키워드':r.searchKeywords};
   });
+}
+function buildJumuPrev(f){
+  const AP=ap();
+  const usedIds=new Set(); f.forEach(r=>r.products.forEach(id=>usedIds.add(id)));
+  const pList=AP.filter(p=>usedIds.has(p.id));
+  const result=[];
+  pList.forEach((prod)=>{
+    const pRows=f.filter(r=>r.products.includes(prod.id));
+    pRows.forEach(r=>{
+      const asgn=ap().filter(p=>r.products.includes(p.id));
+      const alloc=allocate(asgn, r.dailyTarget);
+      const pp=alloc[prod.id]??0;
+      result.push({'상품등급명':prod.name,'업체명':r.name,'URL':r.url,'MID':r.mid,
+        '순위키워드':r.keyword,'일 목표':pp,'일 수':r.days,'예약일':r.startDate,'검색키워드':r.searchKeywords});
+    });
+  });
+  return result;
 }
 </script>
 </body>
