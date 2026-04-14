@@ -214,7 +214,7 @@
             flex-shrink: 0;
         }
         .grade-filter-bar label {
-            font-size: 12px;
+            font-size: 15px;
             font-weight: 700;
             color: #666;
             white-space: nowrap;
@@ -224,7 +224,7 @@
             padding: 0 10px;
             border: 1.5px solid var(--border);
             border-radius: 8px;
-            font-size: 12px;
+            font-size: 15px;
             font-family: inherit;
             color: #333;
             background: white;
@@ -347,8 +347,8 @@
     </div>
 
     <div class="type-selector">
-        <button id="btnTypeA" class="type-btn active" onclick="switchType('A')">📂 블랙/올리브 <span id="countA" class="count-badge" style="margin-left:4px;">0건</span></button>
-        <button id="btnTypeB" class="type-btn"        onclick="switchType('B')">📂 기타등급 <span id="countB" class="count-badge" style="margin-left:4px;">0건</span></button>
+        <button id="btnTypeA" class="type-btn active" onclick="switchType('A')">📂 블랙/올리브</button>
+        <button id="btnTypeB" class="type-btn"        onclick="switchType('B')">📂 기타등급</button>
     </div>
 
 </div><!-- /sticky-top -->
@@ -423,8 +423,6 @@
             window.sortStateA = { colIndex: -1, state: 0 };
             window.sortStateB = { colIndex: -1, state: 0 };
 
-            updateCountBadge('countA', window.dbA.length);
-            updateCountBadge('countB', window.dbB.length);
             renderAll();
             alert("동기화 완료!");
         } catch (e) {
@@ -435,8 +433,8 @@
         }
     }
 
-    function updateCountBadge(id, count) {
-        document.getElementById(id).innerText = count + "건";
+    function stripGrade(val) {
+        return (val || '').replace(/\(\d+\)/g, '').trim();
     }
 
     function getGradeColumn(headers) {
@@ -449,7 +447,7 @@
         const current = select.value;
         select.innerHTML = '<option value="">전체</option>';
         if (gradeCol) {
-            const grades = [...new Set(db.map(item => (item.data[gradeCol] || '').trim()).filter(Boolean))].sort();
+            const grades = [...new Set(db.map(item => stripGrade(item.data[gradeCol] || '')).filter(Boolean))].sort();
             grades.forEach(g => {
                 const opt = document.createElement('option');
                 opt.value = g;
@@ -584,7 +582,7 @@
         document.getElementById('searchResultBody').innerHTML = sorted.map(item => {
             const cells = hList.map(h => {
                 const raw = item.data[h] || '-';
-                const dv  = formatDisplayValue(h, raw);
+                const dv  = h === '등급' ? (stripGrade(raw) || '-') : formatDisplayValue(h, raw);
                 let style = '';
                 if (h === 'MID') style = 'color:red; font-weight:700;';
                 if (String(dv).includes('▲')) style = 'color:#e53935; font-weight:700;';
@@ -629,10 +627,10 @@
 
         const gradeCol = getGradeColumn(headers);
         return db.map(item => {
-            const grade = gradeCol ? (item.data[gradeCol] || '') : '';
+            const grade = gradeCol ? stripGrade(item.data[gradeCol] || '') : '';
             const cells = headers.map(h => {
                 const raw = item.data[h] || '-';
-                const dv = formatDisplayValue(h, raw);
+                const dv = h === '등급' ? (stripGrade(raw) || '-') : formatDisplayValue(h, raw);
                 let style = '';
                 if (h === 'MID') style = 'color:var(--main-green); font-weight:700;';
                 if (String(dv).includes('▲')) style = 'color:#e53935; font-weight:700;';
@@ -700,7 +698,7 @@
         document.getElementById('searchResultBody').innerHTML = foundRows.map(item => {
             const cells = hList.map(h => {
                 const raw = item.data[h] || '-';
-                const dv = formatDisplayValue(h, raw);
+                const dv = h === '등급' ? (stripGrade(raw) || '-') : formatDisplayValue(h, raw);
                 let style = '';
                 if (h === 'MID') style = 'color:red; font-weight:700;';
                 if (String(dv).includes('▲')) style = 'color:#e53935; font-weight:700;';
