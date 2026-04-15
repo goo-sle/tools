@@ -68,8 +68,9 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--tx);
 .ratio-item{background:var(--sur2);border:1px solid var(--brd);border-radius:8px;padding:7px 10px;display:flex;align-items:center;gap:7px;}
 .ratio-item .ri-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
 .ratio-item .ri-name{font-size:11px;font-weight:700;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.ratio-item input[type=number]{width:54px;background:transparent;border:1px solid var(--brd);border-radius:5px;color:var(--tx);padding:3px 6px;font-size:12px;font-family:'JetBrains Mono',monospace;outline:none;text-align:center;transition:border-color .15s;}
+.ratio-item input[type=number]{width:54px;background:transparent;border:1px solid var(--brd);border-radius:5px;color:var(--tx);padding:3px 6px;font-size:12px;font-family:'JetBrains Mono',monospace;outline:none;text-align:center;transition:border-color .15s;-moz-appearance:textfield;}
 .ratio-item input[type=number]:focus{border-color:var(--acc);}
+.ratio-item input[type=number]::-webkit-outer-spin-button,.ratio-item input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
 .ratio-note{font-size:11px;color:var(--txd);font-family:'JetBrains Mono',monospace;text-align:right;}
 .ratio-note.ok{color:var(--grn);}
 .ratio-note.ng{color:var(--red);}
@@ -207,7 +208,7 @@ input[type=date]:focus{border-color:var(--acc);}
   </div>
 
   <!-- Product Settings Modal -->
-  <div class="modal-bg" id="modalBg" style="display:none;" onclick="if(event.target===this)closeModal()">
+  <div class="modal-bg" id="modalBg" style="display:none;">
     <div class="modal">
       <div class="modal-hdr">
         <div class="ps-dot" id="mdot" style="width:14px;height:14px;"></div>
@@ -391,7 +392,7 @@ function openModal(id) {
     <div class="ratio-item">
       <div class="ri-dot" style="background:${q.color}"></div>
       <span class="ri-name" style="color:${q.color}">${esc(q.name)}</span>
-      <input type="number" min="1" max="10" step="1" value="${Math.min(10,Math.max(1,q.ratio))}" id="ratio-${q.id}"
+      <input type="number" step="any" value="${q.ratio}" id="ratio-${q.id}"
         oninput="updateRatioNote()" />
     </div>`).join('');
 
@@ -403,11 +404,12 @@ function updateRatioNote() {
   const actives = ap();
   const sum = actives.reduce((s,q)=>{
     const el = document.getElementById(`ratio-${q.id}`);
-    return s + (el ? (parseInt(el.value)||0) : q.ratio);
+    return s + (el ? (parseFloat(el.value)||0) : q.ratio);
   }, 0);
+  const rounded = Math.round(sum * 10) / 10;
   const note = document.getElementById('ratioNote');
-  note.textContent = `합계: ${sum}`;
-  note.className = 'ratio-note ' + (sum===10?'ok':'ng');
+  note.textContent = `합계: ${rounded}`;
+  note.className = 'ratio-note ' + (rounded===10?'ok':'ng');
 }
 
 function closeModal() {
@@ -424,11 +426,12 @@ function saveModal() {
   const actives = ap();
   const sum = actives.reduce((s,q)=>{
     const el = document.getElementById(`ratio-${q.id}`);
-    return s + (el ? (parseInt(el.value)||0) : q.ratio);
+    return s + (el ? (parseFloat(el.value)||0) : q.ratio);
   }, 0);
-  if (sum > 10) {
+  const rounded = Math.round(sum * 10) / 10;
+  if (rounded !== 10) {
     const note = document.getElementById('ratioNote');
-    note.textContent = `합계: ${sum} — 합계가 10을 초과할 수 없습니다`;
+    note.textContent = `합계: ${rounded} — 합계가 정확히 10이어야 합니다`;
     note.className = 'ratio-note ng';
     return;
   }
@@ -436,7 +439,7 @@ function saveModal() {
   // 비율 저장
   actives.forEach(q=>{
     const el = document.getElementById(`ratio-${q.id}`);
-    if(el) q.ratio = Math.min(10, Math.max(1, parseInt(el.value)||1));
+    if(el) q.ratio = Math.round((parseFloat(el.value)||0) * 10) / 10;
   });
 
   closeModal();
