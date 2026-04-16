@@ -552,6 +552,13 @@
             sorted = [...origDb].sort((a, b) => {
                 const va = a.data[h] ?? '', vb = b.data[h] ?? '';
                 const na = parseFloat(va), nb = parseFloat(vb);
+                if (h === '등락') {
+                    const emptyA = va === '' || va === '-' || isNaN(na) || na === 0;
+                    const emptyB = vb === '' || vb === '-' || isNaN(nb) || nb === 0;
+                    if (emptyA && emptyB) return 0;
+                    if (emptyA) return 1;
+                    if (emptyB) return -1;
+                }
                 const cmp = (!isNaN(na) && !isNaN(nb)) ? na - nb : String(va).localeCompare(String(vb), 'ko');
                 return s.state === 1 ? cmp : -cmp;
             });
@@ -588,10 +595,17 @@
             const icon = th ? th.querySelector('.sort-icon') : null;
             // colIndex 0 = 구분, 1~ = hList
             sorted = [...window.origSearchRows].sort((a, b) => {
-                let va, vb;
+                let va, vb, h = null;
                 if (colIndex === 0) { va = a.listType || ''; vb = b.listType || ''; }
-                else { const h = hList[colIndex - 1]; va = a.data[h] ?? ''; vb = b.data[h] ?? ''; }
+                else { h = hList[colIndex - 1]; va = a.data[h] ?? ''; vb = b.data[h] ?? ''; }
                 const na = parseFloat(va), nb = parseFloat(vb);
+                if (h === '등락') {
+                    const emptyA = va === '' || va === '-' || isNaN(na) || na === 0;
+                    const emptyB = vb === '' || vb === '-' || isNaN(nb) || nb === 0;
+                    if (emptyA && emptyB) return 0;
+                    if (emptyA) return 1;
+                    if (emptyB) return -1;
+                }
                 const cmp = (!isNaN(na) && !isNaN(nb)) ? na - nb : String(va).localeCompare(String(vb), 'ko');
                 return s.state === 1 ? cmp : -cmp;
             });
