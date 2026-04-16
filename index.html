@@ -432,7 +432,7 @@
               <a href="https://docs.google.com/spreadsheets/d/1Ia3CcylXPF-Y4f2V6qBiVHmRf85vSPiJ43v9GnQPB2c/edit?usp=sharing" target="_blank" rel="noopener noreferrer" class="link-card sheet" data-pipeline="ranking">
                 <span class="material-symbols-outlined">reorder</span><span>♠️ 영업점 순위 분류</span>
               </a>
-              <a href="https://docs.google.com/spreadsheets/d/1zUjR04Cr__GxpWi2rVUsfF9sdTYhRxUXN2IZir8MMmU/edit?usp=sharing" target="_blank" rel="noopener noreferrer" class="link-card new-stat">
+              <a href="https://docs.google.com/spreadsheets/d/1zUjR04Cr__GxpWi2rVUsfF9sdTYhRxUXN2IZir8MMmU/edit?usp=sharing" target="_blank" rel="noopener noreferrer" class="link-card new-stat" data-stats="hireward">
                 <span class="material-symbols-outlined">sensors</span><span>📡 Hi 리워드 통계</span>
               </a>
             </div>
@@ -597,11 +597,9 @@
       return yy + mm + dd;
     }
 
-    const pipelineRef = ref(db, 'ha/pipeline/allDone');
-    onValue(pipelineRef, (snapshot) => {
-      const val = snapshot.val();
+    function applyCardBadge(selector, val) {
       const today = getTodayYYMMDD();
-      document.querySelectorAll('[data-pipeline="ranking"]').forEach(card => {
+      document.querySelectorAll(selector).forEach(card => {
         const existing = card.querySelector('.badge');
         if (val === today) {
           if (!existing) {
@@ -614,7 +612,13 @@
           if (existing) existing.remove();
         }
       });
-    });
+    }
+
+    // 순위 파이프라인 완료 배지
+    onValue(ref(db, 'ha/pipeline/allDone'), (snap) => applyCardBadge('[data-pipeline="ranking"]', snap.val()));
+
+    // Hi 리워드 통계 배지
+    onValue(ref(db, 'ha/stats/hireward'), (snap) => applyCardBadge('[data-stats="hireward"]', snap.val()));
   </script>
 
   <script>
