@@ -248,6 +248,7 @@
 
     /* ── 링크 카드 ── */
     .link-card {
+      position: relative;
       display: flex; flex-direction: column; align-items: center; justify-content: center;
       padding: 13px 8px; background: #fff;
       border: 1px solid var(--border-color); border-radius: 12px;
@@ -289,8 +290,8 @@
     .tool-button .badge { margin-left: auto; }
     #sidebar.collapsed .tool-button .badge { display: none; }
 
-    /* 카드 인라인 배지 */
-    .link-card .badge { margin-left: 4px; font-size: 8px; }
+    /* 카드 코너 배지 */
+    .link-card .badge { position: absolute; top: 6px; right: 7px; font-size: 8px; }
 
     .sidebar-footer {
       padding: 10px 16px; border-top: 1px solid var(--border-color);
@@ -598,11 +599,10 @@
         const existing = card.querySelector('.badge');
         if (val === today) {
           if (!existing) {
-            const labelSpan = card.querySelector('span:last-child');
             const badge = document.createElement('span');
             badge.className = 'badge update';
             badge.textContent = 'UPDATE';
-            labelSpan.appendChild(badge);
+            card.appendChild(badge);
           }
         } else {
           if (existing) existing.remove();
