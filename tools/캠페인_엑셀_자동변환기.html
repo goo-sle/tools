@@ -162,6 +162,7 @@ input[type=date]:focus{border-color:var(--acc);}
 /* product groups */
 .pg-btn{display:inline-flex;align-items:center;gap:7px;background:var(--sur2);border:1.5px solid var(--brd);border-radius:8px;padding:5px 8px 5px 12px;cursor:pointer;transition:all .2s;user-select:none;}
 .pg-btn:hover{border-color:rgba(255,255,255,.2);background:#222230;}
+.pg-btn.active-g{border-color:var(--acc);background:rgba(0,229,255,.06);box-shadow:0 0 10px rgba(0,229,255,.15);}
 .pg-name-wrap{display:flex;flex-direction:column;align-items:flex-start;gap:2px;}
 .pg-name{font-size:12px;font-weight:700;line-height:1.2;}
 .pg-active-ind{height:2px;width:100%;background:var(--acc);border-radius:1px;box-shadow:0 0 6px rgba(0,229,255,.5);}
@@ -351,7 +352,7 @@ function renderGroups() {
       const col = p ? p.color : '#555';
       return `<span style="width:7px;height:7px;border-radius:50%;background:${col};opacity:${s.active?1:.2};display:inline-block;flex-shrink:0;"></span>`;
     }).join('');
-    return `<div class="pg-btn" onclick="applyGroup('${g.id}')" title="${g.state.filter(s=>s.active).map(s=>prods.find(x=>x.id===s.id)?.name||s.id).join(', ')}">
+    return `<div class="pg-btn${isActive?' active-g':''}" onclick="applyGroup('${g.id}')" title="${g.state.filter(s=>s.active).map(s=>prods.find(x=>x.id===s.id)?.name||s.id).join(', ')}">
       <div class="pg-name-wrap">
         <span class="pg-name">${esc(g.name)}</span>
         ${isActive ? '<div class="pg-active-ind"></div>' : ''}
