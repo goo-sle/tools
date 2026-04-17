@@ -325,6 +325,7 @@ let prods = [
 
 let rows = [], rid = 0;
 let groups = [];
+let activeGroupId = null;
 
 // ── Product Groups ──
 const GROUPS_KEY = '캠페인_prod_groups';
@@ -344,12 +345,13 @@ function renderGroups() {
     return;
   }
   wrap.innerHTML = groups.map(g => {
+    const isActive = g.id === activeGroupId;
     const dots = g.state.map(s => {
       const p = prods.find(x=>x.id===s.id);
       const col = p ? p.color : '#555';
       return `<span style="width:7px;height:7px;border-radius:50%;background:${col};opacity:${s.active?1:.2};display:inline-block;flex-shrink:0;"></span>`;
     }).join('');
-    return `<div class="pg-btn" onclick="applyGroup('${g.id}')" title="${g.state.filter(s=>s.active).map(s=>prods.find(x=>x.id===s.id)?.name||s.id).join(', ')}">
+    return `<div class="pg-btn${isActive?' active-g':''}" onclick="applyGroup('${g.id}')" title="${g.state.filter(s=>s.active).map(s=>prods.find(x=>x.id===s.id)?.name||s.id).join(', ')}">
       <span class="pg-name">${esc(g.name)}</span>
       <span class="pg-dots">${dots}</span>
       <button class="pg-del" onclick="event.stopPropagation();deleteGroup('${g.id}')">✕</button>
@@ -376,6 +378,7 @@ function saveNewGroup() {
   renderGroups();
 }
 function deleteGroup(id) {
+  if (activeGroupId === id) activeGroupId = null;
   groups = groups.filter(g=>g.id!==id);
   saveGroupsLocal();
   renderGroups();
@@ -389,9 +392,17 @@ function applyGroup(id) {
     if(s.name)               p.name  = s.name;
     if(s.ver  !== undefined) p.ver   = s.ver;
   });
+  activeGroupId = id;
   rows.forEach(r => { r.products = r.products.filter(mid => prods.find(p=>p.id===mid&&p.active)); });
   renderPS(); renderGroups(); renderTable(); refreshUI();
   scheduleSave();
+}
+function updateActiveGroup() {
+  if (!activeGroupId) return;
+  const g = groups.find(x=>x.id===activeGroupId); if(!g) return;
+  g.state = prods.map(p => ({id:p.id, active:p.active, ratio:p.ratio, name:p.name, ver:p.ver}));
+  saveGroupsLocal();
+  renderGroups();
 }
 
 // ── utils ──
@@ -546,6 +557,7 @@ function saveModal() {
 
   closeModal();
   rows.forEach(r => { const c=document.getElementById(`tags-${r.id}`); if(c) c.innerHTML=tagsHtml(r); });
+  updateActiveGroup();
   renderPS(); renderTable(); refreshUI();
   scheduleSave();
 }
@@ -561,6 +573,7 @@ function toggleP(id) {
   const p = prods.find(x=>x.id===id); if(!p) return;
   p.active = !p.active;
   if (!p.active) rows.forEach(r => { r.products=r.products.filter(mid=>mid!==id); });
+  updateActiveGroup();
   renderPS(); renderTable(); refreshUI();
   scheduleSave();
 }
