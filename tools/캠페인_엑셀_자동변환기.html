@@ -876,6 +876,25 @@ function setPG(show,pct=0,lbl=''){
   document.getElementById('pgl').textContent=lbl;
 }
 
+// ── 대행사별 개별 다운로드 (접수+주문 1파일) ──
+async function dlSheetForAgency(ag){
+  const f=rowsByAgency(ag);
+  if(!f.length){alert('해당 대행사의 데이터가 없습니다.');return;}
+  setPG(true,20,'생성 중...');
+  await sleep(60);
+  try{
+    const wb=XLSX.utils.book_new();
+    const realAg=ag==='(대행사 미지정)'?'':ag;
+    buildJusuSheet(wb,f);
+    buildJumuSheet(wb,f);
+    setPG(true,85,'저장 중...');
+    await sleep(40);
+    XLSX.writeFile(wb, realAg ? `${realAg}-주문서.xlsx` : `주문서-${shortD()}.xlsx`);
+    setPG(true,100,'완료 ✅'); await sleep(700);
+  }catch(e){alert('오류: '+e.message);}
+  finally{setPG(false);}
+}
+
 // ── 대행사별 전체 다운로드 (접수+주문 시트 1개 파일) ──
 async function downloadAllForAgency(ag){
   const f=rowsByAgency(ag);
