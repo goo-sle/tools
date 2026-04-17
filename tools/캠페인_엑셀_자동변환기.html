@@ -340,7 +340,7 @@ function deactivateGroup() {
     });
     rows.forEach(r=>{ r.products=(r.products||[]).filter(mid=>prods.find(p=>p.id===mid&&p.active)); });
   }
-  renderPS(); renderGroups(); renderTable(); refreshUI();
+  renderPS(); renderTable(); refreshUI();
   scheduleSave();
 }
 
@@ -415,7 +415,7 @@ function applyGroup(id) {
   activeGroupId = id;
   const activeIds = prods.filter(p=>p.active).map(p=>p.id);
   rows.forEach(r => { r.products = activeIds.slice(); });
-  renderPS(); renderGroups(); renderTable(); refreshUI();
+  renderPS(); renderTable(); refreshUI();
   scheduleSave();
 }
 function startRenameGroup(id) {
@@ -456,7 +456,6 @@ const esc = v => String(v??'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').repl
 const sleep = ms => new Promise(r=>setTimeout(r,ms));
 const hex2rgb = h => { const v=h.replace('#',''); return `${parseInt(v.slice(0,2),16)},${parseInt(v.slice(2,4),16)},${parseInt(v.slice(4,6),16)}`; };
 
-// ── 대행사 목록 추출 (순서 유지, 중복 제거) ──
 function getAgencies(){
   const seen=new Set(), list=[];
   rows.filter(r=>r.name.trim()).forEach(r=>{
@@ -466,21 +465,17 @@ function getAgencies(){
   return list;
 }
 
-// 대행사별 행 필터
 function rowsByAgency(ag){
   return rows.filter(r=>r.name.trim() && (r.agency.trim()||'(대행사 미지정)')===ag);
 }
 
-// ── Firebase 연동 (index.html 부모 창 방식) ──
-
-// 저장: 부모 창의 saveSlotData 호출
+// ── Firebase (부모 창 연동) ──
 function saveToServer() {
   if (window.parent && window.parent.saveSlotData) {
     window.parent.saveSlotData({ prods, rows, groups });
   }
 }
 
-// 불러오기: 부모 창에서 이 함수를 직접 호출해줌
 window.applySlotData = function(data) {
   if (!data) return;
   if (data.prods && Array.isArray(data.prods)) {
@@ -503,7 +498,6 @@ window.applySlotData = function(data) {
   refreshUI();
 };
 
-// 저장 트리거: 상품/행 변경 시 자동 저장 (debounce)
 let _saveTimer = null;
 function scheduleSave() {
   clearTimeout(_saveTimer);
@@ -551,7 +545,6 @@ function openModal(id) {
   document.getElementById('mName').value = p.name;
   document.getElementById('mVer').value = p.ver||'';
 
-  // 분배 비율 그리드: 활성화된 상품들
   const actives = ap();
   const grid = document.getElementById('ratioGrid');
   grid.innerHTML = actives.map(q=>`
@@ -588,7 +581,6 @@ function saveModal() {
   p.name = document.getElementById('mName').value.trim() || p.name;
   p.ver  = document.getElementById('mVer').value.trim();
 
-  // 비율 합계 검증
   const actives = ap();
   const sum = actives.reduce((s,q)=>{
     const el = document.getElementById(`ratio-${q.id}`);
@@ -602,7 +594,6 @@ function saveModal() {
     return;
   }
 
-  // 비율 저장
   actives.forEach(q=>{
     const el = document.getElementById(`ratio-${q.id}`);
     if(el) q.ratio = Math.round((parseFloat(el.value)||0) * 10) / 10;
@@ -613,13 +604,6 @@ function saveModal() {
   if (activeGroupId) updateActiveGroup(); else saveDefaultState();
   renderPS(); renderTable(); refreshUI();
   scheduleSave();
-}
-
-function renameP(id, name) {
-  const p = prods.find(x=>x.id===id); if(!p) return;
-  p.name = name;
-  rows.forEach(r => { const c=document.getElementById(`tags-${r.id}`); if(c) c.innerHTML=tagsHtml(r); });
-  refreshUI();
 }
 
 function toggleP(id) {
@@ -753,7 +737,6 @@ function renderTable(){
     tb.appendChild(tr);
   });
   updateStats();
-  // 5개 초과 시 스크롤
   const wrap = document.getElementById('tbWrap');
   if(wrap) wrap.style.maxHeight = rows.length > 5 ? '320px' : 'none';
 }
@@ -893,25 +876,6 @@ function setPG(show,pct=0,lbl=''){
   document.getElementById('pgl').textContent=lbl;
 }
 
-// ── 개별 다운로드 (대행사별, 접수+주문 1파일) ──
-async function dlSheetForAgency(ag){
-  const f=rowsByAgency(ag);
-  if(!f.length){alert('해당 대행사의 데이터가 없습니다.');return;}
-  setPG(true,20,'생성 중...');
-  await sleep(60);
-  try{
-    const wb=XLSX.utils.book_new();
-    const realAg=ag==='(대행사 미지정)'?'':ag;
-    buildJusuSheet(wb,f);
-    buildJumuSheet(wb,f);
-    setPG(true,85,'저장 중...');
-    await sleep(40);
-    XLSX.writeFile(wb, realAg ? `${realAg}-주문서.xlsx` : `주문서-${shortD()}.xlsx`);
-    setPG(true,100,'완료 ✅'); await sleep(700);
-  }catch(e){alert('오류: '+e.message);}
-  finally{setPG(false);}
-}
-
 // ── 대행사별 전체 다운로드 (접수+주문 시트 1개 파일) ──
 async function downloadAllForAgency(ag){
   const f=rowsByAgency(ag);
@@ -1048,13 +1012,11 @@ function sc(ws,r,c,v,s={}){
   };
 }
 
-// 날짜 전용 셀 (YYYY-MM-DD 문자열 → 엑셀 날짜 서식)
 function scDate(ws,r,c,dateStr,s={}){
   if(!dateStr){sc(ws,r,c,'',s);return;}
   const [y,m,d]=String(dateStr).split('-').map(Number);
   const jsDate=new Date(y,m-1,d);
-  // 엑셀 시리얼 날짜 계산 (1900.1.1 기준, leap bug 보정)
-  const base=new Date(1899,11,30);
+  const base=new Date(1899,11,30); // 1900 leap bug 보정
   const serial=Math.round((jsDate-base)/(86400*1000));
   const addr=XLSX.utils.encode_cell({r,c});
   ws[addr]={
@@ -1087,7 +1049,7 @@ function buildJusuSheet(wb,f){
 
   headers.forEach((h,ci)=>{
     const prod=AP.find(p=>p.name===h);
-    const fill=prod?prod.color.replace('#',''):(ci<9?'D97706':'374151'); // ci 기준 11 -> 9로 변경
+    const fill=prod?prod.color.replace('#',''):(ci<9?'D97706':'374151');
     sc(ws,3,ci,h,{font:{bold:true,color:{rgb:'FFFFFF'}},fill,align:'center'});
   });
 
@@ -1116,7 +1078,6 @@ function buildJusuSheet(wb,f){
   XLSX.utils.book_append_sheet(wb,ws,'접수');
 }
 
-// ── XLSX: product sheet (개별 다운로드용 — 상품별 1파일) ──
 function buildProdSheet(wb,f,prod){
   const ws={};
   const pRows=f.filter(r=>r.products.includes(prod.id));
@@ -1154,7 +1115,6 @@ function buildJumuSheet(wb,f){
 
   const headers=['상품등급명','업체명','URL','MID','순위키워드','일 목표','일 수','예약일','검색키워드'];
 
-  // 헤더 행 (row 0)
   headers.forEach((h,ci)=>{
     const fill=h==='검색키워드'?'DC2626':'1F2937';
     sc(ws,0,ci,h,{font:{bold:true,color:{rgb:'FFFFFF'}},fill});
@@ -1186,25 +1146,16 @@ function buildJumuSheet(wb,f){
   XLSX.utils.book_append_sheet(wb,ws,'주문');
 }
 
-// ── 분배 계산 (B안: 각 상품 고정값 먼저 차감, 나머지를 나머지 상품이 비율로 분배) ──
-// asgn: 켜진 상품 배열, target: 일 목표, prod: 계산할 상품
-// 방식: 라벤더=2면 2 고정 차감 → 잔여를 블랙:올리브 5:5로 분배
-// 즉, 각 상품의 몫 = prod.ratio / 전체ratio합 * target (단순 비율, B안 본질은 이것과 동일)
-// → "자기 ratio만큼 target에서 떼온다"는 건 사실 ratio/sum*target과 같으므로
-// B안의 핵심: 합이 target이 되도록 Largest Remainder로 보정
+// ratio 비율로 target 분배, Largest Remainder로 정수 오차 보정
 function allocate(asgn, target) {
   if (!asgn.length) return {};
   const totalW = asgn.reduce((s,p)=>s+p.ratio, 0) || 1;
-  // 각 상품의 정확한 몫 (소수)
   const exact = asgn.map(p => target * p.ratio / totalW);
-  // floor 값과 나머지
   let floors = exact.map(v => Math.floor(v));
   const remainders = exact.map((v,i) => v - floors[i]);
-  // 남은 수량을 나머지 큰 순서대로 배분 (Largest Remainder)
   let leftover = target - floors.reduce((s,v)=>s+v, 0);
   const order = remainders.map((_,i)=>i).sort((a,b)=>remainders[b]-remainders[a]);
   for (let i = 0; i < leftover; i++) floors[order[i]]++;
-  // id→값 맵 반환
   const map = {};
   asgn.forEach((p,i) => { map[p.id] = floors[i]; });
   return map;
@@ -1219,16 +1170,6 @@ function buildJusuPrev(f){
     return {'업체명':r.name,'URL':r.url,'MID':r.mid,'순위키워드':r.keyword,
       '일수':r.days,'시작일':r.startDate,'일 목표':r.dailyTarget,'분류':asgn.length,
       '검색키워드':r.searchKeywords,...pc,'합계':r.dailyTarget*r.days};
-  });
-}
-function buildProdPrev(f, pname){
-  const prod=prods.find(p=>p.name===pname); if(!prod) return [];
-  return f.filter(r=>r.products.includes(prod.id)).map(r=>{
-    const asgn=ap().filter(p=>r.products.includes(p.id));
-    const alloc=allocate(asgn, r.dailyTarget);
-    const pp=alloc[prod.id]??0;
-    return {'상품등급명':pname,'업체명':r.name,'URL':r.url,'MID':r.mid,
-      '순위키워드':r.keyword,'일 목표':pp,'일 수':r.days,'예약일':r.startDate,'검색키워드':r.searchKeywords};
   });
 }
 function buildJumuPrev(f){
