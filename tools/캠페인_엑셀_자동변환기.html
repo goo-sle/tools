@@ -351,9 +351,9 @@ function renderGroups() {
       const col = p ? p.color : '#555';
       return `<span style="width:7px;height:7px;border-radius:50%;background:${col};opacity:${s.active?1:.2};display:inline-block;flex-shrink:0;"></span>`;
     }).join('');
-    return `<div class="pg-btn${isActive?' active-g':''}" onclick="applyGroup('${g.id}')" title="${g.state.filter(s=>s.active).map(s=>prods.find(x=>x.id===s.id)?.name||s.id).join(', ')}">
+    return `<div class="pg-btn${isActive?' active-g':''}" data-gid="${g.id}" onclick="applyGroup('${g.id}')" ondblclick="event.stopPropagation();startRenameGroup('${g.id}')" title="${g.state.filter(s=>s.active).map(s=>prods.find(x=>x.id===s.id)?.name||s.id).join(', ')}">
       <div class="pg-name-wrap">
-        <span class="pg-name" ondblclick="event.stopPropagation();startRenameGroup('${g.id}',this)">${esc(g.name)}</span>
+        <span class="pg-name">${esc(g.name)}</span>
         <span class="pg-dots">${dots}</span>
       </div>
       <button class="pg-del" onclick="event.stopPropagation();deleteGroup('${g.id}')">✕</button>
@@ -399,21 +399,25 @@ function applyGroup(id) {
   renderPS(); renderGroups(); renderTable(); refreshUI();
   scheduleSave();
 }
-function startRenameGroup(id, el) {
+function startRenameGroup(id) {
   const g = groups.find(x=>x.id===id); if(!g) return;
+  const el = document.querySelector(`.pg-btn[data-gid="${id}"] .pg-name`);
+  if(!el) return;
   const inp = document.createElement('input');
   inp.type = 'text';
   inp.value = g.name;
   inp.maxLength = 24;
   inp.style.cssText = 'background:transparent;border:none;border-bottom:1px solid var(--acc);color:var(--tx);font-size:12px;font-weight:700;font-family:inherit;outline:none;width:80px;padding:0;';
+  let committed = false;
   const commit = () => {
+    if (committed) return; committed = true;
     const v = inp.value.trim();
     if (v) g.name = v;
     saveGroupsLocal();
     renderGroups();
   };
   inp.onblur = commit;
-  inp.onkeydown = e => { if(e.key==='Enter'){inp.blur();} if(e.key==='Escape'){renderGroups();} e.stopPropagation(); };
+  inp.onkeydown = e => { if(e.key==='Enter'){inp.blur();} if(e.key==='Escape'){committed=true;renderGroups();} e.stopPropagation(); };
   el.replaceWith(inp);
   inp.focus(); inp.select();
 }
