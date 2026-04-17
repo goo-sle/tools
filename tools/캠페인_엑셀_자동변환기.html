@@ -326,6 +326,28 @@ let prods = [
 let rows = [], rid = 0;
 let groups = [];
 let activeGroupId = null;
+let defaultProds = null;
+const DEFAULT_KEY = '캠페인_default_prods';
+
+function saveDefaultState() {
+  defaultProds = prods.map(p=>({id:p.id,active:p.active,ratio:p.ratio,name:p.name,ver:p.ver}));
+  try { localStorage.setItem(DEFAULT_KEY, JSON.stringify(defaultProds)); } catch(e){}
+}
+function loadDefaultState() {
+  try { const s=localStorage.getItem(DEFAULT_KEY); if(s) defaultProds=JSON.parse(s); } catch(e){}
+}
+function deactivateGroup() {
+  activeGroupId = null;
+  if (defaultProds) {
+    defaultProds.forEach(s => {
+      const p=prods.find(x=>x.id===s.id); if(!p) return;
+      p.active=s.active; p.ratio=s.ratio; p.name=s.name; p.ver=s.ver;
+    });
+    rows.forEach(r=>{ r.products=r.products.filter(mid=>prods.find(p=>p.id===mid&&p.active)); });
+  }
+  renderPS(); renderGroups(); renderTable(); refreshUI();
+  scheduleSave();
+}
 
 // ── Product Groups ──
 const GROUPS_KEY = '캠페인_prod_groups';
@@ -387,6 +409,7 @@ function deleteGroup(id) {
 }
 function applyGroup(id) {
   const g = groups.find(x=>x.id===id); if(!g) return;
+  if (!activeGroupId) saveDefaultState();
   g.state.forEach(s => {
     const p = prods.find(x=>x.id===s.id); if(!p) return;
     p.active = s.active;
@@ -489,10 +512,17 @@ function scheduleSave() {
 // ── Init ──
 window.onload = () => {
   loadGroups();
+  loadDefaultState();
   renderPS();
   renderGroups();
   addRow(); addRow(); addRow();
   setupUpload();
+  // 그룹 영역 밖 클릭 시 그룹 해제
+  document.addEventListener('click', e => {
+    if (!activeGroupId) return;
+    if (e.target.closest('[data-gid]') || e.target.closest('#addGroupForm') || e.target.closest('#modalBg')) return;
+    deactivateGroup();
+  });
   // 부모 창에게 데이터 요청
   if (window.parent && window.parent.loadSlotData) {
     window.parent.loadSlotData();
@@ -581,7 +611,7 @@ function saveModal() {
 
   closeModal();
   rows.forEach(r => { const c=document.getElementById(`tags-${r.id}`); if(c) c.innerHTML=tagsHtml(r); });
-  updateActiveGroup();
+  if (activeGroupId) updateActiveGroup(); else saveDefaultState();
   renderPS(); renderTable(); refreshUI();
   scheduleSave();
 }
@@ -597,7 +627,7 @@ function toggleP(id) {
   const p = prods.find(x=>x.id===id); if(!p) return;
   p.active = !p.active;
   if (!p.active) rows.forEach(r => { r.products=r.products.filter(mid=>mid!==id); });
-  updateActiveGroup();
+  if (activeGroupId) updateActiveGroup(); else saveDefaultState();
   renderPS(); renderTable(); refreshUI();
   scheduleSave();
 }
