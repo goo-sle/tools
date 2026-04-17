@@ -395,7 +395,7 @@ function applyGroup(id) {
     if(s.ver  !== undefined) p.ver   = s.ver;
   });
   activeGroupId = id;
-  rows.forEach(r => { r.products = r.products.filter(mid => prods.find(p=>p.id===mid&&p.active)); });
+  rows.forEach(r => { r.products = (r.products||[]).filter(mid => prods.find(p=>p.id===mid&&p.active)); });
   renderPS(); renderGroups(); renderTable(); refreshUI();
   scheduleSave();
 }
@@ -471,7 +471,10 @@ window.applySlotData = function(data) {
     groups = data.groups;
   }
   if (data.rows && Array.isArray(data.rows)) {
-    rows = data.rows;
+    rows = data.rows.map(r => ({
+      ...r,
+      products: Array.isArray(r.products) ? r.products : ap().map(p => p.id)
+    }));
     if (rows.length > 0) {
       rid = Math.max(...rows.map(r => r.id ?? 0)) + 1;
     }
@@ -598,7 +601,7 @@ function renameP(id, name) {
 function toggleP(id) {
   const p = prods.find(x=>x.id===id); if(!p) return;
   p.active = !p.active;
-  if (!p.active) rows.forEach(r => { r.products=r.products.filter(mid=>mid!==id); });
+  if (!p.active) rows.forEach(r => { r.products=(r.products||[]).filter(mid=>mid!==id); });
   if (activeGroupId) updateActiveGroup();
   renderPS(); renderTable(); refreshUI();
   scheduleSave();
@@ -733,7 +736,7 @@ function renderTable(){
 
 function tagsHtml(row){
   return `<div class="tw2">${ap().map(p=>{
-    const on=row.products.includes(p.id);
+    const on=(row.products||[]).includes(p.id);
     const rgb=hex2rgb(p.color);
     return `<label class="ptag ${on?'':'off'}" style="color:${p.color};border-color:${on?p.color:`rgba(${rgb},.3)`};background:rgba(${rgb},${on?.16:.05})">
       <input type="checkbox" ${on?'checked':''} onchange="togProd(${row.id},'${p.id}',this.checked)"/>
