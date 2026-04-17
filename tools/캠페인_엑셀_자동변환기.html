@@ -699,10 +699,10 @@ function loadFile(file) {
       }
 
       if(newRows.length){
-        rows=newRows; renderTable(); refreshUI();
+        rows=[...rows.filter(r=>r.name.trim()), ...newRows]; renderTable(); refreshUI();
         const z=document.getElementById('upz');
         z.classList.add('ok');
-        z.querySelector('h3').textContent=`✅ ${file.name} — ${newRows.length}개 업체 로드됨`;
+        z.querySelector('h3').textContent=`✅ ${file.name} — ${newRows.length}개 업체 추가됨 (총 ${rows.filter(r=>r.name.trim()).length}개)`;
         scheduleSave();
       } else { alert('데이터를 찾을 수 없습니다. 헤더 행을 확인하세요.'); }
     } catch(err){ alert('파일 오류: '+err.message); }
