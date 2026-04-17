@@ -353,7 +353,7 @@ function renderGroups() {
     }).join('');
     return `<div class="pg-btn${isActive?' active-g':''}" onclick="applyGroup('${g.id}')" title="${g.state.filter(s=>s.active).map(s=>prods.find(x=>x.id===s.id)?.name||s.id).join(', ')}">
       <div class="pg-name-wrap">
-        <span class="pg-name">${esc(g.name)}</span>
+        <span class="pg-name" ondblclick="event.stopPropagation();startRenameGroup('${g.id}',this)">${esc(g.name)}</span>
         <span class="pg-dots">${dots}</span>
       </div>
       <button class="pg-del" onclick="event.stopPropagation();deleteGroup('${g.id}')">✕</button>
@@ -398,6 +398,24 @@ function applyGroup(id) {
   rows.forEach(r => { r.products = r.products.filter(mid => prods.find(p=>p.id===mid&&p.active)); });
   renderPS(); renderGroups(); renderTable(); refreshUI();
   scheduleSave();
+}
+function startRenameGroup(id, el) {
+  const g = groups.find(x=>x.id===id); if(!g) return;
+  const inp = document.createElement('input');
+  inp.type = 'text';
+  inp.value = g.name;
+  inp.maxLength = 24;
+  inp.style.cssText = 'background:transparent;border:none;border-bottom:1px solid var(--acc);color:var(--tx);font-size:12px;font-weight:700;font-family:inherit;outline:none;width:80px;padding:0;';
+  const commit = () => {
+    const v = inp.value.trim();
+    if (v) g.name = v;
+    saveGroupsLocal();
+    renderGroups();
+  };
+  inp.onblur = commit;
+  inp.onkeydown = e => { if(e.key==='Enter'){inp.blur();} if(e.key==='Escape'){renderGroups();} e.stopPropagation(); };
+  el.replaceWith(inp);
+  inp.focus(); inp.select();
 }
 function updateActiveGroup() {
   if (!activeGroupId) return;
