@@ -431,8 +431,8 @@
             const json = await response.json();
             if (!json.success) { alert(json.msg); return; }
 
-            window.headersA = (json.headersA || []).slice(0, 16);
-            window.headersB = (json.headersB || []).slice(0, 16);
+            window.headersA = (json.headersA || []).slice(0, 17);
+            window.headersB = (json.headersB || []).slice(0, 17);
             window.dbA = json.listA || [];
             window.dbB = json.listB || [];
             window.origDbA = [...window.dbA];
