@@ -483,7 +483,8 @@ function saveToServer() {
 window.applySlotData = function(data) {
   if (!data) return;
   if (data.prods && Array.isArray(data.prods)) {
-    prods = data.prods;
+    const savedMap = new Map(data.prods.map(p => [p.id, p]));
+    prods = prods.map(def => savedMap.has(def.id) ? savedMap.get(def.id) : def);
   }
   if (data.groups && Array.isArray(data.groups)) {
     groups = data.groups;
