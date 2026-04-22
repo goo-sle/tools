@@ -616,6 +616,13 @@ function saveModal() {
     if(el) q.ratio = Math.round((parseFloat(el.value)||0) * 10) / 10;
   });
 
+  // 모든 그룹의 해당 상품 이름/버전 동기화
+  groups.forEach(g => {
+    const gs = g.state.find(s => s.id === p.id);
+    if (gs) { gs.name = p.name; gs.ver = p.ver; }
+  });
+  saveGroupsLocal();
+
   _modalFromToggle = false;
   closeModal();
   rows.forEach(r => { const c=document.getElementById(`tags-${r.id}`); if(c) c.innerHTML=tagsHtml(r); });
