@@ -50,6 +50,19 @@
       font-size: 14px;
     }
 
+    .section-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-main);
+      margin: 0 0 16px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid var(--border);
+    }
+
+    .divider {
+      margin: 28px 0 0;
+    }
+
     .main-card {
       background: var(--card-bg);
       padding: 24px;
@@ -129,6 +142,10 @@
     button#convert:hover { background: var(--primary-hover); }
     button#clear { background: #f1f5f9; color: var(--secondary); }
     button#clear:hover { background: #e2e8f0; }
+    button#split { background: #0ea5e9; color: white; }
+    button#split:hover { background: #0284c7; }
+    button#split-clear { background: #f1f5f9; color: var(--secondary); }
+    button#split-clear:hover { background: #e2e8f0; }
 
     #multi-results {
       margin-top: 24px;
@@ -193,6 +210,29 @@
       margin-top: 8px;
       color: var(--text-sub);
     }
+
+    #split-info {
+      font-size: 12px;
+      text-align: right;
+      margin-top: 8px;
+      color: var(--text-sub);
+    }
+
+    #split-result-area {
+      height: 160px;
+      font-family: monospace;
+      font-size: 13px;
+      background: #f8fafc;
+      color: #334155;
+      line-height: 1.6;
+      margin-top: 16px;
+    }
+
+    .split-copy-row {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 8px;
+    }
   </style>
 </head>
 <body>
@@ -204,6 +244,7 @@
   </header>
 
   <div class="main-card">
+    <div class="section-title">줄바꿈 → 쉼표 병합</div>
     <label>키워드 입력</label>
     <textarea id="keywords" placeholder="키워드를 한 줄에 하나씩 입력하세요..."></textarea>
 
@@ -225,6 +266,21 @@
   </div>
 
   <div id="multi-results"></div>
+
+  <div class="main-card divider">
+    <div class="section-title">쉼표 → 세로 분리</div>
+    <label>쉼표로 구분된 키워드 입력</label>
+    <textarea id="split-keywords" style="height:80px;margin-bottom:16px;" placeholder="키워드1,키워드2,키워드3 형태로 입력하세요..."></textarea>
+    <div class="btn-group" style="max-width:260px;">
+      <button id="split">분리하기</button>
+      <button id="split-clear">초기화</button>
+    </div>
+    <div id="split-info"></div>
+    <textarea id="split-result-area" readonly placeholder="결과가 여기에 표시됩니다..."></textarea>
+    <div class="split-copy-row">
+      <button class="copy-btn" id="split-copy-btn" style="display:none;">복사</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -335,6 +391,32 @@
     multiResults.innerHTML = '';
     info.textContent = '';
   });
+
+  const splitKeywordsEl = document.getElementById('split-keywords');
+  const splitBtn = document.getElementById('split');
+  const splitClearBtn = document.getElementById('split-clear');
+  const splitResultArea = document.getElementById('split-result-area');
+  const splitInfo = document.getElementById('split-info');
+  const splitCopyBtn = document.getElementById('split-copy-btn');
+
+  function splitKeywords() {
+    const input = splitKeywordsEl.value.trim();
+    if (!input) return;
+    const keywords = input.split(',').map(s => s.trim()).filter(s => s.length > 0);
+    splitResultArea.value = keywords.join('\n');
+    splitInfo.textContent = `총 ${keywords.length}개 키워드`;
+    splitCopyBtn.style.display = 'inline-block';
+    splitCopyBtn.dataset.text = splitResultArea.value;
+  }
+
+  splitBtn.addEventListener('click', splitKeywords);
+  splitClearBtn.addEventListener('click', () => {
+    splitKeywordsEl.value = '';
+    splitResultArea.value = '';
+    splitInfo.textContent = '';
+    splitCopyBtn.style.display = 'none';
+  });
+  splitCopyBtn.addEventListener('click', () => copyWithEffect(splitCopyBtn, splitResultArea.value));
 </script>
 
 </body>

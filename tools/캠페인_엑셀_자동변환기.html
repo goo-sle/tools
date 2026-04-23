@@ -1199,9 +1199,9 @@ function buildJumuSheet(wb,f){
 // 찰리는 전체 키워드, 나머지(x1~x8)는 앞 4개만
 function kwForProd(keywords, prod) {
   if (!keywords) return '';
-  if (prod.id === 'charlie') return keywords;
   const parts = keywords.split(',').map(k => k.trim()).filter(k => k);
-  return parts.slice(0, 4).join(', ');
+  if (prod.id === 'charlie') return parts.join(',');
+  return parts.slice(0, 4).join(',');
 }
 
 // ratio 비율로 target 분배, Largest Remainder로 정수 오차 보정
