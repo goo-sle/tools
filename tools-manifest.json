@@ -3,7 +3,7 @@
   { "file": "tools/진행중_중복_체크.html",       "label": "💻 진행중 중복 체크",       "addedAt": "2026-04-02", "updatedAt": "2026-04-14" },
   { "file": "tools/10위_이내_키워드.html",       "label": "🔍 10위 이내 키워드",       "addedAt": "2026-03-05", "updatedAt": "2026-04-10" },
   { "file": "tools/미션_진행_상황판.html",       "label": "📒 미션 진행 상황판",       "addedAt": "2026-03-06", "updatedAt": "2026-04-14" },
-  { "file": "tools/키워드_쉼표_병합기.html",     "label": "⚡ 키워드 쉼표 병합기",     "addedAt": "2026-03-05", "updatedAt": "2026-04-02" },
+  { "file": "tools/키워드_쉼표_병합기.html",     "label": "⚡ 키워드 쉼표 병합기",     "addedAt": "2026-03-05", "updatedAt": "2026-04-23" },
   { "file": "tools/네이버_키워드_조합기.html",   "label": "🔑 네이버 키워드 조합기",   "addedAt": "2026-03-05", "updatedAt": "2026-04-02" },
   { "file": "tools/캠페인_엑셀_자동변환기.html", "label": "❇️ 캠페인 엑셀 자동변환기", "addedAt": "2026-03-30", "updatedAt": "2026-04-17" },
   { "file": "tools/플레이스_단가_계산기.html",   "label": "💰 플레이스 단가 계산기",   "addedAt": "2026-03-05", "updatedAt": "2026-04-13" },
