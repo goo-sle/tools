@@ -11,6 +11,7 @@
     :root {
       --primary: #6366f1;
       --primary-hover: #4f46e5;
+      --split-color: #0ea5e9;
       --secondary: #64748b;
       --bg: #f8fafc;
       --card-bg: #ffffff;
@@ -98,14 +99,9 @@
       resize: vertical;
     }
 
-    #keywords {
+    #keywords, #split-keywords {
       height: 120px;
       margin-bottom: 20px;
-    }
-
-    #split-keywords {
-      height: 120px;
-      margin-bottom: 16px;
     }
 
     .config-grid {
@@ -165,7 +161,7 @@
     button#convert:hover { background: var(--primary-hover); }
     button#clear { background: #f1f5f9; color: var(--secondary); }
     button#clear:hover { background: #e2e8f0; }
-    button#split { background: #0ea5e9; color: white; }
+    button#split { background: var(--split-color); color: white; }
     button#split:hover { background: #0284c7; }
     button#split-clear { background: #f1f5f9; color: var(--secondary); }
     button#split-clear:hover { background: #e2e8f0; }
@@ -175,27 +171,6 @@
       text-align: right;
       margin-top: 8px;
       color: var(--text-sub);
-    }
-
-    /* 분리 결과 영역 — 기본 숨김 */
-    #split-result-wrap {
-      display: none;
-      margin-top: 16px;
-    }
-
-    #split-result-area {
-      height: 160px;
-      font-family: monospace;
-      font-size: 13px;
-      background: #f8fafc;
-      color: #334155;
-      line-height: 1.6;
-    }
-
-    .split-copy-row {
-      display: flex;
-      justify-content: flex-end;
-      margin-top: 8px;
     }
 
     .copy-btn {
@@ -208,8 +183,13 @@
       flex: none;
     }
 
-    /* 병합 결과 */
-    #multi-results {
+    .copy-btn.split-copy {
+      background: #e0f2fe;
+      color: var(--split-color);
+    }
+
+    /* 결과 영역 */
+    #results {
       margin-top: 24px;
       display: flex;
       flex-direction: column;
@@ -237,6 +217,8 @@
       text-transform: uppercase;
     }
 
+    .group-title.split { color: var(--split-color); }
+
     .group-info-row {
       display: flex;
       align-items: center;
@@ -248,13 +230,16 @@
     .group-info-row input { width: 60px; height: 30px; padding: 4px 8px; font-size: 13px; }
 
     .result-area {
-      height: 60px;
       font-family: monospace;
       font-size: 13px;
       background: #f8fafc;
       color: #334155;
-      line-height: 1.4;
+      line-height: 1.5;
+      resize: vertical;
     }
+
+    .result-area.merge { height: 60px; }
+    .result-area.split { height: 200px; }
   </style>
 </head>
 <body>
@@ -300,51 +285,53 @@
         <button id="split-clear">초기화</button>
       </div>
       <div id="split-info"></div>
-
-      <div id="split-result-wrap">
-        <textarea id="split-result-area" readonly></textarea>
-        <div class="split-copy-row">
-          <button class="copy-btn" id="split-copy-btn">복사</button>
-        </div>
-      </div>
     </div>
   </div>
 
-  <div id="multi-results"></div>
+  <div id="results"></div>
 </div>
 
 <script>
-  const keywordsEl = document.getElementById('keywords');
-  const baseCountEl = document.getElementById('base-count');
-  const groupCountEl = document.getElementById('group-count');
-  const convertBtn = document.getElementById('convert');
-  const clearBtn = document.getElementById('clear');
-  const multiResults = document.getElementById('multi-results');
-  const info = document.getElementById('info');
+  const keywordsEl    = document.getElementById('keywords');
+  const baseCountEl   = document.getElementById('base-count');
+  const groupCountEl  = document.getElementById('group-count');
+  const convertBtn    = document.getElementById('convert');
+  const clearBtn      = document.getElementById('clear');
+  const info          = document.getElementById('info');
+
+  const splitKeywordsEl = document.getElementById('split-keywords');
+  const splitBtn        = document.getElementById('split');
+  const splitClearBtn   = document.getElementById('split-clear');
+  const splitInfo       = document.getElementById('split-info');
+
+  const results = document.getElementById('results');
 
   let globalKeywords = [];
   let groupSizes = [];
 
-  function parseKeywords(input){
+  function parseKeywords(input) {
     return input.split(/[\n\r]+/).map(s => s.trim()).filter(s => s.length > 0);
   }
 
-  function copyWithEffect(btn, text){
-    navigator.clipboard.writeText(text).then(()=>{
+  function copyWithEffect(btn, getText) {
+    const text = typeof getText === 'function' ? getText() : getText;
+    navigator.clipboard.writeText(text).then(() => {
       const original = btn.textContent;
-      btn.textContent = "완료 ✨";
-      btn.style.background = "#059669";
-      btn.style.color = "white";
-      setTimeout(()=>{
+      const origBg   = btn.style.background || '';
+      const origColor = btn.style.color || '';
+      btn.textContent = '완료 ✨';
+      btn.style.background = '#059669';
+      btn.style.color = 'white';
+      setTimeout(() => {
         btn.textContent = original;
-        btn.style.background = "#eff6ff";
-        btn.style.color = "var(--primary)";
+        btn.style.background = origBg;
+        btn.style.color = origColor;
       }, 1000);
     });
   }
 
   function calculateGroupSizes(total, base, groups) {
-    let arr = Array(groups).fill(0);
+    const arr = Array(groups).fill(0);
     let remain = total;
     for (let i = 0; i < groups; i++) {
       if (remain <= 0) break;
@@ -357,8 +344,7 @@
 
   function adjustAfterChange(index, newSize) {
     const total = globalKeywords.length;
-    const groups = groupSizes.length;
-    const base = Number(baseCountEl.value) || 1;
+    const base  = Number(baseCountEl.value) || 1;
     let used = 0;
     for (let i = 0; i <= index; i++) {
       used += (i === index) ? newSize : groupSizes[i];
@@ -366,7 +352,7 @@
     let remain = Math.max(0, total - used);
     const newArr = [...groupSizes];
     newArr[index] = newSize;
-    for (let i = index + 1; i < groups; i++) {
+    for (let i = index + 1; i < groupSizes.length; i++) {
       const assign = Math.min(base, remain);
       newArr[i] = assign;
       remain -= assign;
@@ -374,80 +360,99 @@
     groupSizes = newArr;
   }
 
-  function buildGroups(){
+  function buildMergeResults() {
     let html = '';
     let offset = 0;
     for (let i = 0; i < groupSizes.length; i++) {
       const size = groupSizes[i];
-      let blockArr = globalKeywords.slice(offset, offset + size);
-      const block = blockArr.join(',');
+      const block = globalKeywords.slice(offset, offset + size).join(',');
+      const safeBlock = block.replace(/"/g, '&quot;');
       html += `
         <div class="group-box">
           <div class="group-header">
-            <div class="group-title">GROUP ${i+1}</div>
-            <button class="copy-btn" data-text="${block}">복사</button>
+            <div class="group-title">GROUP ${i + 1}</div>
+            <button class="copy-btn" data-idx="${i}">복사</button>
           </div>
           <div class="group-info-row">
             <span>포함 개수:</span>
             <input type="number" class="group-size" min="0" value="${size}" data-idx="${i}" />
           </div>
-          <textarea class="result-area" readonly>${block}</textarea>
+          <textarea class="result-area merge" readonly>${block}</textarea>
         </div>`;
       offset += size;
     }
-    multiResults.innerHTML = html;
-    document.querySelectorAll(".copy-btn").forEach(btn => {
-      btn.addEventListener("click", () => copyWithEffect(btn, btn.dataset.text));
+    results.innerHTML = html;
+
+    results.querySelectorAll('.copy-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const ta = btn.closest('.group-box').querySelector('.result-area');
+        copyWithEffect(btn, () => ta.value);
+      });
     });
-    document.querySelectorAll(".group-size").forEach(inp => {
-      inp.addEventListener("change", e => {
+
+    results.querySelectorAll('.group-size').forEach(inp => {
+      inp.addEventListener('change', e => {
         adjustAfterChange(Number(e.target.dataset.idx), Number(e.target.value));
-        buildGroups();
+        buildMergeResults();
       });
     });
   }
 
-  function convert(){
+  function convert() {
     globalKeywords = parseKeywords(keywordsEl.value);
-    if(globalKeywords.length === 0) return;
+    if (globalKeywords.length === 0) return;
+    splitInfo.textContent = '';
     groupSizes = calculateGroupSizes(globalKeywords.length, Number(baseCountEl.value) || 1, Number(groupCountEl.value) || 1);
-    buildGroups();
+    buildMergeResults();
     info.textContent = `총 ${globalKeywords.length}개 키워드 / ${groupCountEl.value}개 그룹`;
+  }
+
+  function doSplit() {
+    const input = splitKeywordsEl.value.trim();
+    if (!input) return;
+    const keywords = input.split(',').map(s => s.trim()).filter(s => s.length > 0);
+    const resultText = keywords.join('\n');
+    const height = Math.max(120, Math.min(keywords.length * 26, 400));
+
+    globalKeywords = [];
+    groupSizes = [];
+    info.textContent = '';
+
+    results.innerHTML = `
+      <div class="group-box">
+        <div class="group-header">
+          <div class="group-title split">분리 결과</div>
+          <button class="copy-btn split-copy" id="split-copy-btn">복사</button>
+        </div>
+        <div class="group-info-row">
+          <span>키워드 ${keywords.length}개</span>
+        </div>
+        <textarea class="result-area split" style="height:${height}px" readonly>${resultText}</textarea>
+      </div>`;
+
+    splitInfo.textContent = `총 ${keywords.length}개 키워드`;
+
+    document.getElementById('split-copy-btn').addEventListener('click', e => {
+      const ta = e.target.closest('.group-box').querySelector('.result-area');
+      copyWithEffect(e.target, () => ta.value);
+    });
   }
 
   convertBtn.addEventListener('click', convert);
   clearBtn.addEventListener('click', () => {
     keywordsEl.value = '';
-    multiResults.innerHTML = '';
+    globalKeywords = [];
+    groupSizes = [];
+    results.innerHTML = '';
     info.textContent = '';
   });
 
-  // 분리하기
-  const splitKeywordsEl = document.getElementById('split-keywords');
-  const splitBtn = document.getElementById('split');
-  const splitClearBtn = document.getElementById('split-clear');
-  const splitResultWrap = document.getElementById('split-result-wrap');
-  const splitResultArea = document.getElementById('split-result-area');
-  const splitInfo = document.getElementById('split-info');
-  const splitCopyBtn = document.getElementById('split-copy-btn');
-
-  function splitKeywords() {
-    const input = splitKeywordsEl.value.trim();
-    if (!input) return;
-    const keywords = input.split(',').map(s => s.trim()).filter(s => s.length > 0);
-    splitResultArea.value = keywords.join('\n');
-    splitInfo.textContent = `총 ${keywords.length}개 키워드`;
-    splitResultWrap.style.display = 'block';
-  }
-
-  splitBtn.addEventListener('click', splitKeywords);
+  splitBtn.addEventListener('click', doSplit);
   splitClearBtn.addEventListener('click', () => {
     splitKeywordsEl.value = '';
-    splitResultArea.value = '';
     splitInfo.textContent = '';
-    splitResultWrap.style.display = 'none';
+    results.innerHTML = '';
   });
-  splitCopyBtn.addEventListener('click', () => copyWithEffect(splitCopyBtn, splitResultArea.value));
 </script>
 
 </body>
