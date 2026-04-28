@@ -404,12 +404,14 @@ function saveNewGroup() {
   saveGroupsLocal();
   hideAddGroup();
   renderGroups();
+  scheduleSave();
 }
 function deleteGroup(id) {
   if (activeGroupId === id) activeGroupId = null;
   groups = groups.filter(g=>g.id!==id);
   saveGroupsLocal();
   renderGroups();
+  scheduleSave();
 }
 function applyGroup(id) {
   const g = groups.find(x=>x.id===id); if(!g) return;
@@ -444,6 +446,7 @@ function startRenameGroup(id) {
     if (v) g.name = v;
     saveGroupsLocal();
     renderGroups();
+    scheduleSave();
   };
   inp.onblur = commit;
   inp.onkeydown = e => { if(e.key==='Enter'){inp.blur();} if(e.key==='Escape'){committed=true;renderGroups();} e.stopPropagation(); };
@@ -490,7 +493,7 @@ window.applySlotData = function(data) {
   if (!data) return;
   if (data.prods && Array.isArray(data.prods)) {
     const savedMap = new Map(data.prods.map(p => [p.id, p]));
-    prods = prods.map(def => savedMap.has(def.id) ? savedMap.get(def.id) : def);
+    prods = prods.map(def => savedMap.has(def.id) ? {...def, ...savedMap.get(def.id)} : def);
   }
   if (data.groups && Array.isArray(data.groups)) {
     groups = data.groups;
