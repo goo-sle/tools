@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>히든키워드 조회</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', -apple-system, sans-serif; background: #f0f2f5; color: #1a1a2e; min-height: 100vh; }
+
+  .layout { display: grid; grid-template-columns: 260px 1fr 340px; gap: 16px; padding: 20px; max-width: 1400px; margin: 0 auto; align-items: start; }
+
+  .card { background: #fff; border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); overflow: hidden; }
+  .card-header { background: #f8f9fb; padding: 12px 16px; border-bottom: 1px solid #e8eaf0; display: flex; align-items: center; justify-content: space-between; }
+  .card-title  { font-size: 13px; font-weight: 700; color: #2d3748; display: flex; align-items: center; gap: 6px; }
+  .card-body   { padding: 16px; }
+
+  label { display: block; font-size: 11px; font-weight: 600; color: #4a5568; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.4px; }
+  input[type="text"] { width: 100%; padding: 8px 10px; border: 1.5px solid #e2e8f0; border-radius: 7px; font-size: 13px; color: #2d3748; outline: none; transition: border-color 0.2s; margin-bottom: 10px; }
+  input[type="text"]:focus { border-color: #1565c0; }
+  input::placeholder { color: #a0aec0; }
+
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 5px; padding: 8px 14px; border-radius: 7px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; transition: all 0.15s; }
+  .btn-add    { background: #1565c0; color: #fff; width: 100%; margin-top: 2px; }
+  .btn-add:hover { background: #0d47a1; }
+  .btn-danger { background: #fff1f0; color: #e53e3e; border: 1.5px solid #fed7d7; padding: 4px 10px; font-size: 12px; border-radius: 6px; }
+  .btn-danger:hover { background: #ffe0de; }
+  .btn-sm { padding: 3px 8px; font-size: 11px; }
+  .btn-step1 { background: #1565c0; color: #fff; width: 100%; padding: 11px; font-size: 13px; font-weight: 800; border-radius: 8px; }
+  .btn-step1:hover  { background: #0d47a1; }
+  .btn-step2 { background: #2e7d32; color: #fff; width: 100%; padding: 11px; font-size: 13px; font-weight: 800; border-radius: 8px; margin-top: 8px; }
+  .btn-step2:hover  { background: #1b5e20; }
+  .btn-all   { background: #6a1b9a; color: #fff; width: 100%; padding: 11px; font-size: 13px; font-weight: 800; border-radius: 8px; margin-top: 8px; }
+  .btn-all:hover { background: #4a148c; }
+  .btn:disabled { background: #a0aec0 !important; cursor: not-allowed; }
+
+  /* URL 목록 */
+  .url-list { display: flex; flex-direction: column; gap: 6px; }
+  .url-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 10px; background: #f8f9fb; border: 1px solid #e8eaf0;
+    border-radius: 8px; font-size: 12px;
+  }
+  .url-item .url-name { font-weight: 700; color: #2d3748; flex-shrink: 0; min-width: 60px; }
+  .url-item .url-addr { color: #718096; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; font-size: 11px; }
+  .empty-msg { text-align: center; padding: 30px 16px; color: #a0aec0; font-size: 13px; }
+
+  /* 결과 카드들 */
+  .result-cards { display: flex; flex-direction: column; gap: 12px; }
+  .result-card {
+    background: #fff; border-radius: 10px; border: 1px solid #e8eaf0;
+    overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .rc-header {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 14px; background: #f8f9fb; border-bottom: 1px solid #e8eaf0;
+  }
+  .rc-name  { font-weight: 700; font-size: 13px; color: #2d3748; }
+  .rc-url   { font-size: 11px; color: #a0aec0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+  .rc-badge { padding: 2px 8px; border-radius: 100px; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+  .rc-badge.waiting  { background: #edf2f7; color: #718096; }
+  .rc-badge.running  { background: #e3f2fd; color: #1565c0; }
+  .rc-badge.done     { background: #c6f6d5; color: #276749; }
+  .rc-badge.fail     { background: #fed7d7; color: #c53030; }
+
+  .rc-body { padding: 0; }
+  .kw-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .kw-table th {
+    background: #f8f9fb; padding: 6px 10px; text-align: left;
+    font-size: 10px; font-weight: 700; color: #718096;
+    text-transform: uppercase; letter-spacing: 0.4px;
+    border-bottom: 1px solid #e8eaf0;
+  }
+  .kw-table td { padding: 6px 10px; border-bottom: 1px solid #f5f5f5; vertical-align: middle; }
+  .kw-table tr:last-child td { border-bottom: none; }
+  .kw-table tr:hover td { background: #fafbfc; }
+
+  .th-blue  { background: #dbeafe !important; color: #1d4ed8 !important; }
+  .th-green { background: #dcfce7 !important; color: #166534 !important; }
+  .td-kw    { font-weight: 600; color: #1a1a2e; }
+  .td-cnt   { color: #4a5568; }
+  .td-rank  { }
+  .rank-badge { display: inline-block; padding: 1px 7px; border-radius: 100px; font-size: 11px; font-weight: 700; }
+  .rank-1  { background: #fef9c3; color: #854d0e; }
+  .rank-3  { background: #dcfce7; color: #166534; }
+  .rank-10 { background: #e0f2fe; color: #0369a1; }
+  .rank-out{ background: #f1f5f9; color: #94a3b8; }
+
+  .step2-pending { color: #a0aec0; font-style: italic; font-size: 11px; }
+
+  /* 우측 패널 */
+  .right-panel { display: flex; flex-direction: column; gap: 14px; }
+
+  .summary-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 8px; margin-bottom: 14px; }
+  .sum-item { background: #f8f9fb; border-radius: 8px; padding: 10px 12px; text-align: center; }
+  .sum-label { font-size: 10px; font-weight: 700; color: #718096; text-transform: uppercase; }
+  .sum-value { font-size: 20px; font-weight: 800; color: #2d3748; margin-top: 3px; }
+  .sum-value.blue  { color: #1565c0; }
+  .sum-value.green { color: #2e7d32; }
+
+  .divider { border: none; border-top: 1px solid #e8eaf0; margin: 12px 0; }
+
+  .log-area {
+    background: #1a202c; border-radius: 8px; padding: 12px 14px; height: 280px;
+    overflow-y: auto; font-family: 'Consolas', monospace; font-size: 11.5px; line-height: 1.7;
+  }
+  .log-line    { display: flex; gap: 8px; }
+  .log-time    { color: #4a5568; flex-shrink: 0; }
+  .log-msg     { color: #e2e8f0; }
+  .log-success .log-msg { color: #68d391; }
+  .log-fail    .log-msg { color: #fc8181; }
+  .log-info    .log-msg { color: #63b3ed; }
+  .log-warn    .log-msg { color: #f6e05e; }
+
+  .progress-wrap { background: #e2e8f0; border-radius: 100px; height: 4px; overflow: hidden; display: none; }
+  .progress-bar  { height: 100%; background: linear-gradient(90deg, #1565c0, #2e7d32); border-radius: 100px; width: 0%; transition: width 0.3s; }
+
+  .badge { display: inline-block; padding: 2px 7px; border-radius: 100px; font-size: 11px; font-weight: 700; }
+  .badge-blue { background: #dbeafe; color: #1d4ed8; }
+
+  /* 엑셀 업로드 */
+  .excel-zone {
+    border: 2px dashed #bfdbfe; border-radius: 8px; padding: 12px; text-align: center;
+    cursor: pointer; transition: all 0.2s; background: #eff6ff; margin-top: 10px;
+  }
+  .excel-zone:hover, .excel-zone.drag-over { border-color: #1565c0; background: #dbeafe; }
+  .excel-zone .ez-icon { font-size: 22px; margin-bottom: 3px; }
+  .excel-zone .ez-text { font-size: 12px; font-weight: 600; color: #1565c0; }
+  .excel-zone .ez-hint { font-size: 11px; color: #a0aec0; margin-top: 2px; }
+  #excel-input { display: none; }
+
+  @media (max-width: 1100px) { .layout { grid-template-columns: 240px 1fr; } .right-panel { grid-column: 1 / -1; } }
+  @media (max-width: 700px)  { .layout { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<div class="layout">
+
+  <!-- 좌측: URL 입력 -->
+  <div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">🔗 URL 추가</span></div>
+      <div class="card-body">
+        <label>업체명 (선택)</label>
+        <input type="text" id="inp-name" placeholder="예: 강남 귀금속" />
+        <label>플레이스 URL</label>
+        <input type="text" id="inp-url" placeholder="https://m.place.naver.com/..." />
+        <button class="btn btn-add" onclick="addUrl()">➕ 추가</button>
+
+        <div style="border-top:1px solid #e8eaf0;margin:14px 0;"></div>
+
+        <div id="url-list" class="url-list">
+          <div class="empty-msg">등록된 URL이 없습니다</div>
+        </div>
+
+        <div class="excel-zone" id="excel-zone" onclick="document.getElementById('excel-input').click()">
+          <div class="ez-icon">📊</div>
+          <div class="ez-text">엑셀로 일괄 추가</div>
+          <div class="ez-hint">A: 업체명 / B: URL</div>
+        </div>
+        <input type="file" id="excel-input" accept=".xlsx,.xls" onchange="handleExcel(this.files[0])">
+      </div>
+    </div>
+  </div>
+
+  <!-- 중앙: 결과 -->
+  <div>
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">📊 조회 결과 <span class="badge badge-blue" id="result-count">0</span></span>
+        <button class="btn btn-danger btn-sm" onclick="clearResults()">결과 초기화</button>
+      </div>
+      <div class="card-body" style="padding:12px;">
+        <div id="result-cards" class="result-cards">
+          <div class="empty-msg">조회 결과가 여기에 표시됩니다</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 우측: 실행 -->
+  <div class="right-panel">
+    <div class="card">
+      <div class="card-header"><span class="card-title">⚡ 실행</span></div>
+      <div class="card-body">
+        <div class="summary-grid">
+          <div class="sum-item"><div class="sum-label">URL 수</div><div class="sum-value blue" id="sum-urls">0</div></div>
+          <div class="sum-item"><div class="sum-label">완료</div><div class="sum-value green" id="sum-done">0</div></div>
+        </div>
+        <hr class="divider">
+        <button class="btn btn-step1" id="btn-step1" onclick="runStep(1)" disabled>🔍 STEP 1 — 히든키워드 조회</button>
+        <button class="btn btn-step2" id="btn-step2" onclick="runStep(2)" disabled>📈 STEP 2 — 상위순위 조회</button>
+        <button class="btn btn-all"   id="btn-all"   onclick="runStep(0)" disabled>⚡ 통합 실행 (1→2)</button>
+        <div style="height:8px;"></div>
+        <div class="progress-wrap" id="progress-wrap"><div class="progress-bar" id="progress-bar"></div></div>
+        <div style="text-align:center;font-size:11px;color:#718096;margin-top:4px;" id="progress-text"></div>
+        <div class="log-area" id="log-area" style="margin-top:12px;">
+          <div class="log-line log-info">
+            <span class="log-time">--:--:--</span>
+            <span class="log-msg">준비 완료. URL을 추가하고 실행하세요.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+const SERVER = 'https://macro-4-adlog-hidden-938928195180.asia-northeast3.run.app';
+
+let urls    = [];   // [{name, url}]
+let results = {};   // { url: {name, status, keywords, rankResults} }
+
+function save() { if (window.fbSave) window.fbSave(urls); }
+
+// ── URL 추가 ──
+function addUrl() {
+  const name = document.getElementById('inp-name').value.trim();
+  const url  = document.getElementById('inp-url').value.trim();
+  if (!url) { alert('URL을 입력해주세요.'); return; }
+  if (!url.startsWith('http')) { alert('올바른 URL을 입력해주세요.'); return; }
+  if (urls.some(u => u.url === url)) { alert('이미 등록된 URL입니다.'); return; }
+
+  urls.push({ name, url });
+  save();
+  document.getElementById('inp-name').value = '';
+  document.getElementById('inp-url').value  = '';
+  renderUrls(); updateBtns();
+  addLog(`추가: ${name||url}`, 'info');
+}
+
+function removeUrl(idx) {
+  const u = urls[idx];
+  urls.splice(idx, 1);
+  delete results[u.url];
+  save(); renderUrls(); renderResults(); updateBtns();
+}
+
+function clearResults() {
+  results = {};
+  renderResults();
+  document.getElementById('result-count').textContent = '0';
+  document.getElementById('sum-done').textContent = '0';
+}
+
+// ── URL 목록 렌더 ──
+function renderUrls() {
+  const el = document.getElementById('url-list');
+  document.getElementById('sum-urls').textContent = urls.length;
+  if (!urls.length) { el.innerHTML = '<div class="empty-msg">등록된 URL이 없습니다</div>'; return; }
+  el.innerHTML = urls.map((u, i) => `
+    <div class="url-item">
+      <span class="url-name">${esc(u.name || '미지정')}</span>
+      <span class="url-addr" title="${esc(u.url)}">${esc(u.url)}</span>
+      <button class="btn btn-danger btn-sm" onclick="removeUrl(${i})">✕</button>
+    </div>`).join('');
+}
+
+// ── 결과 렌더 ──
+function renderResults() {
+  const el    = document.getElementById('result-cards');
+  const keys  = Object.keys(results);
+  const doneN = keys.filter(k => results[k].status === 'done').length;
+  document.getElementById('result-count').textContent = keys.length;
+  document.getElementById('sum-done').textContent     = doneN;
+
+  if (!keys.length) { el.innerHTML = '<div class="empty-msg">조회 결과가 여기에 표시됩니다</div>'; return; }
+
+  el.innerHTML = keys.map(url => {
+    const r = results[url];
+    const badgeClass = { waiting:'waiting', running:'running', done:'done', fail:'fail' }[r.status] || 'waiting';
+    const badgeText  = { waiting:'대기', running:'⏳ 조회중', done:'✅ 완료', fail:'❌ 실패' }[r.status] || '대기';
+
+    const kws = r.keywords || [];
+    let tableHtml = '';
+
+    if (r.status === 'running') {
+      tableHtml = `<div style="padding:14px 16px;color:#1565c0;font-size:12px;">⏳ 조회 중...</div>`;
+    } else if (r.status === 'fail') {
+      tableHtml = `<div style="padding:14px 16px;color:#c53030;font-size:12px;">❌ ${esc(r.error||'오류')}</div>`;
+    } else if (kws.length === 0 && r.status === 'done') {
+      tableHtml = `<div style="padding:14px 16px;color:#a0aec0;font-size:12px;">검색 결과 없음</div>`;
+    } else if (kws.length > 0) {
+      const hasRank = r.rankResults && r.rankResults.length > 0;
+      const rankMap = {};
+      if (hasRank) r.rankResults.forEach((rr, i) => { if (i < kws.length) rankMap[i] = rr; });
+
+      tableHtml = `<table class="kw-table">
+        <thead><tr>
+          <th class="th-blue">히든키워드</th>
+          <th class="th-blue">조회수</th>
+          <th class="th-blue">히든순위</th>
+          <th class="th-green">상위키워드</th>
+          <th class="th-green">검색량</th>
+          <th class="th-green">상위순위</th>
+        </tr></thead>
+        <tbody>${kws.map((kw, i) => {
+          const rk = rankMap[i];
+          const rankBadge = (rank) => {
+            if (!rank && rank !== 0) return '-';
+            const cls = rank === 1 ? 'rank-1' : rank <= 3 ? 'rank-3' : rank <= 10 ? 'rank-10' : 'rank-out';
+            return `<span class="rank-badge ${cls}">${rank}위</span>`;
+          };
+          return `<tr>
+            <td class="td-kw">${esc(kw.keyword)}</td>
+            <td class="td-cnt">${(kw.search_count||0).toLocaleString()}</td>
+            <td>${rankBadge(kw.rank)}</td>
+            <td class="td-kw">${rk ? esc(rk.kw) : '<span class="step2-pending">—</span>'}</td>
+            <td class="td-cnt">${rk ? (rk.search||0).toLocaleString() : ''}</td>
+            <td>${rk ? rankBadge(rk.rank) : ''}</td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table>`;
+    }
+
+    return `<div class="result-card">
+      <div class="rc-header">
+        <span class="rc-name">${esc(r.name||'미지정')}</span>
+        <span class="rc-url" title="${esc(url)}">${esc(url)}</span>
+        <span class="rc-badge ${badgeClass}">${badgeText}</span>
+      </div>
+      <div class="rc-body">${tableHtml}</div>
+    </div>`;
+  }).join('');
+}
+
+function updateBtns() {
+  const has = urls.length > 0;
+  const hasKw = Object.values(results).some(r => r.status === 'done' && r.keywords && r.keywords.length > 0);
+  document.getElementById('btn-step1').disabled = !has;
+  document.getElementById('btn-step2').disabled = !hasKw;
+  document.getElementById('btn-all').disabled   = !has;
+}
+
+// ── 실행 ──
+let running = false;
+
+async function runStep(mode) {
+  if (running) return;
+  if (!urls.length) { alert('URL을 추가해주세요.'); return; }
+
+  running = true;
+  ['btn-step1','btn-step2','btn-all'].forEach(id => document.getElementById(id).disabled = true);
+  document.getElementById('progress-wrap').style.display = 'block';
+
+  try {
+    if (mode === 1 || mode === 0) await doStep1();
+    if (mode === 2 || mode === 0) await doStep2();
+  } finally {
+    running = false;
+    updateBtns();
+    document.getElementById('progress-bar').style.width = '100%';
+  }
+}
+
+async function doStep1() {
+  const targets = urls;
+  addLog(`▶ STEP 1 시작 — ${targets.length}개 URL`, 'info');
+
+  for (let i = 0; i < targets.length; i++) {
+    const { name, url } = targets[i];
+    results[url] = { name, status: 'running', keywords: [], rankResults: [] };
+    renderResults();
+    addLog(`[${i+1}/${targets.length}] ${name||url} 히든키워드 조회 중...`);
+    setProgress((i / targets.length) * 50, `STEP1 ${i+1}/${targets.length}`);
+
+    try {
+      const res  = await fetch(`${SERVER}/step1`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, url }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        results[url] = { name: data.name || name, status: 'done', keywords: data.keywords || [], rankResults: [] };
+        addLog(`  ✅ ${data.name||name} — ${data.keywords.length}개 키워드`, 'success');
+      } else {
+        results[url] = { name, status: 'fail', keywords: [], rankResults: [], error: data.message };
+        addLog(`  ❌ ${name||url} — ${data.message}`, 'fail');
+      }
+    } catch(e) {
+      results[url] = { name, status: 'fail', keywords: [], rankResults: [], error: e.message };
+      addLog(`  ❌ ${name||url} — ${e.message}`, 'fail');
+    }
+    renderResults();
+  }
+
+  const done = Object.values(results).filter(r => r.status === 'done').length;
+  addLog(`━━ STEP 1 완료 — ${done}개 성공`, done === targets.length ? 'success' : 'warn');
+}
+
+async function doStep2() {
+  const targets = Object.entries(results).filter(([, r]) => r.status === 'done' && r.keywords.length > 0);
+  if (!targets.length) { addLog('STEP 2: 처리할 키워드 없음', 'warn'); return; }
+
+  addLog(`▶ STEP 2 시작 — ${targets.length}개 업체`, 'info');
+
+  for (let i = 0; i < targets.length; i++) {
+    const [url, r] = targets[i];
+    const keywords = r.keywords.map(k => k.keyword);
+    results[url].status = 'running';
+    renderResults();
+    addLog(`[${i+1}/${targets.length}] ${r.name||url} 상위순위 조회 중... (최대 5분)`);
+    setProgress(50 + (i / targets.length) * 50, `STEP2 ${i+1}/${targets.length}`);
+
+    try {
+      const res  = await fetch(`${SERVER}/step2`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url, keywords }),
+        signal: AbortSignal.timeout(360000),
+      });
+      const data = await res.json();
+      if (data.success) {
+        results[url].rankResults = data.results || [];
+        results[url].status      = 'done';
+        addLog(`  ✅ ${r.name||url} — ${data.results.length}개 결과`, 'success');
+      } else {
+        results[url].status = 'done';
+        addLog(`  ⚠️ ${r.name||url} — ${data.message}`, 'warn');
+      }
+    } catch(e) {
+      results[url].status = 'done';
+      addLog(`  ❌ ${r.name||url} — ${e.message}`, 'fail');
+    }
+    renderResults();
+  }
+
+  addLog(`━━ STEP 2 완료`, 'success');
+}
+
+function setProgress(pct, text) {
+  document.getElementById('progress-bar').style.width  = pct + '%';
+  document.getElementById('progress-text').textContent = text;
+}
+
+// ── 로그 ──
+function addLog(msg, type='') {
+  const area = document.getElementById('log-area');
+  const now  = new Date().toLocaleTimeString('ko-KR', { hour12: false });
+  const div  = document.createElement('div');
+  div.className = `log-line ${type?'log-'+type:''}`;
+  div.innerHTML = `<span class="log-time">${now}</span><span class="log-msg">${esc(msg)}</span>`;
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+}
+
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ── 엑셀 ──
+(function() {
+  const zone = document.getElementById('excel-zone');
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+  zone.addEventListener('drop', e => { e.preventDefault(); zone.classList.remove('drag-over'); if (e.dataTransfer.files[0]) handleExcel(e.dataTransfer.files[0]); });
+})();
+
+function handleExcel(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const wb   = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+      const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header:1, defval:'' });
+      const start = (rows.length > 0 && rows[0][1] && !String(rows[0][1]).startsWith('http')) ? 1 : 0;
+      let added = 0;
+      for (let r = start; r < rows.length; r++) {
+        const name = String(rows[r][0]||'').trim();
+        const url  = String(rows[r][1]||'').trim();
+        if (!url.startsWith('http')) continue;
+        if (urls.some(u => u.url === url)) continue;
+        urls.push({ name, url }); added++;
+      }
+      save(); renderUrls(); updateBtns();
+      document.getElementById('excel-input').value = '';
+      addLog(`📊 엑셀 가져오기: ${added}개 추가`, 'info');
+    } catch(err) { addLog(`❌ 엑셀 읽기 실패: ${err.message}`, 'fail'); }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+renderUrls();
+
+(async function checkServer() {
+  try {
+    const res = await fetch(`${SERVER}/ping`, { signal: AbortSignal.timeout(3000) });
+    if (res.ok) { addLog('✅ 서버 연결됨', 'success'); return; }
+  } catch(_) {}
+  addLog('⚠️  서버 연결 실패 — 잠시 후 다시 시도해주세요.', 'warn');
+})();
+</script>
+
+<script type="module">
+  import { db } from "../ha-tools.js";
+  import { ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-database.js";
+
+  const userId = localStorage.getItem('ha_user');
+  if (!userId) { location.replace("../login.html"); }
+
+  const dataRef = ref(db, `users/${userId}/adlog_hidden`);
+
+  onValue(dataRef, (snap) => {
+    const data = snap.val();
+    if (Array.isArray(data) && data.length > 0) {
+      urls = data;
+      renderUrls(); updateBtns();
+      addLog(`📂 URL 목록 불러옴 (${urls.length}개)`, 'info');
+    }
+  }, { onlyOnce: true });
+
+  window.fbSave = (data) => set(dataRef, data).catch(e => console.error('Firebase 저장 실패:', e));
+</script>
+
+</body>
+</html>
