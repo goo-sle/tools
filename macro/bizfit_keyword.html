@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BizFit 키워드 변경</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', -apple-system, sans-serif; background: #f0f2f5; color: #1a1a2e; min-height: 100vh; }
+
+  .container {
+    max-width: 1200px; margin: 24px auto; padding: 0 20px;
+    display: grid; grid-template-columns: 260px 1fr 420px; gap: 18px; align-items: start;
+  }
+
+  .card { background: #fff; border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); overflow: hidden; }
+  .card-header {
+    background: #f8f9fb; padding: 13px 18px; border-bottom: 1px solid #e8eaf0;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .card-title { font-size: 13px; font-weight: 700; color: #2d3748; display: flex; align-items: center; gap: 7px; }
+  .card-body { padding: 18px; }
+
+  .form-group { margin-bottom: 11px; }
+  label { display: block; font-size: 11px; font-weight: 600; color: #4a5568; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.4px; }
+  input[type="text"], textarea {
+    width: 100%; padding: 8px 11px; border: 1.5px solid #e2e8f0; border-radius: 7px;
+    font-size: 13px; color: #2d3748; outline: none; transition: border-color 0.2s;
+  }
+  input[type="text"]:focus, textarea:focus { border-color: #0277bd; }
+  input::placeholder, textarea::placeholder { color: #a0aec0; }
+  textarea { resize: none; height: 64px; font-family: inherit; }
+
+  .keyword-hint { font-size: 11px; color: #a0aec0; margin-top: 4px; }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 8px 16px; border-radius: 7px; font-size: 13px; font-weight: 600;
+    cursor: pointer; border: none; transition: all 0.15s;
+  }
+  .btn-primary  { background: #0277bd; color: #fff; width: 100%; }
+  .btn-primary:hover  { background: #01579b; }
+  .btn-danger   { background: #fff1f0; color: #e53e3e; border: 1.5px solid #fed7d7; padding: 4px 10px; font-size: 12px; border-radius: 6px; white-space: nowrap; }
+  .btn-danger:hover   { background: #ffe0de; }
+  .btn-run      { background: #0277bd; color: #fff; font-size: 14px; font-weight: 800; padding: 12px 24px; border-radius: 8px; width: 100%; }
+  .btn-run:hover      { background: #01579b; }
+  .btn-run:disabled   { background: #a0aec0; cursor: not-allowed; }
+  .btn-sm { padding: 4px 10px; font-size: 12px; }
+
+  .table-wrap { overflow-x: auto; }
+  .kw-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  .kw-table thead th {
+    background: #f8f9fb; padding: 8px 10px; text-align: left;
+    font-size: 11px; font-weight: 700; color: #718096;
+    text-transform: uppercase; letter-spacing: 0.4px; border-bottom: 1px solid #e8eaf0; white-space: nowrap;
+  }
+  .kw-table thead th:first-child { padding-left: 12px; }
+  .kw-table tbody tr { border-bottom: 1px solid #f0f2f5; transition: background 0.1s; }
+  .kw-table tbody tr:last-child { border-bottom: none; }
+  .kw-table tbody tr:hover { background: #fafbfc; }
+  .kw-table tbody tr.checked { background: #e3f2fd; }
+  .kw-table td { padding: 7px 10px; vertical-align: middle; }
+  .kw-table td:first-child { padding-left: 12px; }
+
+  .td-pcode    { font-weight: 700; color: #2d3748; font-family: monospace; font-size: 11.5px; }
+  .td-name     { color: #718096; font-size: 11.5px; margin-top: 1px; }
+  .td-keywords { color: #4a5568; font-size: 11px; max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .status-badge { display: inline-block; padding: 2px 8px; border-radius: 100px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+  .s-ready   { background: #edf2f7; color: #718096; }
+  .s-running { background: #e3f2fd; color: #1565c0; }
+  .s-success { background: #c6f6d5; color: #276749; }
+  .s-fail    { background: #fed7d7; color: #c53030; }
+
+  .select-all-row {
+    display: flex; align-items: center; gap: 8px; padding: 9px 14px;
+    background: #f8f9fb; border-bottom: 1px solid #e8eaf0;
+    font-size: 12px; font-weight: 600; color: #4a5568;
+  }
+  .select-all-row input[type="checkbox"] { width: 15px; height: 15px; accent-color: #0277bd; cursor: pointer; }
+
+  .empty-state { text-align: center; padding: 48px 20px; color: #a0aec0; font-size: 13px; }
+  .empty-icon  { font-size: 32px; margin-bottom: 10px; }
+
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 100px; font-size: 11px; font-weight: 700; }
+  .badge-blue { background: #e3f2fd; color: #1565c0; border: 1px solid #bbdefb; }
+
+  .summary-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 16px; }
+  .summary-item { background: #f8f9fb; border-radius: 8px; padding: 12px 14px; text-align: center; }
+  .summary-label { font-size: 10px; font-weight: 700; color: #718096; text-transform: uppercase; letter-spacing: 0.4px; }
+  .summary-value { font-size: 22px; font-weight: 800; color: #2d3748; margin-top: 4px; }
+  .summary-value.blue { color: #0277bd; }
+
+  .log-area {
+    background: #1a202c; border-radius: 10px; padding: 12px 14px; height: 320px;
+    overflow-y: auto; font-family: 'Consolas', 'Monaco', monospace; font-size: 12px; line-height: 1.7;
+  }
+  .log-line    { display: flex; gap: 10px; }
+  .log-time    { color: #4a5568; flex-shrink: 0; }
+  .log-msg     { color: #e2e8f0; }
+  .log-success .log-msg { color: #68d391; }
+  .log-fail    .log-msg { color: #fc8181; }
+  .log-info    .log-msg { color: #63b3ed; }
+  .log-warn    .log-msg { color: #f6e05e; }
+
+  .progress-wrap { background: #e2e8f0; border-radius: 100px; height: 5px; overflow: hidden; display: none; margin-bottom: 8px; }
+  .progress-bar  { height: 100%; background: linear-gradient(90deg, #0277bd, #26c6da); border-radius: 100px; width: 0%; transition: width 0.4s ease; }
+
+  .divider { border: none; border-top: 1px solid #e8eaf0; margin: 14px 0; }
+
+  .search-wrap {
+    display: flex; align-items: center; gap: 6px; background: #f0f2f5;
+    border: 1.5px solid #e2e8f0; border-radius: 7px; padding: 4px 10px; transition: border-color 0.2s;
+  }
+  .search-wrap:focus-within { border-color: #0277bd; background: #fff; }
+  .search-wrap input { border: none; background: transparent; outline: none; font-size: 12px; color: #2d3748; width: 140px; padding: 0; }
+  .search-wrap input::placeholder { color: #a0aec0; }
+
+  .excel-upload-area {
+    border: 2px dashed #bbdefb; border-radius: 8px; padding: 14px; text-align: center;
+    cursor: pointer; transition: all 0.2s; background: #e3f2fd; margin-top: 10px;
+  }
+  .excel-upload-area:hover, .excel-upload-area.drag-over { border-color: #0277bd; background: #bbdefb; }
+  .excel-upload-area .upload-icon { font-size: 24px; margin-bottom: 4px; }
+  .excel-upload-area .upload-text { font-size: 12px; font-weight: 600; color: #1565c0; }
+  .excel-upload-area .upload-hint { font-size: 11px; color: #a0aec0; margin-top: 2px; }
+  #excel-file-input { display: none; }
+
+  @media (max-width: 1000px) { .container { grid-template-columns: 260px 1fr; } .run-panel { grid-column: 1 / -1; } }
+  @media (max-width: 700px)  { .container { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- 좌측: 입력 폼 -->
+  <div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">➕ 캠페인 추가</span></div>
+      <div class="card-body">
+        <div class="form-group">
+          <label>Pcode</label>
+          <input type="text" id="inp-pcode" placeholder="예: P21169CA0DAB3776F" />
+        </div>
+        <div class="form-group">
+          <label>캠페인명 (선택)</label>
+          <input type="text" id="inp-name" placeholder="메모용" />
+        </div>
+        <div class="form-group">
+          <label>키워드</label>
+          <textarea id="inp-keywords" placeholder="귀금속,귀금속방,귀금속위치"></textarea>
+          <div class="keyword-hint">쉼표(,)로 구분 — A/B 동일하게 입력됩니다</div>
+        </div>
+        <button class="btn btn-primary" onclick="addEntry()">➕ 추가</button>
+
+        <hr style="border:none;border-top:1px solid #e8eaf0;margin:14px 0;">
+
+        <div style="font-size:11px;font-weight:600;color:#4a5568;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:6px;">엑셀로 일괄 추가</div>
+        <div class="excel-upload-area" id="excel-drop-zone" onclick="document.getElementById('excel-file-input').click()">
+          <div class="upload-icon">📊</div>
+          <div class="upload-text">엑셀 파일 클릭 또는 드래그</div>
+          <div class="upload-hint">pcode / 캠페인명 / 키워드(쉼표 구분)</div>
+        </div>
+        <input type="file" id="excel-file-input" accept=".xlsx,.xls" onchange="handleExcelFile(this.files[0])">
+      </div>
+    </div>
+  </div>
+
+  <!-- 중앙: 목록 -->
+  <div>
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">📋 처리 목록 <span class="badge badge-blue" id="entry-count">0</span></span>
+        <div class="search-wrap">
+          <span style="font-size:12px;">🔍</span>
+          <input type="text" placeholder="pcode / 캠페인명 검색" oninput="filterList(this.value)" />
+        </div>
+      </div>
+      <div class="select-all-row">
+        <input type="checkbox" id="chk-all" onchange="toggleAll(this)">
+        <span>전체 선택</span>
+        <span style="color:#718096;font-weight:400;" id="selected-count-small">0개 선택됨</span>
+        <button class="btn btn-danger btn-sm" style="margin-left:auto;" onclick="removeChecked()">선택 삭제</button>
+      </div>
+      <div class="table-wrap">
+        <table class="kw-table">
+          <thead>
+            <tr>
+              <th style="width:36px;"></th>
+              <th>Pcode / 캠페인명</th>
+              <th>키워드</th>
+              <th style="width:72px;">상태</th>
+            </tr>
+          </thead>
+          <tbody id="entry-tbody">
+            <tr><td colspan="4">
+              <div class="empty-state"><div class="empty-icon">📋</div><div>등록된 항목이 없습니다.<br>좌측에서 캠페인을 추가해주세요.</div></div>
+            </td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- 우측: 실행 -->
+  <div class="run-panel">
+    <div class="card">
+      <div class="card-header"><span class="card-title">⚡ 실행</span></div>
+      <div class="card-body">
+        <div class="summary-row">
+          <div class="summary-item">
+            <div class="summary-label">선택 항목</div>
+            <div class="summary-value blue" id="sum-count">0</div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-label">키워드 없음</div>
+            <div class="summary-value" id="sum-nokw" style="color:#e53e3e;">0</div>
+          </div>
+        </div>
+        <hr class="divider">
+        <button class="btn btn-run" id="btn-run" onclick="startProcess()" disabled>⚡ 키워드 변경 시작</button>
+        <div style="height:10px;"></div>
+        <div class="progress-wrap" id="progress-wrap"><div class="progress-bar" id="progress-bar"></div></div>
+        <div style="text-align:center;font-size:12px;color:#718096;margin-top:4px;" id="progress-text"></div>
+        <div class="log-area" id="log-area" style="margin-top:14px;">
+          <div class="log-line log-info">
+            <span class="log-time">--:--:--</span>
+            <span class="log-msg">준비 완료. 캠페인을 추가하고 실행하세요.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const SERVER = 'https://macro-3-bizfit-keyword-938928195180.asia-northeast3.run.app';
+let entries = [];
+
+function save() { if (window.fbSave) window.fbSave(entries); }
+
+function addEntry() {
+  const pcode    = document.getElementById('inp-pcode').value.trim();
+  const name     = document.getElementById('inp-name').value.trim();
+  const keywords = document.getElementById('inp-keywords').value.trim();
+  if (!pcode) { alert('Pcode를 입력해주세요.'); return; }
+  if (!keywords) { alert('키워드를 입력해주세요.'); return; }
+
+  entries.push({ pcode, name, keywords, status: 'ready', result: '' });
+  save();
+  document.getElementById('inp-pcode').value    = '';
+  document.getElementById('inp-name').value     = '';
+  document.getElementById('inp-keywords').value = '';
+  renderList();
+  addLog(`추가: ${pcode}${name?' ('+name+')':''} — ${keywords.split(',').length}개 키워드`, 'info');
+}
+
+function removeChecked() {
+  const checked = entries.filter(e => e.checked);
+  if (!checked.length) { alert('삭제할 항목을 선택해주세요.'); return; }
+  if (!confirm(`선택한 ${checked.length}개 항목을 삭제하시겠습니까?`)) return;
+  entries = entries.filter(e => !e.checked);
+  save(); renderList();
+}
+
+function toggleItem(i, el) {
+  entries[i].checked = el.checked;
+  const row = document.getElementById(`row-${i}`);
+  if (row) row.classList.toggle('checked', el.checked);
+  syncAll();
+}
+function toggleAll(el) { entries.forEach(e => e.checked = el.checked); save(); renderList(); }
+function syncAll() {
+  const total   = entries.length;
+  const checked = entries.filter(e => e.checked).length;
+  const allChk  = document.getElementById('chk-all');
+  allChk.checked       = total > 0 && checked === total;
+  allChk.indeterminate = checked > 0 && checked < total;
+  document.getElementById('selected-count-small').textContent = `${checked}개 선택됨`;
+  updateSummary();
+}
+function updateSummary() {
+  const sel  = entries.filter(e => e.checked);
+  const noKw = sel.filter(e => !e.keywords).length;
+  document.getElementById('sum-count').textContent = sel.length;
+  document.getElementById('sum-nokw').textContent  = noKw;
+  document.getElementById('btn-run').disabled = sel.length === 0 || noKw > 0;
+}
+
+let searchQuery = '';
+function filterList(val) { searchQuery = val.trim().toLowerCase(); renderList(); }
+
+function renderList() {
+  const tbody = document.getElementById('entry-tbody');
+  document.getElementById('entry-count').textContent = entries.length;
+
+  if (!entries.length) {
+    tbody.innerHTML = `<tr><td colspan="4"><div class="empty-state"><div class="empty-icon">📋</div><div>등록된 항목이 없습니다.</div></div></td></tr>`;
+    syncAll(); return;
+  }
+
+  const filtered = searchQuery
+    ? entries.filter(e => e.pcode.toLowerCase().includes(searchQuery) || e.name.toLowerCase().includes(searchQuery))
+    : entries;
+
+  if (!filtered.length) {
+    tbody.innerHTML = `<tr><td colspan="4"><div class="empty-state"><div class="empty-icon">🔍</div><div>검색 결과가 없습니다.</div></div></td></tr>`;
+    syncAll(); return;
+  }
+
+  const sc = { ready:'s-ready', running:'s-running', success:'s-success', fail:'s-fail' };
+  const st = { ready:'대기', running:'⏳ 진행중', success:'✅ 완료', fail:'❌ 실패' };
+
+  tbody.innerHTML = filtered.map(e => {
+    const i = entries.indexOf(e);
+    return `
+    <tr id="row-${i}" class="${e.checked?'checked':''}">
+      <td><input type="checkbox" ${e.checked?'checked':''} onchange="toggleItem(${i},this)" style="width:15px;height:15px;accent-color:#0277bd;cursor:pointer;"></td>
+      <td>
+        <div class="td-pcode">${esc(e.pcode)}</div>
+        ${e.name?`<div class="td-name">${esc(e.name)}</div>`:''}
+        ${e.result?`<div style="font-size:10.5px;color:#718096;margin-top:2px;">${esc(e.result)}</div>`:''}
+      </td>
+      <td><div class="td-keywords" title="${esc(e.keywords)}">${esc(e.keywords)}</div></td>
+      <td><span class="status-badge ${sc[e.status]||'s-ready'}">${st[e.status]||'대기'}</span></td>
+    </tr>`;
+  }).join('');
+
+  syncAll();
+}
+
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function addLog(msg, type='') {
+  const area = document.getElementById('log-area');
+  const now  = new Date().toLocaleTimeString('ko-KR', { hour12: false });
+  const div  = document.createElement('div');
+  div.className = `log-line ${type?'log-'+type:''}`;
+  div.innerHTML = `<span class="log-time">${now}</span><span class="log-msg">${esc(msg)}</span>`;
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+}
+
+async function startProcess() {
+  const selected = entries.filter(e => e.checked);
+  if (!selected.length) { alert('항목을 선택해주세요.'); return; }
+
+  const summary = selected.map(e => `  · ${e.pcode}${e.name?' ('+e.name+')':''}`).join('\n');
+  if (!confirm(`아래 캠페인의 키워드를 변경하시겠습니까?\n\n${summary}\n\n총 ${selected.length}건`)) return;
+
+  document.getElementById('btn-run').disabled = true;
+  document.getElementById('progress-wrap').style.display = 'block';
+
+  const payload = selected.map(e => ({ pcode: e.pcode, name: e.name, keywords: e.keywords }));
+  selected.forEach(e => { e.status = 'running'; e.result = ''; });
+  renderList();
+
+  addLog(`▶ 시작 — ${selected.length}개 캠페인`, 'info');
+  document.getElementById('progress-bar').style.width = '20%';
+  document.getElementById('progress-text').textContent = '처리 중...';
+
+  try {
+    const res  = await fetch(`${SERVER}/process`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ entries: payload }),
+    });
+    if (!res.ok) throw new Error(`서버 응답 오류 (${res.status})`);
+    const data = await res.json();
+
+    let successCnt = 0, failCnt = 0;
+    (data.results || []).forEach(r => {
+      const entry = entries.find(e => e.pcode === r.pcode);
+      if (!entry) return;
+      entry.result = r.message;
+      if (r.success) {
+        entry.status = 'success'; successCnt++;
+        addLog(`✅ ${r.pcode}${r.name?' ('+r.name+')':''} — ${r.message}`, 'success');
+      } else {
+        entry.status = 'fail'; failCnt++;
+        addLog(`❌ ${r.pcode}${r.name?' ('+r.name+')':''} — ${r.message}`, 'fail');
+      }
+    });
+
+    document.getElementById('progress-bar').style.width = '100%';
+    document.getElementById('progress-text').textContent = `완료 — 성공: ${successCnt}  실패: ${failCnt}`;
+    addLog(`━━ 완료 — 성공: ${successCnt}  실패: ${failCnt}`, successCnt===selected.length?'success':'warn');
+
+  } catch(e) {
+    selected.forEach(entry => { entry.status = 'fail'; entry.result = e.message; });
+    addLog(`❌ 서버 오류: ${e.message}`, 'fail');
+    document.getElementById('progress-text').textContent = '오류 발생';
+  }
+
+  save(); renderList();
+  document.getElementById('btn-run').disabled = false;
+}
+
+// ── 엑셀 업로드 ──
+(function() {
+  const zone = document.getElementById('excel-drop-zone');
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+  zone.addEventListener('drop', e => { e.preventDefault(); zone.classList.remove('drag-over'); if (e.dataTransfer.files[0]) handleExcelFile(e.dataTransfer.files[0]); });
+})();
+
+function handleExcelFile(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const wb   = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+      const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header:1, defval:'' });
+      const start = (rows.length > 0 && isNaN(rows[0][0])) ? 1 : 0;
+      let added = 0, skipped = 0;
+
+      for (let r = start; r < rows.length; r++) {
+        const pcode    = String(rows[r][0] || '').trim();
+        const name     = String(rows[r][1] || '').trim();
+        const keywords = String(rows[r][2] || '').trim();
+        if (!pcode || !keywords) { skipped++; continue; }
+        if (entries.some(e => e.pcode === pcode)) { skipped++; continue; }
+        entries.push({ pcode, name, keywords, status: 'ready', result: '' });
+        added++;
+      }
+
+      save(); renderList();
+      document.getElementById('excel-file-input').value = '';
+      if (added > 0) addLog(`📊 엑셀 가져오기: ${added}개 추가${skipped?', '+skipped+'개 건너뜀':''}`, 'info');
+      else           addLog('⚠️ 추가된 항목 없음 — pcode 또는 키워드가 비어있거나 중복', 'warn');
+    } catch(err) { addLog(`❌ 엑셀 읽기 실패: ${err.message}`, 'fail'); }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+renderList();
+
+(async function checkServer() {
+  try {
+    const res = await fetch(`${SERVER}/ping`, { signal: AbortSignal.timeout(3000) });
+    if (res.ok) { addLog('✅ 서버 연결됨 — 준비 완료', 'success'); return; }
+  } catch(_) {}
+  addLog('⚠️  서버 연결 실패 — 잠시 후 다시 시도해주세요.', 'warn');
+})();
+</script>
+
+<script type="module">
+  import { db } from "../ha-tools.js";
+  import { ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-database.js";
+
+  const userId = localStorage.getItem('ha_user');
+  if (!userId) { location.replace("../login.html"); }
+
+  const dataRef = ref(db, `users/${userId}/bizfit_keyword`);
+
+  onValue(dataRef, (snap) => {
+    const data = snap.val();
+    if (Array.isArray(data) && data.length > 0) {
+      entries = data.map(e => ({ ...e, status: 'ready', result: '', checked: e.checked ?? false }));
+      renderList();
+      addLog(`📂 목록 불러옴 (${entries.length}개)`, 'info');
+    }
+  }, { onlyOnce: true });
+
+  window.fbSave = (data) => set(dataRef, data).catch(e => console.error('Firebase 저장 실패:', e));
+</script>
+
+</body>
+</html>
