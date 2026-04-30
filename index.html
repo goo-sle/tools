@@ -605,6 +605,7 @@
     // 2. 유저 데이터 로드 함수
     async function initUserData() {
       await loadDefaultTools(); // manifest 로드
+      loadMacroTools();          // 매크로 manifest 로드
 
       const userRef = ref(db, 'users/' + currentUserId);
       
@@ -767,6 +768,22 @@
         }));
       } catch (e) {
         defaultTools = [{ file: "tools/메모장.html", label: "⏰ 메모장" }];
+      }
+    }
+
+    async function loadMacroTools() {
+      try {
+        const res = await fetch(`macro/manifest.json`);
+        if (!res.ok) throw new Error('macro manifest load failed');
+        const list = await res.json();
+        const container = document.getElementById('macroTools');
+        container.innerHTML = '';
+        list.forEach(t => {
+          const tool = { file: t.file, label: t.label, addedAt: t.addedAt || null, updatedAt: t.updatedAt || null };
+          container.appendChild(createButton(tool));
+        });
+      } catch (e) {
+        // 매크로 manifest 없으면 빈 섹션 유지
       }
     }
 
