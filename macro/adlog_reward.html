@@ -139,7 +139,7 @@
 <body>
 
 <div class="page-header">
-  <span class="page-header-icon">🏆</span>
+  <span class="page-header-icon">🎯</span>
   <div>
     <h1>ADLOG 리워드그룹 순위 다운로드</h1>
     <p id="header-user">리워드 그룹 순위 체크 · 구글 시트 업로드</p>
@@ -267,7 +267,7 @@ async function runProcess() {
       if      (msg.startsWith('✅'))                 type = 'success';
       else if (msg.startsWith('❌'))                 type = 'fail';
       else if (msg.startsWith('⚠️') || msg.startsWith('⚠')) type = 'warn';
-      else if (msg.match(/^[▶🔐📋📥📤⚙️🏆🏁]/u))  type = 'info';
+      else if (msg.match(/^[▶🔐📋📥📤⚙️🎯🏁]/u))  type = 'info';
       addLog(msg, type);
     });
 
