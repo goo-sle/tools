@@ -376,7 +376,9 @@ async function doStep1() {
       const data = await res.json();
       if (data.success) {
         results[url] = { name: data.name || name, status: 'done', keywords: data.keywords || [], rankResults: [] };
-        addLog(`  ✅ ${data.name||name} — ${data.keywords.length}개 키워드`, 'success');
+        const kwCount = (data.keywords || []).length;
+        addLog(`  ✅ ${data.name||name} — ${kwCount}개 키워드`, kwCount > 0 ? 'success' : 'warn');
+        if (kwCount === 0 && data.debug) addLog(`     ⚠ ${data.debug}`, 'warn');
       } else {
         results[url] = { name, status: 'fail', keywords: [], rankResults: [], error: data.message };
         addLog(`  ❌ ${name||url} — ${data.message}`, 'fail');
