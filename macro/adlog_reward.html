@@ -236,6 +236,28 @@ function esc(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
+function logType(msg) {
+  if (msg.startsWith('✅')) return 'success';
+  if (msg.startsWith('❌')) return 'fail';
+  if (msg.startsWith('⚠️') || msg.startsWith('⚠')) return 'warn';
+  if (/^[▶🔐📋📥📤⚙️🎯🏁🔄]/u.test(msg)) return 'info';
+  return '';
+}
+
+function updateSteps(msg) {
+  if (msg.includes('ADLOG 로그인 중'))      setStep(1, 'active');
+  if (msg.includes('로그인 완료'))           setStep(1, 'done');
+  if (msg.includes('그룹') && msg.includes('선택 중')) setStep(2, 'active');
+  if (msg.includes('전체다운 클릭'))         setStep(2, 'active');
+  if (msg.includes('다운로드 완료'))         setStep(2, 'done');
+  if (msg.includes('XLS 파싱 중') ||
+      msg.includes('구글 시트 업로드 중'))   setStep(3, 'active');
+  if (msg.includes('업로드 완료'))           setStep(3, 'done');
+  if (msg.includes('GAS buildAnalysis'))    setStep(4, 'active');
+  if (msg.includes('분석 시트 생성 완료'))   setStep(4, 'done');
+  if (msg.includes('GAS 호출 실패'))        setStep(4, 'error');
+}
+
 async function runProcess() {
   const btn  = document.getElementById('run-btn');
   const text = document.getElementById('btn-text');
@@ -246,56 +268,49 @@ async function runProcess() {
   text.textContent = '실행 중...';
 
   if (!logOpen) toggleLog();
-
   document.getElementById('result-summary').style.display = 'none';
   document.getElementById('log-area').innerHTML = '';
   [1,2,3,4].forEach(n => setStep(n, ''));
   setStatus('자동화 실행 중...', 'running');
 
+  let success = false;
+
   try {
-    const res  = await fetch(`${SERVER}/run`, {
+    const res = await fetch(`${SERVER}/run-stream`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({}),
       signal: AbortSignal.timeout(300000),
     });
-    const data = await res.json();
-    const logs = data.logs || [];
+    if (!res.ok) throw new Error(`서버 응답 오류 (${res.status})`);
 
-    logs.forEach(msg => {
-      let type = '';
-      if      (msg.startsWith('✅'))                 type = 'success';
-      else if (msg.startsWith('❌'))                 type = 'fail';
-      else if (msg.startsWith('⚠️') || msg.startsWith('⚠')) type = 'warn';
-      else if (msg.match(/^[▶🔐📋📥📤⚙️🎯🏁]/u))  type = 'info';
-      addLog(msg, type);
-    });
+    const reader  = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
 
-    const logStr = logs.join('\n');
-    if (logStr.includes('로그인 완료'))       setStep(1, 'done');
-    if (logStr.includes('다운로드 완료'))     setStep(2, 'done');
-    if (logStr.includes('업로드 완료'))       setStep(3, 'done');
-    if (logStr.includes('분석 시트 생성 완료')) setStep(4, 'done');
-    else if (logStr.includes('GAS 호출 실패')) setStep(4, 'error');
+    outer: while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
 
-    if (data.success) {
-      btn.className = 'run-btn success';
-      const iconEl = document.getElementById('btn-icon');
-      if (iconEl) iconEl.outerHTML = '<span id="btn-icon">✅</span>';
-      text.textContent = '실행 완료';
-      setStatus('자동화 완료!', 'success');
-      const summary = document.getElementById('result-summary');
-      summary.className = 'result-summary success';
-      summary.textContent = '✅ 리워드그룹 순위 다운로드 및 구글 시트 업로드 완료';
-      summary.style.display = 'block';
-      setTimeout(() => {
-        btn.className = 'run-btn';
-        const el = document.getElementById('btn-icon');
-        if (el) el.outerHTML = '<span id="btn-icon">▶</span>';
-        text.textContent = '다시 실행';
-      }, 3000);
-    } else {
-      throw new Error(logs[logs.length - 1] || '알 수 없는 오류');
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        let data;
+        try { data = JSON.parse(line.slice(6)); } catch { continue; }
+        if (data.ping) continue;
+
+        if (data.log !== undefined) {
+          addLog(data.log, logType(data.log));
+          updateSteps(data.log);
+        }
+        if (data.done !== undefined) {
+          success = data.done;
+          break outer;
+        }
+      }
     }
 
   } catch(e) {
@@ -315,6 +330,34 @@ async function runProcess() {
     summary.textContent = '❌ 오류가 발생했습니다. 로그를 확인해주세요.';
     summary.style.display = 'block';
     return;
+  }
+
+  if (success) {
+    btn.className = 'run-btn success';
+    const iconEl = document.getElementById('btn-icon');
+    if (iconEl) iconEl.outerHTML = '<span id="btn-icon">✅</span>';
+    text.textContent = '실행 완료';
+    setStatus('자동화 완료!', 'success');
+    const summary = document.getElementById('result-summary');
+    summary.className = 'result-summary success';
+    summary.textContent = '✅ 리워드그룹 순위 다운로드 및 구글 시트 업로드 완료';
+    summary.style.display = 'block';
+    setTimeout(() => {
+      btn.className = 'run-btn';
+      const el = document.getElementById('btn-icon');
+      if (el) el.outerHTML = '<span id="btn-icon">▶</span>';
+      text.textContent = '다시 실행';
+    }, 3000);
+  } else {
+    btn.className = 'run-btn error';
+    const iconEl = document.getElementById('btn-icon');
+    if (iconEl) iconEl.outerHTML = '<span id="btn-icon">❌</span>';
+    text.textContent = '오류 발생 — 다시 실행';
+    setStatus('오류 발생. 로그를 확인하세요.', 'error');
+    const summary = document.getElementById('result-summary');
+    summary.className = 'result-summary error';
+    summary.textContent = '❌ 오류가 발생했습니다. 로그를 확인해주세요.';
+    summary.style.display = 'block';
   }
 
   btn.disabled = false;
