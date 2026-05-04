@@ -5,5 +5,5 @@
   { "file": "macro/adlog_hidden.html",   "label": "히든키워드 조회",   "addedAt": "2026-04-30" },
   { "file": "macro/adlog_memo.html",     "label": "애드로그 메모",      "addedAt": "2026-04-30" },
   { "file": "macro/bizfit_traffic.html", "label": "물동량 자동화",       "addedAt": "2026-05-04" },
-  { "file": "macro/adlog_reward.html",  "label": "리워드 순위 다운로드", "addedAt": "2026-05-04" }
+  { "file": "macro/adlog_reward.html",  "label": "경쟁사 데이터",        "addedAt": "2026-05-04" }
 ]
