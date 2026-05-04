@@ -174,6 +174,15 @@ input[type=date]:focus{border-color:var(--acc);}
 .pg-add-form input[type=text]{background:var(--sur2);border:1px solid var(--brd);border-radius:7px;color:var(--tx);padding:5px 10px;font-size:12px;font-family:inherit;outline:none;width:160px;transition:border-color .15s;}
 .pg-add-form input[type=text]:focus{border-color:var(--acc);}
 
+/* product add/delete */
+.ps-item-del{width:16px;height:16px;border-radius:3px;border:none;background:transparent;color:transparent;cursor:pointer;font-size:9px;display:flex;align-items:center;justify-content:center;transition:all .12s;flex-shrink:0;line-height:1;padding:0;}
+.ps-item:hover .ps-item-del{color:var(--txd);}
+.ps-item-del:hover{background:rgba(239,68,68,.25)!important;color:var(--red)!important;}
+.color-swatches{display:flex;flex-wrap:wrap;gap:5px;}
+.csw{width:22px;height:22px;border-radius:5px;cursor:pointer;border:2px solid transparent;transition:all .12s;flex-shrink:0;}
+.csw:hover{transform:scale(1.15);}
+.csw.sel{border-color:#fff;transform:scale(1.15);}
+
 /* misc */
 .empty{padding:36px;text-align:center;color:var(--txd);}
 .empty .ico{font-size:34px;margin-bottom:8px;}
@@ -217,7 +226,7 @@ input[type=date]:focus{border-color:var(--acc);}
 
   <!-- Product type settings -->
   <div class="panel" id="prodPanel">
-    <div class="ph"><span>🏷️</span><h2>상품 유형 설정</h2><span class="m">클릭하면 상품명·버전·고정 비율 설정 가능</span><button class="btn btn-s" style="font-size:11px;padding:4px 10px;margin-left:auto;" onclick="showAddGroup()">＋ 그룹 추가</button></div>
+    <div class="ph"><span>🏷️</span><h2>상품 유형 설정</h2><span class="m">클릭하면 상품명·버전·고정 비율 설정 가능</span><div style="display:flex;gap:6px;margin-left:auto;"><button class="btn btn-p" style="font-size:11px;padding:4px 10px;" onclick="showAddProdModal()">＋ 상품 추가</button><button class="btn btn-s" style="font-size:11px;padding:4px 10px;" onclick="showAddGroup()">＋ 그룹 추가</button></div></div>
     <div class="pb">
       <!-- Groups -->
       <div class="pg-section">
@@ -272,6 +281,38 @@ input[type=date]:focus{border-color:var(--acc);}
       <div class="modal-footer">
         <button class="btn btn-s" style="font-size:12px;padding:7px 14px;" onclick="closeModal()">취소</button>
         <button class="btn btn-p" style="font-size:12px;padding:7px 16px;" onclick="saveModal()">✔ 저장</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Product Modal -->
+  <div class="modal-bg" id="addProdModalBg" style="display:none;">
+    <div class="modal" style="width:400px;">
+      <div class="modal-hdr">
+        <div class="ps-dot" id="apDot" style="width:14px;height:14px;background:#06b6d4;"></div>
+        <h3>상품 유형 추가</h3>
+        <button class="modal-close" onclick="closeAddProdModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="mf-row">
+          <div class="mf" style="flex:1;">
+            <label>상품명</label>
+            <input type="text" id="apName" placeholder="새 상품" maxlength="16"
+              onkeydown="if(event.key==='Enter')saveNewProd();if(event.key==='Escape')closeAddProdModal();" />
+          </div>
+          <div class="mf" style="flex:0 0 112px;">
+            <label>키워드 수 <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:9px;">(0=전체)</span></label>
+            <input type="number" id="apKwCount" min="0" max="99" value="4" style="font-family:'JetBrains Mono',monospace;text-align:center;" />
+          </div>
+        </div>
+        <div class="mf">
+          <label>엑셀 버전</label>
+          <input type="text" id="apVer" placeholder="ver.5.0/3.2" style="font-family:'JetBrains Mono',monospace;font-size:12px;" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-s" style="font-size:12px;padding:7px 14px;" onclick="closeAddProdModal()">취소</button>
+        <button class="btn btn-p" style="font-size:12px;padding:7px 16px;" onclick="saveNewProd()">✔ 추가</button>
       </div>
     </div>
   </div>
@@ -492,8 +533,10 @@ function saveToServer() {
 window.applySlotData = function(data) {
   if (!data) return;
   if (data.prods && Array.isArray(data.prods)) {
+    const defaultIds = new Set(prods.map(p => p.id));
     const savedMap = new Map(data.prods.map(p => [p.id, p]));
     prods = prods.map(def => savedMap.has(def.id) ? {...def, ...savedMap.get(def.id)} : def);
+    data.prods.forEach(sp => { if (!defaultIds.has(sp.id)) prods.push(sp); });
   }
   if (data.groups && Array.isArray(data.groups)) {
     groups = data.groups;
@@ -544,6 +587,7 @@ function renderPS() {
       <div class="ps-dot" style="background:${p.color};border-color:rgba(255,255,255,.25);"></div>
       <span class="ps-name" style="color:${p.color}">${esc(p.name)}</span>
       <button class="ps-tog ${p.active?'on':'off'}" onclick="event.stopPropagation();toggleP('${p.id}')"></button>
+      <button class="ps-item-del" onclick="event.stopPropagation();deleteProd('${p.id}')" title="${esc(p.name)} 삭제">✕</button>
     </div>`).join('');
 }
 
@@ -654,6 +698,48 @@ function toggleP(id) {
     const sum = Math.round(ap().reduce((s,q)=>s+q.ratio, 0) * 10) / 10;
     if (sum !== 10) openModal(id, true);
   }
+}
+
+// ── Add / Delete Product ──
+const PROD_COLORS=['#3b82f6','#8b5cf6','#10b981','#f97316','#cbd5e1','#84cc16','#ec4899','#eab308','#f43f5e','#06b6d4','#a78bfa','#34d399','#fb923c','#60a5fa','#f472b6','#facc15','#ef4444','#14b8a6','#d946ef','#78716c'];
+let _apColor='#06b6d4';
+
+function nextProdColor(){
+  const used=new Set(prods.map(p=>p.color));
+  return PROD_COLORS.find(c=>!used.has(c))||PROD_COLORS[prods.length%PROD_COLORS.length];
+}
+function showAddProdModal(){
+  _apColor=nextProdColor();
+  document.getElementById('apDot').style.background=_apColor;
+  document.getElementById('apName').value='';
+  document.getElementById('apKwCount').value=4;
+  document.getElementById('apVer').value='';
+  document.getElementById('addProdModalBg').style.display='flex';
+  setTimeout(()=>document.getElementById('apName').focus(),50);
+}
+function closeAddProdModal(){
+  document.getElementById('addProdModalBg').style.display='none';
+}
+function saveNewProd(){
+  const name=document.getElementById('apName').value.trim();
+  if(!name){document.getElementById('apName').focus();return;}
+  const kwCountVal=parseInt(document.getElementById('apKwCount').value);
+  const kwCount=isNaN(kwCountVal)?4:Math.max(0,kwCountVal);
+  const ver=document.getElementById('apVer').value.trim();
+  prods.push({id:'u'+Date.now(),name,color:_apColor,active:false,ver:ver||'ver.5.0/3.2',ratio:5,kwCount});
+  closeAddProdModal();
+  if(activeGroupId) updateActiveGroup(); else saveDefaultState();
+  renderPS(); renderTable(); refreshUI(); scheduleSave();
+}
+function deleteProd(id){
+  const p=prods.find(x=>x.id===id); if(!p) return;
+  if(!confirm(`'${p.name}' 상품을 삭제할까요?\n(모든 행의 배정에서도 제거됩니다)`)) return;
+  prods=prods.filter(x=>x.id!==id);
+  rows.forEach(r=>{r.products=(r.products||[]).filter(mid=>mid!==id);});
+  groups.forEach(g=>{g.state=g.state.filter(s=>s.id!==id);});
+  saveGroupsLocal();
+  if(activeGroupId) updateActiveGroup(); else saveDefaultState();
+  renderPS(); renderTable(); refreshUI(); scheduleSave();
 }
 
 // ── Upload ──
