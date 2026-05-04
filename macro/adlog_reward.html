@@ -164,6 +164,11 @@
         <div class="step-icon" id="step3-icon">📤</div>
         <div class="step-label">시트<br>업로드</div>
       </div>
+      <div class="step-arrow">→</div>
+      <div class="step">
+        <div class="step-icon" id="step4-icon">📊</div>
+        <div class="step-label">분석 시트<br>생성</div>
+      </div>
     </div>
 
     <button class="run-btn" id="run-btn" onclick="runProcess()">
@@ -244,7 +249,7 @@ async function runProcess() {
 
   document.getElementById('result-summary').style.display = 'none';
   document.getElementById('log-area').innerHTML = '';
-  [1,2,3].forEach(n => setStep(n, ''));
+  [1,2,3,4].forEach(n => setStep(n, ''));
   setStatus('자동화 실행 중...', 'running');
 
   try {
@@ -267,9 +272,11 @@ async function runProcess() {
     });
 
     const logStr = logs.join('\n');
-    if (logStr.includes('로그인 완료'))  setStep(1, 'done');
-    if (logStr.includes('다운로드 완료')) setStep(2, 'done');
-    if (logStr.includes('업로드 완료'))  setStep(3, 'done');
+    if (logStr.includes('로그인 완료'))       setStep(1, 'done');
+    if (logStr.includes('다운로드 완료'))     setStep(2, 'done');
+    if (logStr.includes('업로드 완료'))       setStep(3, 'done');
+    if (logStr.includes('분석 시트 생성 완료')) setStep(4, 'done');
+    else if (logStr.includes('GAS 호출 실패')) setStep(4, 'error');
 
     if (data.success) {
       btn.className = 'run-btn success';
@@ -293,7 +300,7 @@ async function runProcess() {
 
   } catch(e) {
     addLog(`❌ ${e.message}`, 'fail');
-    [1,2,3].forEach(n => {
+    [1,2,3,4].forEach(n => {
       const el = document.getElementById(`step${n}-icon`);
       if (el && !el.classList.contains('done')) el.className = 'step-icon';
     });
