@@ -1,0 +1,11 @@
+flask
+flask-cors
+playwright
+gspread
+google-auth
+google-auth-httplib2
+pandas
+openpyxl
+xlrd
+lxml
+requests

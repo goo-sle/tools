@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BizFit 물동량 자동화</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', -apple-system, sans-serif; background: #f0f2f5; color: #1a1a2e; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 32px 20px; }
+
+  .main-card {
+    width: 100%; max-width: 680px;
+    background: #fff; border-radius: 0 0 16px 16px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08); overflow: hidden;
+  }
+
+  .card-top {
+    padding: 28px 32px 24px;
+    border-bottom: 1px solid #e8eaf0;
+  }
+
+  .flow-steps {
+    display: flex; align-items: center; gap: 0;
+    margin-bottom: 24px;
+  }
+  .step {
+    display: flex; flex-direction: column; align-items: center; gap: 5px;
+    flex: 1;
+  }
+  .step-icon {
+    width: 44px; height: 44px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; background: #f8f9fb; border: 2px solid #e2e8f0;
+    transition: all 0.3s;
+  }
+  .step-icon.active   { background: #e3f2fd; border-color: #1565c0; }
+  .step-icon.done     { background: #e8f5e9; border-color: #2e7d32; }
+  .step-icon.error    { background: #ffebee; border-color: #c53030; }
+  .step-label { font-size: 11px; font-weight: 600; color: #718096; text-align: center; }
+  .step-arrow { font-size: 16px; color: #cbd5e0; flex-shrink: 0; margin: 0 4px; padding-bottom: 20px; }
+
+  .run-btn {
+    width: 100%; padding: 16px; border: none; border-radius: 10px;
+    font-size: 16px; font-weight: 800; cursor: pointer;
+    background: #1565c0; color: #fff;
+    transition: all 0.2s; letter-spacing: 0.3px;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .run-btn:hover:not(:disabled) { background: #0d47a1; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(21,101,192,0.3); }
+  .run-btn:disabled { background: #a0aec0; cursor: not-allowed; transform: none; box-shadow: none; }
+  .run-btn.running { background: #37474f; }
+  .run-btn.success { background: #2e7d32; }
+  .run-btn.error   { background: #c53030; }
+
+  .spinner {
+    width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: #fff; border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .status-bar {
+    margin-top: 14px; padding: 10px 14px;
+    background: #f8f9fb; border-radius: 8px;
+    font-size: 13px; color: #4a5568;
+    display: flex; align-items: center; gap: 8px;
+    min-height: 40px;
+  }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #cbd5e0; flex-shrink: 0; }
+  .status-dot.running { background: #1565c0; animation: pulse 1s ease-in-out infinite; }
+  .status-dot.success { background: #2e7d32; }
+  .status-dot.error   { background: #c53030; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  .log-panel {
+    padding: 0 32px 28px;
+  }
+  .log-toggle {
+    padding: 14px 0 10px;
+    font-size: 12px; font-weight: 600; color: #a0aec0;
+    cursor: pointer; display: flex; align-items: center; gap: 6px;
+    user-select: none; border-top: 1px solid #e8eaf0;
+  }
+  .log-toggle:hover { color: #718096; }
+  .log-area {
+    background: #1a202c; border-radius: 10px; padding: 14px 16px;
+    height: 320px; overflow-y: auto;
+    font-family: 'Consolas', 'Monaco', monospace; font-size: 12px; line-height: 1.8;
+    display: none;
+  }
+  .log-area.open { display: block; }
+  .log-line    { display: flex; gap: 10px; }
+  .log-time    { color: #4a5568; flex-shrink: 0; }
+  .log-msg     { color: #e2e8f0; }
+  .log-success .log-msg { color: #68d391; }
+  .log-fail    .log-msg { color: #fc8181; }
+  .log-info    .log-msg { color: #63b3ed; }
+  .log-warn    .log-msg { color: #f6e05e; }
+
+  .result-summary {
+    margin-top: 14px; padding: 14px 16px;
+    border-radius: 10px; font-size: 13px; font-weight: 600;
+    display: none;
+  }
+  .result-summary.success { background: #c6f6d5; color: #276749; }
+  .result-summary.error   { background: #fed7d7; color: #c53030; }
+
+  .note-box {
+    margin-top: 14px; padding: 12px 14px;
+    background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px;
+    font-size: 12px; color: #92400e; line-height: 1.6;
+  }
+  .note-box strong { display: block; margin-bottom: 4px; }
+
+  .page-header {
+    width: 100%; max-width: 680px;
+    background: linear-gradient(135deg, #1e3a5f 0%, #1565c0 100%);
+    color: #fff; padding: 20px 28px;
+    border-radius: 16px 16px 0 0;
+    display: flex; align-items: center; gap: 14px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+  }
+  .page-header-icon { font-size: 28px; }
+  .page-header h1 { font-size: 19px; font-weight: 700; letter-spacing: -0.3px; }
+  .page-header p  { font-size: 12px; opacity: 0.75; margin-top: 2px; }
+
+  @media (max-width: 500px) {
+    .step-label { font-size: 10px; }
+    .step-arrow { font-size: 13px; }
+    .card-top { padding: 20px; }
+    .log-panel { padding: 0 20px 20px; }
+    .page-header { padding: 16px 20px; }
+    .page-header h1 { font-size: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <span class="page-header-icon">🚚</span>
+  <div>
+    <h1>BizFit 물동량 자동화</h1>
+    <p id="header-user">물동량 데이터 수집 · 구글 시트 업로드 · GAS 실행</p>
+  </div>
+</div>
+
+<div class="main-card">
+  <div class="card-top">
+
+    <!-- 단계 표시 -->
+    <div class="flow-steps">
+      <div class="step">
+        <div class="step-icon" id="step1-icon">🔐</div>
+        <div class="step-label">BizFit<br>로그인</div>
+      </div>
+      <div class="step-arrow">→</div>
+      <div class="step">
+        <div class="step-icon" id="step2-icon">📥</div>
+        <div class="step-label">엑셀<br>다운로드</div>
+      </div>
+      <div class="step-arrow">→</div>
+      <div class="step">
+        <div class="step-icon" id="step3-icon">📤</div>
+        <div class="step-label">시트<br>업로드</div>
+      </div>
+      <div class="step-arrow">→</div>
+      <div class="step">
+        <div class="step-icon" id="step4-icon">⚙️</div>
+        <div class="step-label">GAS<br>스크립트</div>
+      </div>
+    </div>
+
+    <!-- 실행 버튼 -->
+    <button class="run-btn" id="run-btn" onclick="runProcess()">
+      <span id="btn-icon">▶</span>
+      <span id="btn-text">물동량 자동화 실행</span>
+    </button>
+
+    <!-- 상태 표시 -->
+    <div class="status-bar">
+      <div class="status-dot" id="status-dot"></div>
+      <span id="status-text">실행 버튼을 눌러 시작하세요.</span>
+    </div>
+
+    <!-- 결과 요약 -->
+    <div class="result-summary" id="result-summary"></div>
+
+  </div>
+
+  <div class="log-panel">
+    <div class="log-toggle" onclick="toggleLog()" id="log-toggle">
+      ▶ 실행 로그 보기
+    </div>
+    <div class="log-area" id="log-area"></div>
+
+    <div class="note-box" id="gas-note" style="display:none;">
+      <strong>⚠️ GAS 자동 실행 설정 필요</strong>
+      시트 업로드 완료 후 GAS 스크립트가 자동 실행되려면:<br>
+      1. GAS 에디터에서 <code>doPost()</code> 함수 추가 후 웹앱 배포<br>
+      2. Cloud Run 서비스에 환경변수 <code>GAS_WEBAPP_URL</code> 설정
+    </div>
+  </div>
+</div>
+
+<script>
+const SERVER = 'https://macro-6-bizfit-traffic-938928195180.asia-northeast3.run.app';
+
+let logOpen = false;
+
+function toggleLog() {
+  logOpen = !logOpen;
+  document.getElementById('log-area').classList.toggle('open', logOpen);
+  document.getElementById('log-toggle').textContent = (logOpen ? '▼' : '▶') + ' 실행 로그 ' + (logOpen ? '접기' : '보기');
+}
+
+function addLog(msg, type='') {
+  const area = document.getElementById('log-area');
+  const now  = new Date().toLocaleTimeString('ko-KR', { hour12: false });
+  const div  = document.createElement('div');
+  div.className = `log-line ${type ? 'log-'+type : ''}`;
+  div.innerHTML = `<span class="log-time">${now}</span><span class="log-msg">${esc(msg)}</span>`;
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+}
+
+function setStep(n, state) {
+  const icon = document.getElementById(`step${n}-icon`);
+  if (!icon) return;
+  icon.className = `step-icon ${state}`;
+}
+
+function setStatus(text, state='') {
+  document.getElementById('status-text').textContent = text;
+  const dot = document.getElementById('status-dot');
+  dot.className = 'status-dot' + (state ? ' ' + state : '');
+}
+
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+async function runProcess() {
+  const btn  = document.getElementById('run-btn');
+  const icon = document.getElementById('btn-icon');
+  const text = document.getElementById('btn-text');
+
+  btn.disabled = true;
+  btn.className = 'run-btn running';
+  icon.outerHTML = '<div class="spinner" id="btn-icon"></div>';
+  text.textContent = '실행 중...';
+
+  // 로그 자동 열기
+  if (!logOpen) toggleLog();
+
+  document.getElementById('result-summary').style.display = 'none';
+  document.getElementById('gas-note').style.display = 'none';
+  document.getElementById('log-area').innerHTML = '';
+  [1,2,3,4].forEach(n => setStep(n, ''));
+  setStatus('자동화 실행 중...', 'running');
+
+  try {
+    const res  = await fetch(`${SERVER}/run`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+      signal: AbortSignal.timeout(300000),
+    });
+    const data = await res.json();
+    const logs = data.logs || [];
+
+    // 로그 렌더링
+    logs.forEach(msg => {
+      let type = '';
+      if (msg.startsWith('✅')) type = 'success';
+      else if (msg.startsWith('❌')) type = 'fail';
+      else if (msg.startsWith('⚠️') || msg.startsWith('⚠')) type = 'warn';
+      else if (msg.startsWith('▶') || msg.startsWith('🔐') || msg.startsWith('📋') || msg.startsWith('📥') || msg.startsWith('📤') || msg.startsWith('⚙️') || msg.startsWith('🏁')) type = 'info';
+      addLog(msg, type);
+    });
+
+    // 단계별 아이콘 업데이트 (로그 분석)
+    const logStr = logs.join('\n');
+    if (logStr.includes('로그인 완료'))          setStep(1, 'done');
+    if (logStr.includes('데이터 가공 중'))       setStep(2, 'done');
+    if (logStr.includes('업로드 완료'))          setStep(3, 'done');
+    if (logStr.includes('GAS 실행 완료'))        setStep(4, 'done');
+    else if (logStr.includes('GAS_WEBAPP_URL')) { setStep(4, ''); document.getElementById('gas-note').style.display = 'block'; }
+    else if (logStr.includes('GAS 호출 실패'))  setStep(4, 'error');
+
+    if (data.success) {
+      btn.className = 'run-btn success';
+      document.getElementById('btn-icon') && (document.getElementById('btn-icon').outerHTML = '<span id="btn-icon">✅</span>');
+      text.textContent = '실행 완료';
+      setStatus('자동화 완료!', 'success');
+      const summary = document.getElementById('result-summary');
+      summary.className = 'result-summary success';
+      summary.textContent = '✅ BizFit 데이터 수집 및 구글 시트 업로드 완료';
+      summary.style.display = 'block';
+      setTimeout(() => {
+        btn.className = 'run-btn';
+        const iconEl = document.getElementById('btn-icon');
+        if (iconEl) iconEl.outerHTML = '<span id="btn-icon">▶</span>';
+        text.textContent = '다시 실행';
+      }, 3000);
+    } else {
+      throw new Error(logs[logs.length - 1] || '알 수 없는 오류');
+    }
+
+  } catch(e) {
+    addLog(`❌ ${e.message}`, 'fail');
+    [1,2,3,4].forEach(n => {
+      const el = document.getElementById(`step${n}-icon`);
+      if (el && !el.classList.contains('done')) el.className = 'step-icon';
+    });
+    btn.className = 'run-btn error';
+    document.getElementById('btn-icon') && (document.getElementById('btn-icon').outerHTML = '<span id="btn-icon">❌</span>');
+    text.textContent = '오류 발생 — 다시 실행';
+    btn.disabled = false;
+    setStatus('오류 발생. 로그를 확인하세요.', 'error');
+    const summary = document.getElementById('result-summary');
+    summary.className = 'result-summary error';
+    summary.textContent = '❌ 오류가 발생했습니다. 로그를 확인해주세요.';
+    summary.style.display = 'block';
+    return;
+  }
+
+  btn.disabled = false;
+}
+
+// 서버 연결 확인
+(async function() {
+  try {
+    const res = await fetch(`${SERVER}/ping`, { signal: AbortSignal.timeout(3000) });
+    if (res.ok) setStatus('서버 연결됨 — 실행 준비 완료', '');
+  } catch(_) {
+    setStatus('⚠️ 서버 연결 실패 — 잠시 후 다시 시도', 'error');
+  }
+})();
+</script>
+
+<script type="module">
+  import { db } from "../ha-tools.js";
+  import { ref } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-database.js";
+  const userId = localStorage.getItem('ha_user');
+  if (!userId) { location.replace("../login.html"); }
+  const headerEl = document.getElementById('header-user');
+  if (headerEl) headerEl.textContent = `물동량 데이터 수집 · 구글 시트 업로드 · ${userId}`;
+</script>
+
+</body>
+</html>
