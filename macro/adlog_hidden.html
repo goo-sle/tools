@@ -356,6 +356,47 @@ async function runStep(mode) {
   }
 }
 
+function logType(msg) {
+  if (msg.startsWith('✅')) return 'success';
+  if (msg.startsWith('❌')) return 'fail';
+  if (msg.startsWith('⚠️') || msg.startsWith('⚠')) return 'warn';
+  if (/^[▶🔐🔍📋📝⏳🏁]/u.test(msg)) return 'info';
+  return '';
+}
+
+async function streamFetch(endpoint, body, onLog, timeout=360000) {
+  const res = await fetch(`${SERVER}/${endpoint}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(timeout),
+  });
+  if (!res.ok) throw new Error(`서버 응답 오류 (${res.status})`);
+
+  const reader  = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop();
+
+    for (const line of lines) {
+      if (!line.startsWith('data: ')) continue;
+      let data;
+      try { data = JSON.parse(line.slice(6)); } catch { continue; }
+      if (data.ping) continue;
+      if (data.log !== undefined) onLog(data.log);
+      if (data.result !== undefined) return data.result;
+    }
+  }
+  throw new Error('스트림이 결과 없이 종료됨');
+}
+
 async function doStep1() {
   const targets = urls;
   addLog(`▶ STEP 1 시작 — ${targets.length}개 URL`, 'info');
@@ -364,16 +405,13 @@ async function doStep1() {
     const { name, url } = targets[i];
     results[url] = { name, status: 'running', keywords: [], rankResults: [] };
     renderResults();
-    addLog(`[${i+1}/${targets.length}] ${name||url} 히든키워드 조회 중...`);
+    addLog(`[${i+1}/${targets.length}] ${name||url}`, 'info');
     setProgress((i / targets.length) * 50, `STEP1 ${i+1}/${targets.length}`);
 
     try {
-      const res  = await fetch(`${SERVER}/step1`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, url }),
-      });
-      const data = await res.json();
+      const data = await streamFetch('step1-stream', { name, url },
+        msg => addLog(`  ${msg}`, logType(msg))
+      );
       if (data.success) {
         results[url] = { name: data.name || name, status: 'done', keywords: data.keywords || [], rankResults: [] };
         const kwCount = (data.keywords || []).length;
@@ -405,17 +443,14 @@ async function doStep2() {
     const keywords = r.keywords.map(k => k.keyword);
     results[url].status = 'running';
     renderResults();
-    addLog(`[${i+1}/${targets.length}] ${r.name||url} 상위순위 조회 중... (최대 5분)`);
+    addLog(`[${i+1}/${targets.length}] ${r.name||url} — 키워드 ${keywords.length}개`, 'info');
     setProgress(50 + (i / targets.length) * 50, `STEP2 ${i+1}/${targets.length}`);
 
     try {
-      const res  = await fetch(`${SERVER}/step2`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url, keywords }),
-        signal: AbortSignal.timeout(360000),
-      });
-      const data = await res.json();
+      const data = await streamFetch('step2-stream', { url, keywords },
+        msg => addLog(`  ${msg}`, logType(msg)),
+        420000
+      );
       if (data.success) {
         results[url].rankResults = data.results || [];
         results[url].status      = 'done';
