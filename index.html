@@ -289,6 +289,35 @@
     .tab.active .close-tab { color: rgba(255,255,255,0.65); }
     .tab .close-tab:hover { color: var(--primary-color); }
     .tab.active .close-tab:hover { color: #fff; }
+    .tab.tab-overflow { display: none !important; }
+
+    #tabOverflowBtn {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 5px 10px; flex-shrink: 0;
+      background: transparent; border: 1px solid var(--green-border);
+      border-radius: 20px; font-size: 12px; font-weight: 600;
+      color: var(--text-sub); cursor: pointer;
+      transition: all 0.15s; user-select: none; white-space: nowrap;
+    }
+    #tabOverflowBtn:hover { background: var(--green-light); color: var(--primary-color); border-color: var(--primary-color); }
+
+    #tabOverflowMenu {
+      position: fixed; background: #fff;
+      border: 1px solid var(--green-border); border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(46,125,50,0.13);
+      z-index: 200; min-width: 180px; overflow: hidden;
+      display: none;
+    }
+    #tabOverflowMenu.open { display: block; }
+    .overflow-item {
+      display: flex; align-items: center;
+      padding: 9px 14px; font-size: 13px; color: var(--text-sub);
+      cursor: pointer; transition: background 0.1s; gap: 10px;
+    }
+    .overflow-item:hover { background: var(--green-light); color: var(--primary-color); }
+    .overflow-item-label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .overflow-item-close { font-size: 14px; color: #ccc; flex-shrink: 0; }
+    .overflow-item:hover .overflow-item-close { color: #bbb; }
 
     #content {
       flex-grow: 1; position: relative; background: var(--bg);
@@ -757,6 +786,8 @@
     let dragged = null;
     let draggedTab = null;
     let tabs = [];
+    const MAX_VISIBLE_TABS = 5;
+    let currentActiveFile = null;
 
     const normalizeToolFile = (file) => (file || "").replace(/^★\//, "tools/");
 
@@ -963,11 +994,13 @@
 
     function updateTabsArrayOrder() {
       const currentTabElements = [...tabBar.querySelectorAll('.tab')];
-      tabs = currentTabElements.map(el => tabs.find(t => t.file === el.dataset.file));
+      tabs = currentTabElements.map(el => tabs.find(t => t.file === el.dataset.file)).filter(Boolean);
+      updateTabOverflow();
     }
 
     function activateTab(file) {
       if (isMobile()) return;
+      currentActiveFile = file;
       const tid = getSafeId(file);
       document.querySelectorAll('.tab, #iframeContainer iframe, .tool-button').forEach(el => el.classList.remove('active'));
       welcome.style.display = "none";
@@ -978,6 +1011,7 @@
       if(tBtn) tBtn.classList.add('active');
       if(ifr) ifr.classList.add('active');
       if(mBtn) mBtn.classList.add('active');
+      updateTabOverflow();
     }
 
     window.closeTab = function(e, file) {
@@ -997,9 +1031,84 @@
       document.querySelectorAll('.tab, #iframeContainer iframe, .tool-button').forEach(el => el.classList.remove('active'));
       tabBar.style.display = "none";
       welcome.style.display = "flex";
+      currentActiveFile = null;
+      document.getElementById('tabOverflowBtn')?.remove();
+      document.getElementById('tabOverflowMenu')?.remove();
       const mf = document.getElementById('mobileFrame');
       if(mf) mf.src = "";
     }
+
+    function closeOverflowMenu() {
+      document.getElementById('tabOverflowMenu')?.classList.remove('open');
+    }
+
+    function activateFromOverflow(file) {
+      closeOverflowMenu();
+      const allTabEls = [...tabBar.querySelectorAll('.tab')];
+      const visibleTabEls = allTabEls.filter(el => !el.classList.contains('tab-overflow'));
+      const tabEl = document.getElementById('tab_' + getSafeId(file));
+      if (!tabEl) return;
+      if (tabEl.classList.contains('tab-overflow') && visibleTabEls.length >= MAX_VISIBLE_TABS) {
+        tabBar.insertBefore(tabEl, visibleTabEls[visibleTabEls.length - 1]);
+        tabs = [...tabBar.querySelectorAll('.tab')].map(el => tabs.find(t => t.file === el.dataset.file)).filter(Boolean);
+      }
+      activateTab(file);
+    }
+
+    function updateTabOverflow() {
+      const allTabEls = [...tabBar.querySelectorAll('.tab')];
+      allTabEls.forEach(el => el.classList.remove('tab-overflow'));
+      document.getElementById('tabOverflowBtn')?.remove();
+      document.getElementById('tabOverflowMenu')?.remove();
+      if (allTabEls.length <= MAX_VISIBLE_TABS) return;
+
+      const activeIdx = allTabEls.findIndex(el => el.classList.contains('active'));
+      for (let i = MAX_VISIBLE_TABS; i < allTabEls.length; i++) {
+        allTabEls[i].classList.add('tab-overflow');
+      }
+      if (activeIdx >= MAX_VISIBLE_TABS) {
+        allTabEls[MAX_VISIBLE_TABS - 1].classList.add('tab-overflow');
+        allTabEls[activeIdx].classList.remove('tab-overflow');
+      }
+
+      const hiddenTabData = allTabEls
+        .filter(el => el.classList.contains('tab-overflow'))
+        .map(el => tabs.find(t => t.file === el.dataset.file))
+        .filter(Boolean);
+
+      const overflowBtn = document.createElement('div');
+      overflowBtn.id = 'tabOverflowBtn';
+      overflowBtn.innerHTML = `<span class="material-symbols-outlined" style="font-size:15px;vertical-align:middle;">more_horiz</span><span>+${hiddenTabData.length}</span>`;
+      tabBar.appendChild(overflowBtn);
+
+      const menu = document.createElement('div');
+      menu.id = 'tabOverflowMenu';
+      hiddenTabData.forEach(t => {
+        const item = document.createElement('div');
+        item.className = 'overflow-item';
+        item.innerHTML = `<span class="overflow-item-label">${t.label}</span><span class="material-symbols-outlined overflow-item-close">close</span>`;
+        item.onclick = (e) => {
+          if (!e.target.classList.contains('overflow-item-close')) activateFromOverflow(t.file);
+        };
+        item.querySelector('.overflow-item-close').onclick = (e) => {
+          e.stopPropagation();
+          closeOverflowMenu();
+          window.closeTab({ stopPropagation: () => {} }, t.file);
+        };
+        menu.appendChild(item);
+      });
+      document.body.appendChild(menu);
+
+      overflowBtn.onclick = (e) => {
+        e.stopPropagation();
+        const rect = overflowBtn.getBoundingClientRect();
+        menu.style.top = (rect.bottom + 4) + 'px';
+        menu.style.right = (window.innerWidth - rect.right) + 'px';
+        menu.classList.toggle('open');
+      };
+    }
+
+    document.addEventListener('click', closeOverflowMenu);
 
     function setupDragAndDrop() {
       sections.forEach(section => {
