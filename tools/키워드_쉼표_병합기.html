@@ -465,6 +465,31 @@
     splitInfo.textContent = '';
     results.innerHTML = '';
   });
+
+  // ── Firebase (부모 창 연동) ──
+  function saveToServer() {
+    if (window.parent && window.parent.saveKeywordMergerData) {
+      window.parent.saveKeywordMergerData({
+        baseCount: baseCountEl.value,
+        groupCount: groupCountEl.value
+      });
+    }
+  }
+
+  window.applyKeywordMergerData = function(data) {
+    if (!data) return;
+    if (data.baseCount) baseCountEl.value = data.baseCount;
+    if (data.groupCount) groupCountEl.value = data.groupCount;
+  };
+
+  baseCountEl.addEventListener('change', saveToServer);
+  groupCountEl.addEventListener('change', saveToServer);
+
+  window.onload = () => {
+    if (window.parent && window.parent.loadKeywordMergerData) {
+      window.parent.loadKeywordMergerData().then(data => window.applyKeywordMergerData(data));
+    }
+  };
 </script>
 
 </body>

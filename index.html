@@ -768,6 +768,22 @@
       });
     };
 
+    // 7-1. 키워드 쉼표 병합기 데이터 저장 (키워드_쉼표_병합기.html에서 호출)
+    window.saveKeywordMergerData = function(data) {
+      if (!currentUserId) return;
+      const kmRef = ref(db, `users/${currentUserId}/keywordMerger`);
+      set(kmRef, data).catch(err => console.error("키워드 쉼표 병합기 저장 실패:", err));
+    };
+
+    // 7-2. 키워드 쉼표 병합기 데이터 로드 (키워드_쉼표_병합기.html에서 호출)
+    window.loadKeywordMergerData = function() {
+      if (!currentUserId) return Promise.resolve(null);
+      const kmRef = ref(db, `users/${currentUserId}/keywordMerger`);
+      return new Promise((resolve) => {
+        onValue(kmRef, (snapshot) => resolve(snapshot.val()), { onlyOnce: true });
+      });
+    };
+
     // 9. 네이버 키워드 조합기 슬롯 저장 (네이버_키워드_조합기.html에서 호출)
     window.saveSeoData = function(slotNum, data, slotNames) {
       if (!currentUserId) return;
