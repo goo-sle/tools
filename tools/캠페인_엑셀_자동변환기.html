@@ -612,7 +612,7 @@ window.onload = () => {
   window.addEventListener('resize', updatePSArrows);
   // 부모 창에게 데이터 요청
   if (window.parent && window.parent.loadSlotData) {
-    window.parent.loadSlotData();
+    window.parent.loadSlotData().then(data => applySlotData(data));
   }
 };
 

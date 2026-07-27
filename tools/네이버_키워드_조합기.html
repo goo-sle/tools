@@ -168,7 +168,9 @@ function switchSlot(slotNum) {
     document.getElementById('slot_btn_'+slotNum).classList.add('active');
 
     if (window.parent && window.parent.loadSeoData) {
-        window.parent.loadSeoData(slotNum);
+        window.parent.loadSeoData(slotNum).then(({slotData, slotNames}) => {
+            applyServerData(slotNum, slotData, slotNames);
+        });
     }
 }
 
@@ -299,7 +301,9 @@ window.onload = () => {
     createSlots();
     document.getElementById('slot_btn_1').classList.add('active');
     if (window.parent && window.parent.loadSeoData) {
-        window.parent.loadSeoData(1);
+        window.parent.loadSeoData(1).then(({slotData, slotNames}) => {
+            applyServerData(1, slotData, slotNames);
+        });
     }
 };
 </script>
