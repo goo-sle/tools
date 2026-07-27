@@ -762,10 +762,10 @@
     // 8. 캠페인 엑셀 변환기 데이터 로드 (캠페인_엑셀_자동변환기.html에서 호출)
     window.loadSlotData = function() {
       if (!currentUserId) return;
+      const activeFrame = document.querySelector('#iframeContainer iframe.active, #mobileFrame');
       const slotRef = ref(db, `users/${currentUserId}/slotConverter`);
       onValue(slotRef, (snapshot) => {
         const data = snapshot.val();
-        const activeFrame = document.querySelector('#iframeContainer iframe.active, #mobileFrame');
         if (activeFrame && activeFrame.contentWindow && activeFrame.contentWindow.applySlotData) {
           activeFrame.contentWindow.applySlotData(data);
         }
@@ -783,12 +783,12 @@
     // 10. 네이버 키워드 조합기 슬롯 로드 (네이버_키워드_조합기.html에서 호출)
     window.loadSeoData = function(slotNum) {
       if (!currentUserId) return;
+      const activeFrame = document.querySelector('#iframeContainer iframe.active, #mobileFrame');
       const seoRef = ref(db, `users/${currentUserId}/seoKeyword`);
       onValue(seoRef, (snapshot) => {
         const saved = snapshot.val();
         const slotData = saved ? (saved.slots || {})[slotNum] || null : null;
         const slotNames = saved ? (saved.slotNames || null) : null;
-        const activeFrame = document.querySelector('#iframeContainer iframe.active, #mobileFrame');
         if (activeFrame && activeFrame.contentWindow && activeFrame.contentWindow.applyServerData) {
           activeFrame.contentWindow.applyServerData(slotNum, slotData, slotNames);
         }
