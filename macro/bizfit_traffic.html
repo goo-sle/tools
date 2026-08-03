@@ -201,13 +201,6 @@
         물동량 메인 시트 (진행중 전체 · 저장하기 종료)
       </a>
     </div>
-    <div class="sheet-link">
-      📊 업로드 대상 2:
-      <a href="https://docs.google.com/spreadsheets/d/1sX5QAFULG5ZIxeRpS6jG4mAZWIeOmDiKs_3oPlq31tk" target="_blank">
-        물동량 업로드 시트 (업로드 탭)
-      </a>
-    </div>
-
   </div>
 
   <div class="log-panel">
@@ -217,10 +210,8 @@
     <div class="log-area" id="log-area"></div>
 
     <div class="note-box" id="gas-note" style="display:none;">
-      <strong>⚠️ GAS 자동 실행 설정 필요</strong>
-      시트 업로드 완료 후 GAS 스크립트가 자동 실행되려면:<br>
-      1. GAS 에디터에서 <code>doPost()</code> 함수 추가 후 웹앱 배포<br>
-      2. Cloud Run 서비스에 환경변수 <code>GAS_WEBAPP_URL</code> 설정
+      <strong>⚠️ GAS 비즈핏 URL 미설정</strong>
+      Cloud Run 서비스에 환경변수 <code>GAS_BIZFIT_URL</code>을 설정해야 GAS 스크립트가 자동 실행됩니다.
     </div>
   </div>
 </div>
@@ -278,10 +269,10 @@ function updateSteps(msg) {
   if (msg.includes('데이터 가공 중'))              { setStep(2, 'done'); setStep(3, 'active'); }
   if (msg.includes('구글 시트 업로드 중'))         setStep(3, 'active');
   if (msg.includes('업로드 완료'))                 setStep(3, 'done');
-  if (msg.includes('GAS runProcessSequentially')) setStep(4, 'active');
-  if (msg.includes('GAS 실행 완료'))              setStep(4, 'done');
-  if (msg.includes('GAS_WEBAPP_URL 미설정'))      { setStep(4, ''); document.getElementById('gas-note').style.display = 'block'; }
-  if (msg.includes('GAS 호출 실패'))              setStep(4, 'error');
+  if (msg.includes('GAS 비즈핏 호출 중'))          setStep(4, 'active');
+  if (msg.includes('GAS 비즈핏 실행 완료'))        setStep(4, 'done');
+  if (msg.includes('GAS 비즈핏 URL 미설정'))       { setStep(4, ''); document.getElementById('gas-note').style.display = 'block'; }
+  if (msg.includes('GAS 비즈핏 호출 실패'))        setStep(4, 'error');
 }
 
 async function runProcess() {
