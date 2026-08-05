@@ -148,6 +148,8 @@
 
   .td-mid  { font-weight: 700; color: #2d3748; font-family: monospace; font-size: 12px; }
 
+  .pcode-badge { display: inline-block; padding: 1px 6px; border-radius: 100px; font-size: 9.5px; font-weight: 700; background: #e9d8fd; color: #553c9a; font-family: monospace; margin-left: 4px; }
+
   .action-badge {
     display: inline-block;
     padding: 2px 7px;
@@ -298,6 +300,10 @@
           <input type="text" id="inp-mid" placeholder="예: 1839711962" />
         </div>
         <div class="form-group">
+          <label>Pcode (선택)</label>
+          <input type="text" id="inp-pcode" placeholder="비우면 MID의 전체 캠페인 대상" />
+        </div>
+        <div class="form-group">
           <label>메모 (선택)</label>
           <input type="text" id="inp-memo" placeholder="비우면 오늘 날짜(MM-DD) 자동 입력" />
         </div>
@@ -314,7 +320,7 @@
         <div class="excel-upload-area" id="excel-drop-zone" onclick="document.getElementById('excel-file-input').click()">
           <div class="upload-icon">📊</div>
           <div class="upload-text">클릭 또는 드래그 업로드</div>
-          <div class="upload-hint">MID / 캠페인명 / 임시중단B(O) / 강제종료(O) / 메모</div>
+          <div class="upload-hint">MID / Pcode(선택) / 임시중단B(O) / 강제종료(O) / 메모</div>
         </div>
         <input type="file" id="excel-file-input" accept=".xlsx,.xls" onchange="handleExcelFile(this.files[0])">
       </div>
@@ -328,7 +334,7 @@
         <span class="card-title">📋 처리 목록 <span class="badge badge-purple" id="entry-count">0</span></span>
         <div class="search-wrap">
           <span style="font-size:12px;">🔍</span>
-          <input type="text" id="inp-search" placeholder="MID / 캠페인명 검색" oninput="filterList(this.value)" lang="ko" inputmode="text" />
+          <input type="text" id="inp-search" placeholder="MID / Pcode 검색" oninput="filterList(this.value)" lang="ko" inputmode="text" />
         </div>
       </div>
       <div class="select-all-row">
@@ -344,7 +350,7 @@
           <thead>
             <tr>
               <th style="width:36px;"></th>
-              <th>MID / 캠페인명</th>
+              <th>MID</th>
               <th>처리 작업</th>
               <th style="width:72px;">상태</th>
             </tr>
@@ -427,19 +433,22 @@ function toggleAction(type) {
 
 // ── MID 추가 ──
 function addEntry() {
-  const mid  = document.getElementById('inp-mid').value.trim();
-  const memo = document.getElementById('inp-memo').value.trim();
+  const mid   = document.getElementById('inp-mid').value.trim();
+  const pcode = document.getElementById('inp-pcode').value.trim();
+  const memo  = document.getElementById('inp-memo').value.trim();
   if (!mid) { alert('MID를 입력해주세요.'); return; }
   if (!addPause && !addForce && !memo) { alert('처리 작업을 선택하거나 메모를 입력해주세요.'); return; }
+  if (entries.some(e => e.mid === mid && (e.pcode||'') === pcode)) { alert('이미 등록된 MID/Pcode 조합입니다.'); return; }
 
-  entries.push({ mid, memo, do_pause: addPause, do_force: addForce, status: 'ready', result: '' });
+  entries.push({ mid, pcode, memo, do_pause: addPause, do_force: addForce, status: 'ready', result: '' });
   save();
 
-  document.getElementById('inp-mid').value  = '';
-  document.getElementById('inp-memo').value = '';
+  document.getElementById('inp-mid').value   = '';
+  document.getElementById('inp-pcode').value = '';
+  document.getElementById('inp-memo').value  = '';
   renderList();
   const actionLabel = [addPause?'임시중단B':'', addForce?'강제종료':''].filter(Boolean).join('+') || '메모만';
-  addLog(`추가: ${mid} — ${actionLabel}`, 'info');
+  addLog(`추가: ${mid}${pcode?' / '+pcode:''} — ${actionLabel}`, 'info');
 }
 
 // ── 삭제 ──
@@ -494,7 +503,7 @@ function renderList() {
   }
 
   const filtered = searchQuery
-    ? entries.filter(e => e.mid.includes(searchQuery))
+    ? entries.filter(e => e.mid.includes(searchQuery) || (e.pcode||'').toLowerCase().includes(searchQuery))
     : entries;
 
   if (!filtered.length) {
@@ -511,7 +520,7 @@ function renderList() {
     <tr id="row-${i}" class="${e.checked ? 'checked' : ''}">
       <td><input type="checkbox" ${e.checked?'checked':''} onchange="toggleItem(${i},this)" style="width:15px;height:15px;accent-color:#7b1fa2;cursor:pointer;"></td>
       <td>
-        <div class="td-mid">${esc(e.mid)}</div>
+        <div class="td-mid">${esc(e.mid)}${e.pcode?` <span class="pcode-badge">${esc(e.pcode)}</span>`:''}</div>
         ${e.result ? `<div style="font-size:10.5px;color:#718096;margin-top:2px;">${esc(e.result)}</div>` : ''}
       </td>
       <td>
@@ -560,7 +569,7 @@ async function startProcess() {
   document.getElementById('progress-wrap').style.display = 'block';
 
   const payload = selected.map(e => ({
-    mid: e.mid, memo: e.memo || '', do_pause: e.do_pause, do_force: e.do_force
+    mid: e.mid, pcode: e.pcode || '', memo: e.memo || '', do_pause: e.do_pause, do_force: e.do_force
   }));
 
   selected.forEach(e => { e.status = 'running'; e.result = ''; });
@@ -600,7 +609,7 @@ async function startProcess() {
 
         if (data.entry_result) {
           const r = data.entry_result;
-          const entry = entries.find(e => e.mid === r.mid);
+          const entry = entries.find(e => e.mid === r.mid && (e.pcode||'') === (r.pcode||''));
           if (entry) {
             entry.result = r.message;
             if (r.success) {
@@ -666,6 +675,7 @@ function handleExcelFile(file) {
       const hdr      = rows[0].map(h => String(h||'').trim());
       const hasHdr   = isNaN(Number(hdr[0]));
       const midCol   = hasHdr ? Math.max(hdr.findIndex(h => /mid/i.test(h)), 0) : 0;
+      const pcodeCol = hasHdr ? hdr.findIndex(h => /pcode/i.test(h)) : -1;
       const pauseCol = hasHdr ? hdr.findIndex(h => /임시중단/i.test(h)) : 1;
       const forceCol = hasHdr ? hdr.findIndex(h => /강제종료/i.test(h)) : 2;
       const memoCol  = hasHdr ? hdr.findIndex(h => /메모/i.test(h))     : 3;
@@ -675,12 +685,13 @@ function handleExcelFile(file) {
       for (let r = start; r < rows.length; r++) {
         const row      = rows[r];
         const mid      = String(row[midCol]   || '').trim();
+        const pcode    = pcodeCol >= 0 ? String(row[pcodeCol]||'').trim() : '';
         const do_pause = pauseCol >= 0 && String(row[pauseCol] || '').trim().toUpperCase() === 'O';
         const do_force = forceCol >= 0 && String(row[forceCol] || '').trim().toUpperCase() === 'O';
         const memo     = memoCol  >= 0 ? String(row[memoCol]  || '').trim() : '';
         if (!mid || (!do_pause && !do_force && !memo)) { skipped++; continue; }
-        if (entries.some(e => e.mid === mid)) { skipped++; continue; }
-        entries.push({ mid, memo, do_pause, do_force, status:'ready', result:'' });
+        if (entries.some(e => e.mid === mid && (e.pcode||'') === pcode)) { skipped++; continue; }
+        entries.push({ mid, pcode, memo, do_pause, do_force, status:'ready', result:'' });
         added++;
       }
 
