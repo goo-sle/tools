@@ -148,7 +148,9 @@
 
   .td-mid  { font-weight: 700; color: #2d3748; font-family: monospace; font-size: 12px; }
 
-  .pcode-badge { display: inline-block; padding: 1px 6px; border-radius: 100px; font-size: 9.5px; font-weight: 700; background: #e9d8fd; color: #553c9a; font-family: monospace; margin-left: 4px; }
+  .type-badge { display: inline-block; padding: 1px 7px; border-radius: 100px; font-size: 9.5px; font-weight: 700; white-space: nowrap; margin-left: 5px; }
+  .type-pcode { background: #e9d8fd; color: #553c9a; }
+  .type-mid   { background: #feebc8; color: #c05621; }
 
   .action-badge {
     display: inline-block;
@@ -288,20 +290,16 @@
 
 <div class="container">
 
-  <!-- 좌측: MID 추가 폼 -->
+  <!-- 좌측: 캠페인 추가 폼 -->
   <div>
     <div class="card">
       <div class="card-header">
-        <span class="card-title">➕ MID 추가</span>
+        <span class="card-title">➕ 캠페인 추가</span>
       </div>
       <div class="card-body">
         <div class="form-group">
-          <label>MID (상품 MID/PID)</label>
-          <input type="text" id="inp-mid" placeholder="예: 1839711962" />
-        </div>
-        <div class="form-group">
-          <label>Pcode (선택)</label>
-          <input type="text" id="inp-pcode" placeholder="비우면 MID의 전체 캠페인 대상" />
+          <label>Pcode / MID</label>
+          <input type="text" id="inp-id" placeholder="Pcode 또는 MID" />
         </div>
         <div class="form-group">
           <label>메모 (선택)</label>
@@ -350,7 +348,7 @@
           <thead>
             <tr>
               <th style="width:36px;"></th>
-              <th>MID</th>
+              <th>Pcode / MID</th>
               <th>처리 작업</th>
               <th style="width:72px;">상태</th>
             </tr>
@@ -419,6 +417,11 @@ function save() {
   if (window.fbSave) window.fbSave(entries);
 }
 
+function detectIdType(value) {
+  // P로 시작하는 영숫자(10자 이상) → pcode, 그 외(숫자 등) → mid (bizfit_keyword.html과 동일 규칙)
+  return /^P[A-Z0-9]{10,}/i.test(value) ? 'pcode' : 'mid';
+}
+
 // ── 토글 버튼 ──
 let addPause = false, addForce = false;
 function toggleAction(type) {
@@ -431,24 +434,26 @@ function toggleAction(type) {
   }
 }
 
-// ── MID 추가 ──
+// ── 캠페인 추가 ──
 function addEntry() {
-  const mid   = document.getElementById('inp-mid').value.trim();
-  const pcode = document.getElementById('inp-pcode').value.trim();
+  const idVal = document.getElementById('inp-id').value.trim();
   const memo  = document.getElementById('inp-memo').value.trim();
-  if (!mid) { alert('MID를 입력해주세요.'); return; }
+  if (!idVal) { alert('Pcode 또는 MID를 입력해주세요.'); return; }
   if (!addPause && !addForce && !memo) { alert('처리 작업을 선택하거나 메모를 입력해주세요.'); return; }
-  if (entries.some(e => e.mid === mid && (e.pcode||'') === pcode)) { alert('이미 등록된 MID/Pcode 조합입니다.'); return; }
+
+  const id_type = detectIdType(idVal);
+  const mid     = id_type === 'mid'   ? idVal : '';
+  const pcode   = id_type === 'pcode' ? idVal : '';
+  if (entries.some(e => e.mid === mid && (e.pcode||'') === pcode)) { alert('이미 등록된 항목입니다.'); return; }
 
   entries.push({ mid, pcode, memo, do_pause: addPause, do_force: addForce, status: 'ready', result: '' });
   save();
 
-  document.getElementById('inp-mid').value   = '';
-  document.getElementById('inp-pcode').value = '';
-  document.getElementById('inp-memo').value  = '';
+  document.getElementById('inp-id').value   = '';
+  document.getElementById('inp-memo').value = '';
   renderList();
   const actionLabel = [addPause?'임시중단B':'', addForce?'강제종료':''].filter(Boolean).join('+') || '메모만';
-  addLog(`추가: ${mid}${pcode?' / '+pcode:''} — ${actionLabel}`, 'info');
+  addLog(`추가 [${id_type.toUpperCase()}]: ${idVal} — ${actionLabel}`, 'info');
 }
 
 // ── 삭제 ──
@@ -516,11 +521,13 @@ function renderList() {
 
   tbody.innerHTML = filtered.map(e => {
     const i = entries.indexOf(e);
+    const idVal  = e.mid || e.pcode;
+    const idType = e.pcode ? 'pcode' : 'mid';
     return `
     <tr id="row-${i}" class="${e.checked ? 'checked' : ''}">
       <td><input type="checkbox" ${e.checked?'checked':''} onchange="toggleItem(${i},this)" style="width:15px;height:15px;accent-color:#7b1fa2;cursor:pointer;"></td>
       <td>
-        <div class="td-mid">${esc(e.mid)}${e.pcode?` <span class="pcode-badge">${esc(e.pcode)}</span>`:''}</div>
+        <div class="td-mid">${esc(idVal)}<span class="type-badge ${idType==='pcode'?'type-pcode':'type-mid'}">${idType==='pcode'?'Pcode':'MID'}</span></div>
         ${e.result ? `<div style="font-size:10.5px;color:#718096;margin-top:2px;">${esc(e.result)}</div>` : ''}
       </td>
       <td>
@@ -561,7 +568,7 @@ async function startProcess() {
 
   const summary = selected.map(e => {
     const acts = [e.do_pause?'임시중단B':'', e.do_force?'강제종료':''].filter(Boolean).join('+') || '메모만';
-    return `  · ${e.mid}: ${acts}`;
+    return `  · ${e.mid || e.pcode}: ${acts}`;
   }).join('\n');
   if (!confirm(`아래 항목을 처리하시겠습니까?\n\n${summary}\n\n총 ${selected.length}건${skipped ? ` (완료된 ${skipped}건은 건너뜀)` : ''}`)) return;
 
@@ -614,11 +621,11 @@ async function startProcess() {
             entry.result = r.message;
             if (r.success) {
               entry.status = 'success'; successCnt++;
-              addLog(`✅ ${r.mid} — ${r.message}`, 'success');
+              addLog(`✅ ${r.mid || r.pcode} — ${r.message}`, 'success');
             } else {
               const isPartial = r.message.includes('OK') && r.message.includes('실패');
               entry.status = isPartial ? 'partial' : 'fail'; failCnt++;
-              addLog(`${isPartial?'⚠️':'❌'} ${r.mid} — ${r.message}`, isPartial?'warn':'fail');
+              addLog(`${isPartial?'⚠️':'❌'} ${r.mid || r.pcode} — ${r.message}`, isPartial?'warn':'fail');
             }
           }
           processed++;
