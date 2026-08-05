@@ -108,7 +108,14 @@
     <p class="auth-footer" onclick="toggleAuth(false)">이미 계정이 있습니다</p>
   </div>
 
-<script>
+<script type="module">
+  import { auth as firebaseAuth } from "./ha-tools.js";
+  import { signInWithCustomToken } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
+
+  // RTDB 규칙이 users/resource_hub read/write에 auth != null을 요구함(2026-08-05 추가 —
+  // 이전엔 인증 없이 전체 공개였음, project_tools_rtdb_unprotected.md 참고). tools 로그인은
+  // Firebase Auth 계정이 아니므로 /tools-login이 발급하는 커스텀 토큰으로 실제 로그인 세션을 만든다.
+
   const TOOLS_API = 'https://higherad-auto-938928195180.asia-northeast3.run.app';
 
   // 버튼 클릭 시 시각 효과 함수
@@ -151,7 +158,9 @@
       const result = await res.json();
 
       if (result.ok) {
-        // 로그인 성공: 로컬 스토리지에 유저 ID 저장
+        // 서버가 준 커스텀 토큰으로 실제 Firebase Auth 세션을 먼저 만든 뒤에 이동
+        // (RTDB users/resource_hub 규칙이 이 세션을 검사함)
+        if (result.token) await signInWithCustomToken(firebaseAuth, result.token);
         localStorage.setItem('ha_user', id);
         location.href = './';
       } else {

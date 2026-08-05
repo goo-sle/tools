@@ -677,7 +677,8 @@
   </div><!-- /.shell -->
 
   <script type="module">
-    import { db } from "./ha-tools.js";
+    import { db, auth as firebaseAuth } from "./ha-tools.js";
+    import { signOut } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
     import { ref, set, onValue, update, get } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-database.js";
 
     // 1. 로그인 체크 (인증 자체는 body 상단의 인라인 스크립트가 이미 처리함)
@@ -748,6 +749,7 @@
     window.handleLogout = () => {
       if(confirm("로그아웃 하시겠습니까?")) {
         localStorage.removeItem('ha_user');
+        signOut(firebaseAuth).catch(() => {});
         location.replace("login.html");
       }
     };
