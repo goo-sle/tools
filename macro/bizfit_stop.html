@@ -685,14 +685,18 @@ function handleExcelFile(file) {
       for (let r = start; r < rows.length; r++) {
         const row      = rows[r];
         const mid      = String(row[midCol]   || '').trim();
-        const pcode    = pcodeCol >= 0 ? String(row[pcodeCol]||'').trim() : '';
+        const pcodeRaw = pcodeCol >= 0 ? String(row[pcodeCol]||'').trim() : '';
         const do_pause = pauseCol >= 0 && String(row[pauseCol] || '').trim().toUpperCase() === 'O';
         const do_force = forceCol >= 0 && String(row[forceCol] || '').trim().toUpperCase() === 'O';
         const memo     = memoCol  >= 0 ? String(row[memoCol]  || '').trim() : '';
         if (!mid || (!do_pause && !do_force && !memo)) { skipped++; continue; }
-        if (entries.some(e => e.mid === mid && (e.pcode||'') === pcode)) { skipped++; continue; }
-        entries.push({ mid, pcode, memo, do_pause, do_force, status:'ready', result:'' });
-        added++;
+        // Pcode 칸에 콤마로 여러 개가 들어있으면(순위표에서 그대로 복사) 각각 별도 항목으로 펼침
+        const pcodes = pcodeRaw ? pcodeRaw.split(',').map(p => p.trim()).filter(Boolean) : [''];
+        for (const pcode of pcodes) {
+          if (entries.some(e => e.mid === mid && (e.pcode||'') === pcode)) { skipped++; continue; }
+          entries.push({ mid, pcode, memo, do_pause, do_force, status:'ready', result:'' });
+          added++;
+        }
       }
 
       save(); renderList();
