@@ -174,7 +174,7 @@
 
     <!-- 엑셀 등록 -->
     <div class="card">
-      <div class="card-header"><span class="card-title">📂 엑셀 등록</span><button class="excel-tpl-btn" onclick="downloadMemoTemplate()" title="양식 다운로드"><span>⬇</span></button></div>
+      <div class="card-header"><span class="card-title">📂 엑셀 등록</span><a class="excel-tpl-btn" href="애드로그메모_양식.xlsx" download="애드로그메모_양식.xlsx" title="양식 다운로드"><span>⬇</span></a></div>
       <div class="card-body">
         <div class="excel-upload-area" id="excel-drop-zone" onclick="document.getElementById('excel-file-input').click()">
           <div class="upload-icon">📊</div>
@@ -539,17 +539,6 @@ function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;'
     if (file) loadExcel(file);
   });
 })();
-
-function downloadMemoTemplate() {
-  const wb = XLSX.utils.book_new();
-  const ws = XLSX.utils.aoa_to_sheet([
-    ['MID', '변경조건', '변경결과', '삭제조건'],
-    ['123456789', '찾을 텍스트', '바꿀 텍스트', '삭제 조건'],
-  ]);
-  ws['!cols'] = [{wch:13},{wch:20},{wch:20},{wch:20}];
-  XLSX.utils.book_append_sheet(wb, ws, '메모등록');
-  XLSX.writeFile(wb, '애드로그메모_양식.xlsx');
-}
 
 function loadExcel(file) {
   if (!file) return;
