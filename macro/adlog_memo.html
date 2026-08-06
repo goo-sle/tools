@@ -129,6 +129,10 @@
   .excel-upload-area .upload-text { font-size: 13px; font-weight: 600; color: #4a5568; }
   .excel-upload-area .upload-hint { font-size: 11px; color: #a0aec0; margin-top: 3px; }
 
+  .excel-tpl-btn { display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; border-radius:5px; border:1px solid #e2e8f0; background:#fff; color:#718096; font-size:11px; line-height:1; cursor:pointer; transition:all .15s; }
+  .excel-tpl-btn span { transform:translate(0,2px); }
+  .excel-tpl-btn:hover { background:#f1f5f9; color:#2d3748; border-color:#94a3b8; }
+
   @media (max-width: 1100px) { .layout { grid-template-columns: 260px 1fr; } .right-panel { grid-column: 1 / -1; } }
   @media (max-width: 700px)  { .layout { grid-template-columns: 1fr; } }
 </style>
@@ -170,7 +174,7 @@
 
     <!-- 엑셀 등록 -->
     <div class="card">
-      <div class="card-header"><span class="card-title">📂 엑셀 등록</span></div>
+      <div class="card-header"><span class="card-title">📂 엑셀 등록</span><button class="excel-tpl-btn" onclick="downloadMemoTemplate()" title="양식 다운로드"><span>⬇</span></button></div>
       <div class="card-body">
         <div class="excel-upload-area" id="excel-drop-zone" onclick="document.getElementById('excel-file-input').click()">
           <div class="upload-icon">📊</div>
@@ -535,6 +539,17 @@ function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;'
     if (file) loadExcel(file);
   });
 })();
+
+function downloadMemoTemplate() {
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet([
+    ['MID', '변경조건', '변경결과', '삭제조건'],
+    ['123456789', '찾을 텍스트', '바꿀 텍스트', '삭제 조건'],
+  ]);
+  ws['!cols'] = [{wch:13},{wch:20},{wch:20},{wch:20}];
+  XLSX.utils.book_append_sheet(wb, ws, '메모등록');
+  XLSX.writeFile(wb, '애드로그메모_양식.xlsx');
+}
 
 function loadExcel(file) {
   if (!file) return;
