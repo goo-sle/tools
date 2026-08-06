@@ -130,7 +130,6 @@
   .excel-upload-area .upload-hint { font-size: 11px; color: #a0aec0; margin-top: 3px; }
 
   .excel-tpl-btn { display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; border-radius:5px; border:1px solid #e2e8f0; background:#fff; color:#718096; font-size:11px; line-height:1; text-decoration:none; cursor:pointer; transition:all .15s; }
-  .excel-tpl-btn span { transform:translate(0,2px); }
   .excel-tpl-btn:hover { background:#f1f5f9; color:#2d3748; border-color:#94a3b8; }
 
   @media (max-width: 1100px) { .layout { grid-template-columns: 260px 1fr; } .right-panel { grid-column: 1 / -1; } }
@@ -174,7 +173,7 @@
 
     <!-- 엑셀 등록 -->
     <div class="card">
-      <div class="card-header"><span class="card-title">📂 엑셀 등록</span><a class="excel-tpl-btn" href="양식/애드로그메모_양식.xlsx" download="애드로그메모_양식.xlsx" title="양식 다운로드"><span>⬇</span></a></div>
+      <div class="card-header"><span class="card-title">📂 엑셀 등록</span><a class="excel-tpl-btn" href="양식/애드로그메모_양식.xlsx" download="애드로그메모_양식.xlsx" title="양식 다운로드"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v11"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg></a></div>
       <div class="card-body">
         <div class="excel-upload-area" id="excel-drop-zone" onclick="document.getElementById('excel-file-input').click()">
           <div class="upload-icon">📊</div>
