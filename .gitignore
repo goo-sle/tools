@@ -3,12 +3,3 @@ higherad-b9d62-firebase-adminsdk-fbsvc-a46811723b.json
 .env.*
 config.js
 회원가입.md
-
-# Cloud Run 백엔드 스크립트 (macro 하위 디렉토리)
-macro/macro-*/
-macro/higherad-auto/
-macro/naver-keyword-bot/
-macro/place-rank-check/
-macro/bizfit-direct-proxy/
-macro/blog-tag-search/
-macro/kimpro-premium/
