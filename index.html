@@ -754,22 +754,6 @@
       }
     };
 
-    // 7. 캠페인 엑셀 변환기 데이터 저장 (캠페인_엑셀_자동변환기.html에서 호출)
-    window.saveSlotData = function(data) {
-      if (!currentUserId) return;
-      const slotRef = ref(db, `users/${currentUserId}/slotConverter`);
-      set(slotRef, data).catch(err => console.error("캠페인 변환기 저장 실패:", err));
-    };
-
-    // 8. 캠페인 엑셀 변환기 데이터 로드 (캠페인_엑셀_자동변환기.html에서 호출)
-    window.loadSlotData = function() {
-      if (!currentUserId) return Promise.resolve(null);
-      const slotRef = ref(db, `users/${currentUserId}/slotConverter`);
-      return new Promise((resolve) => {
-        onValue(slotRef, (snapshot) => resolve(snapshot.val()), { onlyOnce: true });
-      });
-    };
-
     // 7-1. 키워드 쉼표 병합기 데이터 저장 (키워드_쉼표_병합기.html에서 호출)
     window.saveKeywordMergerData = function(data) {
       if (!currentUserId) return;
