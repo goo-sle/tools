@@ -1,5 +1,4 @@
 [
-  { "file": "macro/bizfit_charge.html",  "label": "영업점 충전",      "addedAt": "2026-06-02" },
   { "file": "macro/adlog_memo.html",     "label": "애드로그 메모",     "addedAt": "2026-06-11", "updatedAt": "2026-06-25" },
   { "file": "macro/bizfit_keyword.html", "label": "키워드 변경",      "addedAt": "2026-06-02", "updatedAt": "2026-07-16" },
   { "file": "macro/bizfit_traffic.html", "label": "물동량 자동화",     "addedAt": "2026-06-11", "updatedAt": "2026-08-03" },
