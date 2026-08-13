@@ -139,7 +139,7 @@
 <body>
 <div class="layout">
 
-  <!-- 좌측: 설정 + MID 추가 -->
+  <!-- 좌측: 설정 + 엑셀 등록 -->
   <div style="display:flex;flex-direction:column;gap:14px;">
 
     <!-- 구글 시트 불러오기 -->
@@ -159,15 +159,6 @@
           </div>
         </div>
         <button class="btn btn-blue btn-full" onclick="fetchMids()" id="btn-fetch">📥 MID 불러오기</button>
-      </div>
-    </div>
-
-    <!-- 수동 MID 추가 -->
-    <div class="card">
-      <div class="card-header"><span class="card-title">➕ MID 직접 추가</span></div>
-      <div class="card-body">
-        <input type="text" id="inp-mid" placeholder="MID 입력" />
-        <button class="btn btn-blue btn-full" onclick="addMid()">➕ 추가</button>
       </div>
     </div>
 
@@ -240,7 +231,7 @@
             </tr>
           </thead>
           <tbody id="mid-tbody">
-            <tr><td colspan="8"><div class="empty-msg">등록된 MID가 없습니다.<br>구글 시트에서 불러오거나 직접 추가하세요.</div></td></tr>
+            <tr><td colspan="8"><div class="empty-msg">등록된 MID가 없습니다.<br>구글 시트에서 불러오거나 엑셀로 등록하세요.</div></td></tr>
           </tbody>
         </table>
       </div>
@@ -315,16 +306,6 @@ async function fetchMids() {
   }
 }
 
-// ── MID 추가 ──
-function addMid() {
-  const mid = document.getElementById('inp-mid').value.trim();
-  if (!mid) { alert('MID를 입력해주세요.'); return; }
-  if (entries.some(e => e.mid === mid)) { alert('이미 등록된 MID입니다.'); return; }
-  entries.push({ mid, change_from: '', change_to: '', delete_cond: '', status: 'ready', result: '', checked: false });
-  document.getElementById('inp-mid').value = '';
-  save(); renderTable();
-}
-
 function removeChecked() {
   entries = entries.filter(e => !e.checked);
   save(); renderTable();
@@ -384,7 +365,7 @@ function renderTable() {
   document.getElementById('sum-total').textContent  = entries.length;
 
   if (!entries.length) {
-    tbody.innerHTML = `<tr><td colspan="8"><div class="empty-msg">등록된 MID가 없습니다.<br>구글 시트에서 불러오거나 직접 추가하세요.</div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty-msg">등록된 MID가 없습니다.<br>구글 시트에서 불러오거나 엑셀로 등록하세요.</div></td></tr>`;
     syncAll(); return;
   }
 

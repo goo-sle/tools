@@ -21,8 +21,6 @@
   input::placeholder { color: #a0aec0; }
 
   .btn { display: inline-flex; align-items: center; justify-content: center; gap: 5px; padding: 8px 14px; border-radius: 7px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; transition: all 0.15s; }
-  .btn-add    { background: #1565c0; color: #fff; width: 100%; margin-top: 2px; }
-  .btn-add:hover { background: #0d47a1; }
   .btn-danger { background: #fff1f0; color: #e53e3e; border: 1.5px solid #fed7d7; padding: 4px 10px; font-size: 12px; border-radius: 6px; }
   .btn-danger:hover { background: #ffe0de; }
   .btn-clear-all { width: 100%; padding: 8px 14px; font-size: 13px; margin-bottom: 14px; }
@@ -140,19 +138,11 @@
 
 <div class="layout">
 
-  <!-- 좌측: URL 입력 -->
+  <!-- 좌측: URL 목록 -->
   <div>
     <div class="card">
-      <div class="card-header"><span class="card-title">🔗 URL 추가</span></div>
+      <div class="card-header"><span class="card-title">🔗 URL 목록</span></div>
       <div class="card-body">
-        <label>업체명 (선택)</label>
-        <input type="text" id="inp-name" placeholder="예: 강남 귀금속" />
-        <label>플레이스 URL</label>
-        <input type="text" id="inp-url" placeholder="https://m.place.naver.com/..." />
-        <button class="btn btn-add" onclick="addUrl()">➕ 추가</button>
-
-        <div style="border-top:1px solid #e8eaf0;margin:14px 0;"></div>
-
         <button class="btn btn-danger btn-clear-all" onclick="deleteAllUrls()">🗑️ 전체 삭제</button>
 
         <div id="url-list" class="url-list">
@@ -221,22 +211,6 @@ let urls    = [];   // [{name, url}]
 let results = {};   // { url: {name, status, keywords, rankResults} }
 
 function save() { if (window.fbSave) window.fbSave(urls); }
-
-// ── URL 추가 ──
-function addUrl() {
-  const name = document.getElementById('inp-name').value.trim();
-  const url  = document.getElementById('inp-url').value.trim();
-  if (!url) { alert('URL을 입력해주세요.'); return; }
-  if (!url.startsWith('http')) { alert('올바른 URL을 입력해주세요.'); return; }
-  if (urls.some(u => u.url === url)) { alert('이미 등록된 URL입니다.'); return; }
-
-  urls.push({ name, url });
-  save();
-  document.getElementById('inp-name').value = '';
-  document.getElementById('inp-url').value  = '';
-  renderUrls(); updateBtns();
-  addLog(`추가: ${name||url}`, 'info');
-}
 
 function removeUrl(idx) {
   const u = urls[idx];

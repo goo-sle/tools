@@ -49,7 +49,6 @@
   }
   .card-body { padding: 18px; }
 
-  .form-group { margin-bottom: 11px; }
   label {
     display: block;
     font-size: 11px;
@@ -71,31 +70,6 @@
   }
   input[type="text"]:focus { border-color: #7b1fa2; }
   input::placeholder { color: #a0aec0; }
-
-  /* 체크박스 토글 */
-  .toggle-group {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 14px;
-  }
-  .toggle-label {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    padding: 8px;
-    border: 1.5px solid #e2e8f0;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 12px;
-    font-weight: 600;
-    color: #718096;
-    transition: all 0.15s;
-    user-select: none;
-  }
-  .toggle-label.pause-active  { background: #fef9c3; border-color: #d69e2e; color: #b7791f; }
-  .toggle-label.force-active  { background: #fed7d7; border-color: #c53030; color: #c53030; }
 
   .btn {
     display: inline-flex;
@@ -292,31 +266,14 @@
 
 <div class="container">
 
-  <!-- 좌측: 캠페인 추가 폼 -->
+  <!-- 좌측: 엑셀 등록 -->
   <div>
     <div class="card">
       <div class="card-header">
-        <span class="card-title">➕ 캠페인 추가</span>
+        <span class="card-title">📂 엑셀 등록</span>
+        <a class="excel-tpl-btn" href="양식/임시중단_강제종료_양식.xlsx" download="임시중단_강제종료_양식.xlsx" title="양식 다운로드"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2h-4v11H5l7 7 7-7h-5V2z"/></svg></a>
       </div>
       <div class="card-body">
-        <div class="form-group">
-          <label>Pcode / MID</label>
-          <input type="text" id="inp-id" placeholder="Pcode 또는 MID" />
-        </div>
-        <div class="form-group">
-          <label>메모 (선택)</label>
-          <input type="text" id="inp-memo" placeholder="비우면 오늘 날짜(MM-DD) 자동 입력" />
-        </div>
-        <label style="margin-bottom:6px;">처리 작업</label>
-        <div class="toggle-group">
-          <div class="toggle-label" id="lbl-pause" onclick="toggleAction('pause')">⏸ 임시중단B</div>
-          <div class="toggle-label" id="lbl-force" onclick="toggleAction('force')">🛑 강제종료</div>
-        </div>
-        <button class="btn btn-primary" onclick="addEntry()">➕ 추가</button>
-
-        <hr style="border:none;border-top:1px solid #e8eaf0;margin:14px 0;">
-
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;"><span style="font-size:11px;font-weight:600;color:#4a5568;text-transform:uppercase;letter-spacing:0.4px;">📂 엑셀 등록</span><a class="excel-tpl-btn" href="양식/임시중단_강제종료_양식.xlsx" download="임시중단_강제종료_양식.xlsx" title="양식 다운로드"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2h-4v11H5l7 7 7-7h-5V2z"/></svg></a></div>
         <div class="excel-upload-area" id="excel-drop-zone" onclick="document.getElementById('excel-file-input').click()">
           <div class="upload-icon">📊</div>
           <div class="upload-text">클릭 또는 드래그 업로드</div>
@@ -359,7 +316,7 @@
             <tr><td colspan="4">
               <div class="empty-state">
                 <div class="empty-icon">📋</div>
-                <div>등록된 MID가 없습니다.<br>좌측에서 MID를 추가해주세요.</div>
+                <div>등록된 MID가 없습니다.<br>좌측에서 엑셀로 등록해주세요.</div>
               </div>
             </td></tr>
           </tbody>
@@ -419,45 +376,6 @@ function save() {
   if (window.fbSave) window.fbSave(entries);
 }
 
-function detectIdType(value) {
-  // P로 시작하는 영숫자(10자 이상) → pcode, 그 외(숫자 등) → mid (bizfit_keyword.html과 동일 규칙)
-  return /^P[A-Z0-9]{10,}/i.test(value) ? 'pcode' : 'mid';
-}
-
-// ── 토글 버튼 ──
-let addPause = false, addForce = false;
-function toggleAction(type) {
-  if (type === 'pause') {
-    addPause = !addPause;
-    document.getElementById('lbl-pause').classList.toggle('pause-active', addPause);
-  } else {
-    addForce = !addForce;
-    document.getElementById('lbl-force').classList.toggle('force-active', addForce);
-  }
-}
-
-// ── 캠페인 추가 ──
-function addEntry() {
-  const idVal = document.getElementById('inp-id').value.trim();
-  const memo  = document.getElementById('inp-memo').value.trim();
-  if (!idVal) { alert('Pcode 또는 MID를 입력해주세요.'); return; }
-  if (!addPause && !addForce && !memo) { alert('처리 작업을 선택하거나 메모를 입력해주세요.'); return; }
-
-  const id_type = detectIdType(idVal);
-  const mid     = id_type === 'mid'   ? idVal : '';
-  const pcode   = id_type === 'pcode' ? idVal : '';
-  if (entries.some(e => e.mid === mid && (e.pcode||'') === pcode)) { alert('이미 등록된 항목입니다.'); return; }
-
-  entries.push({ mid, pcode, memo, do_pause: addPause, do_force: addForce, status: 'ready', result: '' });
-  save();
-
-  document.getElementById('inp-id').value   = '';
-  document.getElementById('inp-memo').value = '';
-  renderList();
-  const actionLabel = [addPause?'임시중단B':'', addForce?'강제종료':''].filter(Boolean).join('+') || '메모만';
-  addLog(`추가 [${id_type.toUpperCase()}]: ${idVal} — ${actionLabel}`, 'info');
-}
-
 // ── 삭제 ──
 function removeChecked() {
   const checked = entries.filter(e => e.checked);
@@ -505,7 +423,7 @@ function renderList() {
   document.getElementById('entry-count').textContent = entries.length;
 
   if (!entries.length) {
-    tbody.innerHTML = `<tr><td colspan="4"><div class="empty-state"><div class="empty-icon">📋</div><div>등록된 MID가 없습니다.<br>좌측에서 MID를 추가해주세요.</div></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="4"><div class="empty-state"><div class="empty-icon">📋</div><div>등록된 MID가 없습니다.<br>좌측에서 엑셀로 등록해주세요.</div></div></td></tr>`;
     syncAll(); return;
   }
 
