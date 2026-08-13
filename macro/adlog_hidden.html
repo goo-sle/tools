@@ -234,7 +234,7 @@ function switchTab(t) {
   } else {
     tplLink.href = '양식/상위키워드조회_양식.xlsx';
     tplLink.download = '상위키워드조회_양식.xlsx';
-    hint.textContent = 'MID / 키워드';
+    hint.textContent = 'MID / 키워드 (콤마로 구분, 최대 100개)';
     btnRun.textContent = '📈 상위순위 조회';
     btnRun.classList.remove('btn-step1'); btnRun.classList.add('btn-step2');
   }
@@ -546,11 +546,13 @@ function handleExcel(file) {
           if (entries.hidden.some(e => e.mid === mid)) continue;
           entries.hidden.push({ name, mid }); added++;
         } else {
-          const mid     = String(rows[r][0]||'').trim();
-          const keyword = String(rows[r][1]||'').trim();
-          if (!mid || !keyword) continue;
-          if (entries.top.some(e => e.mid === mid && e.keyword === keyword)) continue;
-          entries.top.push({ mid, keyword }); added++;
+          const mid = String(rows[r][0]||'').trim();
+          const kws = String(rows[r][1]||'').split(',').map(s => s.trim()).filter(Boolean).slice(0, 100);
+          if (!mid || !kws.length) continue;
+          kws.forEach(keyword => {
+            if (entries.top.some(e => e.mid === mid && e.keyword === keyword)) return;
+            entries.top.push({ mid, keyword }); added++;
+          });
         }
       }
       save(); renderEntries(); updateBtn();
