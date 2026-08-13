@@ -43,8 +43,12 @@ input[type=number]{-moz-appearance:textfield}
 .btn-danger:hover{background:#b91c1c}
 .btn-sm{padding:6px 11px;font-size:12px;border-radius:8px}
 .btn-icon{padding:5px 7px;font-size:13px;border-radius:8px;line-height:1}
-.mode-btn{min-width:32px;padding:6px 10px;justify-content:center}
-.mode-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+/* 세그먼트(모드) 스위치 */
+.seg{display:inline-flex;background:var(--bg);border-radius:999px;padding:3px;gap:2px;flex-shrink:0}
+.seg-btn{border:none;background:transparent;padding:8px 16px;border-radius:999px;font:600 12.5px inherit;color:var(--muted);cursor:pointer;transition:all .18s}
+.seg-btn.active{background:var(--accent);color:#fff;box-shadow:0 3px 8px -3px rgba(37,99,235,.5)}
+.seg-btn:not(.active):hover{color:var(--text)}
 
 /* 견적 블록 */
 .blk{border:1.5px solid var(--line);border-radius:12px;padding:14px;background:#fff;margin-bottom:10px}
@@ -85,10 +89,10 @@ input[type=number]{-moz-appearance:textfield}
 <!-- ① 단가 설정 -->
 <div class="card">
   <div class="card-top">
-    <div class="card-title"><div class="ic" style="background:#eff4ff;color:var(--accent)">💰</div>개별 단가 설정</div>
-    <div style="display:flex;gap:6px">
-      <button class="btn btn-ghost btn-sm mode-btn active" id="modeBtn1">1</button>
-      <button class="btn btn-ghost btn-sm mode-btn" id="modeBtn2">2</button>
+    <div class="card-title"><div class="ic" style="background:#eff4ff;color:var(--accent)">💰</div>단가 설정</div>
+    <div class="seg">
+      <button class="seg-btn active" id="modeBtn1">트래픽</button>
+      <button class="seg-btn" id="modeBtn2">슬롯</button>
     </div>
   </div>
   <div class="row">
@@ -100,7 +104,7 @@ input[type=number]{-moz-appearance:textfield}
 <!-- ② 견적 블록 -->
 <div class="card">
   <div class="card-top" style="margin-bottom:14px">
-    <div class="card-title"><div class="ic" style="background:#eff4ff;color:var(--accent)">📝</div>개별 정산 수량</div>
+    <div class="card-title"><div class="ic" style="background:#eff4ff;color:var(--accent)">📝</div>수량 입력</div>
     <div style="display:flex;gap:8px;align-items:center">
       <button class="btn btn-ghost btn-sm" id="resetAll">초기화</button>
       <button class="btn btn-ghost btn-sm" id="openRefundModal" style="color:var(--error);border-color:#fecaca">↩️ 환불 계산</button>
@@ -174,7 +178,7 @@ input[type=number]{-moz-appearance:textfield}
     mode = m;
     $("#modeBtn1").classList.toggle("active", m === 1);
     $("#modeBtn2").classList.toggle("active", m === 2);
-    $("#priceLabel").textContent = m === 1 ? "트래픽 단가 (원)" : "슬롯 단가 (원/일)";
+    $("#priceLabel").textContent = m === 1 ? "트래픽 단가 (원)" : "슬롯 단가 (원)";
     $("#blocks").style.display   = m === 1 ? "" : "none";
     $("#slotForm").style.display = m === 2 ? "" : "none";
     $("#openRefundModal").style.display = m === 1 ? "" : "none";
