@@ -143,13 +143,6 @@
     <div class="card">
       <div class="card-header"><span class="card-title">🔗 URL 목록</span></div>
       <div class="card-body">
-        <button class="btn btn-danger btn-clear-all" onclick="deleteAllUrls()">🗑️ 전체 삭제</button>
-
-        <div id="url-list" class="url-list">
-          <div class="empty-msg">등록된 URL이 없습니다</div>
-        </div>
-
-        <div style="border-top:1px solid #e8eaf0;margin:14px 0;"></div>
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;"><span style="font-size:11px;font-weight:600;color:#4a5568;text-transform:uppercase;letter-spacing:0.4px;">📂 엑셀 등록</span><a class="excel-tpl-btn" href="양식/히든키워드조회_양식.xlsx" download="히든키워드조회_양식.xlsx" title="양식 다운로드"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2h-4v11H5l7 7 7-7h-5V2z"/></svg></a></div>
         <div class="excel-zone" id="excel-zone" onclick="document.getElementById('excel-input').click()">
           <div class="ez-icon">📊</div>
@@ -157,6 +150,13 @@
           <div class="ez-hint">업체명 / URL</div>
         </div>
         <input type="file" id="excel-input" accept=".xlsx,.xls" onchange="handleExcel(this.files[0])">
+
+        <div style="border-top:1px solid #e8eaf0;margin:14px 0;"></div>
+        <button class="btn btn-danger btn-clear-all" onclick="deleteAllUrls()">🗑️ 전체 삭제</button>
+
+        <div id="url-list" class="url-list">
+          <div class="empty-msg">등록된 URL이 없습니다</div>
+        </div>
       </div>
     </div>
   </div>
