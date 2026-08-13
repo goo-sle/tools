@@ -529,7 +529,7 @@
 
   <div class="status-strip">
     <div class="left">
-      <span id="strDate">2026.07.22 (수)</span>
+      <span id="strDate"></span>
       <div class="divider"></div>
       <!-- 공지 문구: NOTICES 배열 맨 아래에 { date, text } 한 줄만 추가하면 됩니다 (7일간 자동 순환 노출) -->
       <div class="notice-wrap"><span class="notice" id="noticeText"></span></div>
@@ -684,6 +684,11 @@
     // 1. 로그인 체크 (인증 자체는 body 상단의 인라인 스크립트가 이미 처리함)
     const currentUserId = localStorage.getItem('ha_user');
 
+    // 상단 날짜/시계·공지 티커는 유저 데이터 로드와 무관하므로 즉시 실행(지연 시 하드코딩된 초기값이 잠깐 보이는 문제 방지)
+    updateClock();
+    setInterval(updateClock, 1000);
+    initNoticeTicker();
+
     if (currentUserId) {
       document.querySelectorAll('.display-user').forEach(el => el.textContent = currentUserId + "님"); // 이름 로드 후 교체됨
 
@@ -724,9 +729,6 @@
         }
       });
 
-      updateClock();
-      setInterval(updateClock, 1000);
-      initNoticeTicker();
       setupDragAndDrop();
       setupTabDragAndDrop();
     }
