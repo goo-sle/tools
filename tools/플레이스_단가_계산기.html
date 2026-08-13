@@ -110,7 +110,6 @@ input[type=number]{-moz-appearance:textfield}
   <div id="slotForm" style="display:none">
     <div class="row">
       <div class="col field"><label>접수 날짜</label><input type="date" id="slotDate"/></div>
-      <div class="col field"><label>업체명</label><input type="text" id="slotCompany" placeholder="예: 비전"/></div>
       <div class="col field"><label>슬롯 수</label><input type="number" id="slotCount" placeholder="0"/></div>
     </div>
   </div>
@@ -372,7 +371,6 @@ input[type=number]{-moz-appearance:textfield}
   function recalcSlot(){
     const price   = num($("#unitPrice").value) || 1300;
     const slots   = num($("#slotCount").value);
-    const company = $("#slotCompany").value.trim();
     const dateVal = $("#slotDate").value;
 
     const amount = slots * price;
@@ -387,7 +385,7 @@ input[type=number]{-moz-appearance:textfield}
     }
 
     $("#summary1").textContent =
-`※ ${dateLabel}쇼핑 유입플 접수건(${company || "-"})
+`※ ${dateLabel}쇼핑 유입플 접수건(비전)
 
 * 1슬롯(10일 기준, 일 150타) : ${fmt(oneSlotPrice)}원(vat별도)
 * 1슬롯 1일을 슬롯 1로 책정됩니다.
@@ -413,7 +411,7 @@ input[type=number]{-moz-appearance:textfield}
     recalcRefund();
   };
 
-  ["slotDate","slotCompany","slotCount"].forEach(id => { $("#"+id).oninput = recalc; });
+  ["slotDate","slotCount"].forEach(id => { $("#"+id).oninput = recalc; });
 
   $("#modeBtn1").onclick = () => switchMode(1);
   $("#modeBtn2").onclick = () => switchMode(2);
@@ -424,7 +422,6 @@ input[type=number]{-moz-appearance:textfield}
       $("#blocks").appendChild(makeBlk());
     } else {
       $("#slotDate").value = "";
-      $("#slotCompany").value = "";
       $("#slotCount").value = "";
     }
     recalc();
