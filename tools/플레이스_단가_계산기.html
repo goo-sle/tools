@@ -60,7 +60,7 @@ input[type=number]{-moz-appearance:textfield}
 .refund-row{border:1.5px solid #fecaca;border-radius:12px;padding:14px;background:#fff}
 .refund-row-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
 .refund-row-num{font-size:13px;font-weight:800;color:var(--error)}
-.refund-row-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.refund-row-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
 .refund-result{font-size:12px;margin-top:10px;padding-top:10px;border-top:1px dashed #fecaca;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .r-tag{color:var(--muted)}
 .r-days{background:#fef2f2;color:var(--error);font-weight:700;padding:2px 7px;border-radius:999px;font-size:11px}
@@ -168,12 +168,12 @@ input[type=number]{-moz-appearance:textfield}
     recalc();
   }
 
-  /* 오늘 포함하여 종료예정일까지 일수 계산 */
-  function calcRefundDays(endDateVal){
-    if(!endDateVal) return 0;
-    const today = new Date(); today.setHours(0,0,0,0);
-    const end   = new Date(endDateVal); end.setHours(0,0,0,0);
-    const diff  = Math.round((end - today) / 86400000) + 1; // 오늘 포함
+  /* 종료일 미포함, 종료 예정일까지 일수 계산 (예: 12일 종료 → 15일 예정이면 3일) */
+  function calcRefundDays(stopDateVal, endDateVal){
+    if(!stopDateVal || !endDateVal) return 0;
+    const stop = new Date(stopDateVal); stop.setHours(0,0,0,0);
+    const end  = new Date(endDateVal);  end.setHours(0,0,0,0);
+    const diff = Math.round((end - stop) / 86400000);
     return diff > 0 ? diff : 0;
   }
 
@@ -194,13 +194,17 @@ input[type=number]{-moz-appearance:textfield}
       </div>
       <div class="refund-row-grid">
         <div class="field">
+          <label>종료일</label>
+          <input type="date" class="r-stop" value="${todayStr()}"/>
+        </div>
+        <div class="field">
           <label>종료 예정일</label>
-          <input type="date" class="r-end" min="${todayStr()}"/>
+          <input type="date" class="r-end"/>
         </div>
         <div class="field"><label>트래픽 수량</label><input type="number" class="r-qty" placeholder="0"/></div>
       </div>
       <div class="refund-result" data-result>
-        <span class="r-tag">종료 예정일을 선택하고 수량을 입력해주세요</span>
+        <span class="r-tag">종료일과 종료 예정일을 선택하고 수량을 입력해주세요</span>
       </div>`;
 
     el.querySelector(".rdel").onclick = () => { el.remove(); renumberRefund(); recalcRefund(); };
@@ -217,24 +221,25 @@ input[type=number]{-moz-appearance:textfield}
   }
 
   function updateRefundRow(el){
-    const endVal = el.querySelector(".r-end").value;
-    const qty    = num(el.querySelector(".r-qty").value);
-    const tp     = num($("#unitPrice").value);
-    const res    = el.querySelector("[data-result]");
+    const stopVal = el.querySelector(".r-stop").value;
+    const endVal  = el.querySelector(".r-end").value;
+    const qty     = num(el.querySelector(".r-qty").value);
+    const tp      = num($("#unitPrice").value);
+    const res     = el.querySelector("[data-result]");
 
-    if(!endVal){
-      res.innerHTML = `<span class="r-tag">종료 예정일을 선택하고 수량을 입력해주세요</span>`;
+    if(!stopVal || !endVal){
+      res.innerHTML = `<span class="r-tag">종료일과 종료 예정일을 선택하고 수량을 입력해주세요</span>`;
       return;
     }
 
-    const days  = calcRefundDays(endVal);
+    const days  = calcRefundDays(stopVal, endVal);
     const total = qty * tp * days;
 
     if(days === 0){
       res.innerHTML =
         `<span class="r-days">0일</span>` +
         `<span class="r-arrow">→</span>` +
-        `<span class="r-tag">오늘이 종료일이므로 환불 금액이 없습니다</span>`;
+        `<span class="r-tag">종료일이 종료 예정일과 같거나 이후여서 환불 금액이 없습니다</span>`;
       return;
     }
 
@@ -271,7 +276,7 @@ input[type=number]{-moz-appearance:textfield}
     let sum = 0;
 
     rows.forEach(b => {
-      const days = calcRefundDays(b.querySelector(".r-end").value);
+      const days = calcRefundDays(b.querySelector(".r-stop").value, b.querySelector(".r-end").value);
       if(days > 0) sum += num(b.querySelector(".r-qty").value) * tp * days;
     });
 
@@ -300,7 +305,7 @@ input[type=number]{-moz-appearance:textfield}
     // 환불 합계
     let refundTotal = 0;
     $$("#refundBlocks .refund-row").forEach(b => {
-      const days = calcRefundDays(b.querySelector(".r-end").value);
+      const days = calcRefundDays(b.querySelector(".r-stop").value, b.querySelector(".r-end").value);
       if(days > 0) refundTotal += num(b.querySelector(".r-qty").value) * tp * days;
     });
 
