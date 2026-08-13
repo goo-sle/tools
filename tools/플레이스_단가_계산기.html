@@ -167,8 +167,10 @@ input[type=number]{-moz-appearance:textfield}
   const todayStr = () => new Date().toISOString().split("T")[0];
 
   let mode = 1; // 1: 트래픽 견적, 2: 쇼핑 유입플 슬롯 견적
+  const priceByMode = { 1: "", 2: "1300" }; // 모드별 단가 입력값 별도 보관
 
   function switchMode(m){
+    priceByMode[mode] = $("#unitPrice").value; // 현재 모드 값 저장
     mode = m;
     $("#modeBtn1").classList.toggle("active", m === 1);
     $("#modeBtn2").classList.toggle("active", m === 2);
@@ -176,7 +178,7 @@ input[type=number]{-moz-appearance:textfield}
     $("#blocks").style.display   = m === 1 ? "" : "none";
     $("#slotForm").style.display = m === 2 ? "" : "none";
     $("#openRefundModal").style.display = m === 1 ? "" : "none";
-    if(m === 2 && !num($("#unitPrice").value)) $("#unitPrice").value = 1300;
+    $("#unitPrice").value = priceByMode[m];
     recalc();
   }
 
