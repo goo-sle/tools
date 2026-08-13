@@ -5,7 +5,7 @@
   { "file": "tools/미션_진행_상황판.html",       "label": "📒 미션 진행 상황판",       "addedAt": "2026-03-06", "updatedAt": "2026-05-06" },
   { "file": "tools/키워드_쉼표_병합기.html",     "label": "⚡ 키워드 쉼표 병합기",     "addedAt": "2026-03-05", "updatedAt": "2026-06-02" },
   { "file": "tools/네이버_키워드_조합기.html",    "label": "🔑 네이버 키워드 조합기",    "addedAt": "2026-03-05", "updatedAt": "2026-06-02" },
-  { "file": "tools/플레이스_단가_계산기.html",   "label": "💰 플레이스 단가 계산기",   "addedAt": "2026-03-05", "updatedAt": "2026-06-02" },
+  { "file": "tools/플레이스_단가_계산기.html",   "label": "💰 플레이스 단가 계산기",   "addedAt": "2026-03-05", "updatedAt": "2026-08-13" },
   { "file": "tools/블로그_태그_검색.html",       "label": "🏷️ 블로그 태그 검색",       "addedAt": "2026-03-11", "updatedAt": "2026-06-02" },
   { "file": "tools/자동완성_체크.html",          "label": "✅ 자동완성 체크",          "addedAt": "2026-03-05", "updatedAt": "2026-07-22" },
   { "file": "tools/등급_확인.html",              "label": "🎖️ 등급 확인",              "addedAt": "2026-03-05", "updatedAt": "2026-06-02" },

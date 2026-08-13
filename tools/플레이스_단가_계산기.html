@@ -5,8 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>플레이스 단가 계산기</title>
 
-<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
-
 <style>
 :root{
   --bg:#f1f3f8;--card:#fff;--text:#111827;--muted:#6b7280;
@@ -62,33 +60,6 @@ input[type=number]{-moz-appearance:textfield}
 .filter-row{display:flex;gap:10px;flex-wrap:wrap}
 .filter-row label{font-size:12px;font-weight:600;color:var(--text);margin:0;display:flex;align-items:center;gap:4px;cursor:pointer}
 
-/* 업로드 */
-.upload-area{border:2px dashed var(--line);border-radius:12px;padding:32px;text-align:center;cursor:pointer;transition:all .15s;background:var(--line2)}
-.upload-area:hover,.upload-area.drag{border-color:var(--accent);background:var(--accent-l)}
-.upload-area .u-icon{font-size:28px;margin-bottom:8px}
-.upload-area p{color:var(--muted);font-size:13px;line-height:1.6}
-
-/* 대행사 */
-.agency-block{margin-bottom:16px;border:1.5px solid #c7d2fe;border-radius:14px;overflow:hidden}
-.agency-block:last-child{margin-bottom:0}
-.agency-hd{display:flex;justify-content:space-between;align-items:center;background:var(--accent-l);padding:12px 16px;border-bottom:1.5px solid #c7d2fe}
-.agency-hd .aname{font-size:15px;font-weight:800;color:var(--accent)}
-.agency-hd .ameta{font-size:12px;color:#6366f1;margin-top:1px}
-.ag-table{width:100%;border-collapse:collapse;font-size:13px}
-.ag-table thead th{background:#f8fafc;color:var(--muted);font-size:11px;font-weight:700;letter-spacing:.3px;padding:9px 14px;text-align:left;border-bottom:1px solid var(--line)}
-.ag-table tbody tr{border-bottom:1px solid var(--line)}
-.ag-table tbody tr:last-child{border-bottom:none}
-.ag-table tbody td{padding:10px 14px}
-.badge{display:inline-block;padding:3px 8px;border-radius:999px;font-size:11px;font-weight:700}
-.badge-done{background:var(--ok-l);color:var(--ok)}
-.badge-pend{background:#fef9c3;color:#854d0e}
-.agency-ft{background:#f0f4ff;border-top:1.5px solid #c7d2fe;padding:11px 16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
-.agency-ft .totals{display:flex;gap:20px;font-size:13px;color:var(--muted);flex-wrap:wrap}
-.agency-ft .totals span b{color:var(--accent);font-weight:800}
-.agency-copy-btn{background:var(--ok);color:#fff;border:none;border-radius:8px;padding:7px 13px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;transition:background .15s}
-.agency-copy-btn:hover{background:#0f766e}
-.agency-copy-btn.ok{background:#0f766e}
-
 /* 환불 모달 항목 */
 .refund-row{border:1.5px solid #fecaca;border-radius:12px;padding:14px;background:#fff}
 .refund-row-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
@@ -111,25 +82,7 @@ input[type=number]{-moz-appearance:textfield}
 <body>
 <div class="wrap">
 
-<!-- ① CSV 정산 등록 -->
-<div class="card">
-  <div class="card-top">
-    <div class="card-title"><div class="ic" style="background:#f0fdfa;color:var(--ok)">📂</div>정산 등록 — 대행사별 분류</div>
-    <div style="display:flex;gap:8px">
-      <input type="file" id="csvFileInput" accept=".csv,.xlsx,.xls" style="display:none"/>
-      <button class="btn btn-ghost btn-sm" id="uploadCsvBtn">📤 엑셀 파일 업로드</button>
-      <button class="btn btn-ghost btn-sm" id="clearCsvBtn" style="display:none;color:var(--error)">✕ 초기화</button>
-    </div>
-  </div>
-  <div id="csvContent">
-    <div class="upload-area" id="uploadZone">
-      <div class="u-icon">📄</div>
-      <p><b>정산내역_날짜.xlsx 드래그 또는 클릭해서 업로드</b><br>대행사별로 자동 분류됩니다</p>
-    </div>
-  </div>
-</div>
-
-<!-- ② 단가 설정 -->
+<!-- ① 단가 설정 -->
 <div class="card">
   <div class="card-top">
     <div class="card-title"><div class="ic" style="background:#eff4ff;color:var(--accent)">💰</div>개별 단가 설정</div>
@@ -141,7 +94,7 @@ input[type=number]{-moz-appearance:textfield}
   </div>
 </div>
 
-<!-- ③ 견적 블록 -->
+<!-- ② 견적 블록 -->
 <div class="card">
   <div class="card-top" style="margin-bottom:14px">
     <div class="card-title"><div class="ic" style="background:#eff4ff;color:var(--accent)">📝</div>개별 정산 수량</div>
@@ -153,7 +106,7 @@ input[type=number]{-moz-appearance:textfield}
   <div id="blocks"></div>
 </div>
 
-<!-- ④ 안내 문구 -->
+<!-- ③ 안내 문구 -->
 <div class="card">
   <div class="card-top">
     <div class="card-title"><div class="ic" style="background:#f0fdfa;color:var(--ok)">📋</div>안내 문구</div>
@@ -479,212 +432,8 @@ input[type=number]{-moz-appearance:textfield}
   $("#blocks").appendChild(makeBlk());
   recalc();
 
-  /* ══════════════════════════════
-     CSV 업로드 & 대행사별 분류
-  ══════════════════════════════ */
-  function triggerUpload(){ $("#csvFileInput").click(); }
-  $("#uploadCsvBtn").onclick = triggerUpload;
-  $("#uploadZone").onclick   = triggerUpload;
-  $("#uploadZone").ondragover  = e => { e.preventDefault(); $("#uploadZone").classList.add("drag"); };
-  $("#uploadZone").ondragleave = () => $("#uploadZone").classList.remove("drag");
-  $("#uploadZone").ondrop = e => {
-    e.preventDefault(); $("#uploadZone").classList.remove("drag");
-    const f = e.dataTransfer.files[0]; if(f) readCsv(f);
-  };
-  $("#csvFileInput").onchange = e => {
-    const f = e.target.files[0]; if(f) readCsv(f); e.target.value = "";
-  };
-
-  function resetCsvArea(){
-    $("#csvContent").innerHTML = `<div class="upload-area" id="uploadZone"><div class="u-icon">📄</div><p><b>CSV 파일을 드래그하거나 클릭해서 업로드</b><br>대행사별로 자동 분류됩니다</p></div>`;
-    const uz = $("#uploadZone");
-    uz.onclick     = triggerUpload;
-    uz.ondragover  = e => { e.preventDefault(); uz.classList.add("drag"); };
-    uz.ondragleave = () => uz.classList.remove("drag");
-    uz.ondrop      = e => { e.preventDefault(); uz.classList.remove("drag"); const f = e.dataTransfer.files[0]; if(f) readCsv(f); };
-    $("#clearCsvBtn").style.display = "none";
-  }
-  $("#clearCsvBtn").onclick = resetCsvArea;
-
-  function readCsv(file){
-
-    const ext = file.name.split(".").pop().toLowerCase();
-
-    // CSV
-    if(ext === "csv"){
-
-      const r = new FileReader();
-
-      r.onload = ev => {
-        parseCsv(
-          ev.target.result.replace(/^\uFEFF/, "")
-        );
-      };
-
-      r.readAsText(file, "UTF-8");
-
-      return;
-    }
-
-    // XLSX / XLS
-    if(ext === "xlsx" || ext === "xls"){
-
-      const r = new FileReader();
-
-      r.onload = ev => {
-
-        const data = new Uint8Array(ev.target.result);
-
-        const workbook = XLSX.read(data, {
-          type: "array"
-        });
-
-        const firstSheet = workbook.SheetNames[0];
-
-        const worksheet = workbook.Sheets[firstSheet];
-
-        const csv = XLSX.utils.sheet_to_csv(worksheet);
-
-        parseCsv(csv);
-      };
-
-      r.readAsArrayBuffer(file);
-
-      return;
-    }
-
-    alert("지원하지 않는 파일 형식입니다.");
-  }
-
-  function parseCsv(text){
-    const lines = text.split(/\r?\n/).filter(l => l.trim());
-    if(lines.length < 2){ alert("데이터가 없습니다."); return; }
-    const header = lines[0].split(",").map(h => h.replace(/"/g,"").trim());
-    const colMap = {
-      "접수일시":"date","대행사":"agency","유저ID":"userId",
-      "캠페인 수":"campaigns","일 목표 합산":"totalGoal","단가(원)":"unitPrice",
-      "정산 금액(VAT 별도)":"amount","입금액(VAT 포함)":"deposit",
-      "환불 금액":"refund","정산상태":"status"
-    };
-    const ci = {};
-    header.forEach((h,i) => { if(colMap[h]) ci[colMap[h]] = i; });
-    const rows = [];
-    for(let i=1;i<lines.length;i++){
-      const c = lines[i].split(",").map(v => v.replace(/"/g,"").trim());
-      if(!c[ci.agency]) continue;
-      rows.push({
-        date:c[ci.date]||"", agency:c[ci.agency]||"", userId:c[ci.userId]||"",
-        campaigns:num(c[ci.campaigns]), totalGoal:num(c[ci.totalGoal]),
-        unitPrice:num(c[ci.unitPrice]), amount:num(c[ci.amount]),
-        deposit:num(c[ci.deposit]), refund:num(c[ci.refund]),
-        status:c[ci.status]||""
-      });
-    }
-    if(!rows.length){ alert("유효한 데이터가 없습니다."); return; }
-    renderAgencies(rows);
-    $("#clearCsvBtn").style.display = "";
-  }
-
-  function buildCopyMsg(totalCamp, totalG, uPrice, totalA, totalD, totalRefund, vat=10){
-    const header =
-      `• 캠페인 수: ${totalCamp}건\n` +
-      `• 전체 목표: ${fmt(totalG)}개\n\n` +
-      `• 단가: ${fmt(uPrice)}원\n`;
-    let amtPart;
-    if(totalRefund > 0){
-      amtPart =
-        `• 환불 금액: -${won(totalRefund)}\n` +
-        `• 금액: ${won(totalA)} (VAT 별도)\n\n` +
-        `• 입금액: ${won(totalD)} (VAT 포함)`;
-    } else {
-      amtPart =
-        `• 금액: ${won(totalA)} (VAT 별도)\n\n` +
-        `• 입금액: ${won(totalD)} (VAT 포함)`;
-    }
-    return header + amtPart + "\n\n주식회사 하이어애드\n666-045450-04-013\nIBK기업은행\n\n확인 후 입금 부탁드립니다.";
-  }
-
-  function renderAgencies(rows){
-    const order = [], groups = {};
-    rows.forEach(r => {
-      if(!groups[r.agency]){ groups[r.agency]=[]; order.push(r.agency); }
-      groups[r.agency].push(r);
-    });
-    const container = document.createElement("div");
-    order.forEach(agency => {
-      const list = groups[agency];
-      const totalAmt    = list.reduce((s,r) => s+r.amount,    0);
-      const totalDep    = list.reduce((s,r) => s+r.deposit,   0);
-      const totalRefund = list.reduce((s,r) => s+r.refund,    0);
-      const totalCamp   = list.reduce((s,r) => s+r.campaigns, 0);
-      const totalG      = list.reduce((s,r) => s+r.totalGoal, 0);
-
-      const block = document.createElement("div");
-      block.className = "agency-block";
-
-      const hd = document.createElement("div");
-      hd.className = "agency-hd";
-      hd.innerHTML = `
-        <div>
-          <div class="aname">${agency}</div>
-          <div class="ameta">총 ${totalCamp}건 · 전체 목표 ${Math.round(totalG).toLocaleString()}건</div>
-        </div>
-        <button class="agency-copy-btn">📋 복사</button>`;
-      block.appendChild(hd);
-
-      const wrap = document.createElement("div");
-      wrap.style.overflowX = "auto";
-      const tbl = document.createElement("table");
-      tbl.className = "ag-table";
-      tbl.innerHTML = `<thead><tr>
-        <th>접수일시</th><th>유저ID</th><th>캠페인 수</th>
-        <th>일 목표 합산</th><th>단가(원)</th>
-        <th>정산 금액(VAT 별도)</th><th>입금액(VAT 포함)</th>
-        <th>환불 금액</th><th>상태</th>
-      </tr></thead>`;
-      const tbody = document.createElement("tbody");
-      list.forEach(r => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${r.date}</td><td>${r.userId}</td>
-          <td style="text-align:right">${fmt(r.campaigns)}</td>
-          <td style="text-align:right"><b>${fmt(r.totalGoal)}</b></td>
-          <td style="text-align:right">${fmt(r.unitPrice)}</td>
-          <td style="text-align:right"><b>${fmt(r.amount)}</b></td>
-          <td style="text-align:right;color:var(--accent);font-weight:700">${fmt(r.deposit)}</td>
-          <td style="text-align:right${r.refund?";color:var(--error);font-weight:700":""}">${r.refund?fmt(r.refund):"-"}</td>
-          <td><span class="badge ${r.status==="정산완료"?"badge-done":"badge-pend"}">${r.status}</span></td>`;
-        tbody.appendChild(tr);
-      });
-      tbl.appendChild(tbody); wrap.appendChild(tbl); block.appendChild(wrap);
-
-      const ft = document.createElement("div");
-      ft.className = "agency-ft";
-      ft.innerHTML = `<div class="totals">
-        <span>정산 합계 <b>${fmt(totalAmt)}원</b></span>
-        <span>입금 합계 <b>${fmt(totalDep)}원</b></span>
-        ${totalRefund ? `<span style="color:var(--error)">환불 <b>${fmt(totalRefund)}원</b></span>` : ""}
-      </div>`;
-      block.appendChild(ft);
-      container.appendChild(block);
-
-      hd.querySelector(".agency-copy-btn").onclick = function(){
-        const totalCamp = list.reduce((s,r) => s+r.campaigns, 0);
-        const totalG    = list.reduce((s,r) => s+r.totalGoal, 0);
-        const uPrice    = list[0].unitPrice;
-        const msg = buildCopyMsg(totalCamp, totalG, uPrice, totalAmt, totalDep, totalRefund);
-        navigator.clipboard.writeText(msg).then(() => {
-          const btn = this;
-          btn.classList.add("ok"); btn.textContent = "✓ 복사됨";
-          setTimeout(() => { btn.classList.remove("ok"); btn.textContent = "📋 복사"; }, 1500);
-        });
-      };
-    });
-    $("#csvContent").innerHTML = "";
-    $("#csvContent").appendChild(container);
-  }
-
 })();
+
 </script>
 </body>
 </html>
