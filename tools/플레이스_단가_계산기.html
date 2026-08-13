@@ -80,7 +80,10 @@ input[type=number]{-moz-appearance:textfield}
 <!-- 단가 및 수량 입력 -->
 <div class="card">
   <div class="card-top">
-    <div class="card-title"><div class="ic" style="background:#eff4ff;color:var(--accent)">💰</div>단가 및 수량 입력</div>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <div class="card-title"><div class="ic" style="background:#eff4ff;color:var(--accent)">💰</div>단가 및 수량 입력</div>
+      <button class="btn btn-ghost btn-sm" id="openRefundModal" style="color:var(--error);border-color:#fecaca">↩️ 환불 계산</button>
+    </div>
     <div class="seg">
       <button class="seg-btn active" id="modeBtn1">트래픽</button>
       <button class="seg-btn" id="modeBtn2">슬롯</button>
@@ -93,9 +96,8 @@ input[type=number]{-moz-appearance:textfield}
     <div class="col field" id="dateField" style="display:none"><label>접수 날짜</label><input type="date" id="slotDate"/></div>
     <div class="col field" id="slotCountField" style="display:none"><label>슬롯 수</label><input type="number" id="slotCount" placeholder="0"/></div>
   </div>
-  <div style="display:flex;gap:8px;align-items:center;justify-content:flex-end;margin-top:14px">
+  <div style="display:flex;align-items:center;justify-content:flex-end;margin-top:14px">
     <button class="btn btn-ghost btn-sm" id="resetAll">초기화</button>
-    <button class="btn btn-ghost btn-sm" id="openRefundModal" style="color:var(--error);border-color:#fecaca">↩️ 환불 계산</button>
   </div>
 </div>
 
@@ -103,8 +105,6 @@ input[type=number]{-moz-appearance:textfield}
 <div class="card">
   <div class="card-top">
     <div class="card-title"><div class="ic" style="background:#f0fdfa;color:var(--ok)">📋</div>안내 문구</div>
-  </div>
-  <div style="display:flex;justify-content:flex-end;align-items:center;margin-bottom:10px">
     <button class="copy-btn" id="copy1">복사</button>
   </div>
   <div class="summary-box" id="summary1"></div>
