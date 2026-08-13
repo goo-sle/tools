@@ -43,6 +43,8 @@ input[type=number]{-moz-appearance:textfield}
 .btn-danger:hover{background:#b91c1c}
 .btn-sm{padding:6px 11px;font-size:12px;border-radius:8px}
 .btn-icon{padding:5px 7px;font-size:13px;border-radius:8px;line-height:1}
+.mode-btn{min-width:32px;padding:6px 10px;justify-content:center}
+.mode-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
 
 /* 견적 블록 */
 .blk{border:1.5px solid var(--line);border-radius:12px;padding:14px;background:#fff;margin-bottom:10px}
@@ -84,9 +86,13 @@ input[type=number]{-moz-appearance:textfield}
 <div class="card">
   <div class="card-top">
     <div class="card-title"><div class="ic" style="background:#eff4ff;color:var(--accent)">💰</div>개별 단가 설정</div>
+    <div style="display:flex;gap:6px">
+      <button class="btn btn-ghost btn-sm mode-btn active" id="modeBtn1">1</button>
+      <button class="btn btn-ghost btn-sm mode-btn" id="modeBtn2">2</button>
+    </div>
   </div>
   <div class="row">
-    <div class="col field"><label>트래픽 단가 (원)</label><input id="trafficPrice" type="number" placeholder="0"/></div>
+    <div class="col field"><label id="priceLabel">트래픽 단가 (원)</label><input id="unitPrice" type="number" placeholder="0"/></div>
     <div class="col field"><label>부가세 (%)</label><input id="vatRate" type="number" value="10" readonly/></div>
   </div>
 </div>
@@ -101,6 +107,13 @@ input[type=number]{-moz-appearance:textfield}
     </div>
   </div>
   <div id="blocks"></div>
+  <div id="slotForm" style="display:none">
+    <div class="row">
+      <div class="col field"><label>접수 날짜</label><input type="date" id="slotDate"/></div>
+      <div class="col field"><label>업체명</label><input type="text" id="slotCompany" placeholder="예: 비전"/></div>
+      <div class="col field"><label>슬롯 수</label><input type="number" id="slotCount" placeholder="0"/></div>
+    </div>
+  </div>
 </div>
 
 <!-- ③ 안내 문구 -->
@@ -153,6 +166,20 @@ input[type=number]{-moz-appearance:textfield}
   const won = n => fmt(n)+"원";
 
   const todayStr = () => new Date().toISOString().split("T")[0];
+
+  let mode = 1; // 1: 트래픽 견적, 2: 쇼핑 유입플 슬롯 견적
+
+  function switchMode(m){
+    mode = m;
+    $("#modeBtn1").classList.toggle("active", m === 1);
+    $("#modeBtn2").classList.toggle("active", m === 2);
+    $("#priceLabel").textContent = m === 1 ? "트래픽 단가 (원)" : "슬롯 단가 (원/일)";
+    $("#blocks").style.display   = m === 1 ? "" : "none";
+    $("#slotForm").style.display = m === 2 ? "" : "none";
+    $("#openRefundModal").style.display = m === 1 ? "" : "none";
+    if(m === 2 && !num($("#unitPrice").value)) $("#unitPrice").value = 1300;
+    recalc();
+  }
 
   /* 오늘 포함하여 종료예정일까지 일수 계산 */
   function calcRefundDays(endDateVal){
@@ -222,7 +249,7 @@ input[type=number]{-moz-appearance:textfield}
   function updateRefundRow(el){
     const endVal = el.querySelector(".r-end").value;
     const qty    = num(el.querySelector(".r-qty").value);
-    const tp     = num($("#trafficPrice").value);
+    const tp     = num($("#unitPrice").value);
     const res    = el.querySelector("[data-result]");
 
     if(!endVal){
@@ -270,7 +297,7 @@ input[type=number]{-moz-appearance:textfield}
 
     empty.style.display = "none";
 
-    const tp = num($("#trafficPrice").value);
+    const tp = num($("#unitPrice").value);
     let sum = 0;
 
     rows.forEach(b => {
@@ -289,7 +316,9 @@ input[type=number]{-moz-appearance:textfield}
      안내 문구 재계산
   ══════════════════════════════ */
   function recalc(){
-    const tp  = num($("#trafficPrice").value);
+    if(mode === 2){ recalcSlot(); return; }
+
+    const tp  = num($("#unitPrice").value);
     const vat = num($("#vatRate").value);
 
     let totalCamp = 0, T = 0;
@@ -338,17 +367,66 @@ input[type=number]{-moz-appearance:textfield}
   }
 
   /* ══════════════════════════════
+     안내 문구 재계산 — 쇼핑 유입플 슬롯
+  ══════════════════════════════ */
+  function recalcSlot(){
+    const price   = num($("#unitPrice").value) || 1300;
+    const slots   = num($("#slotCount").value);
+    const company = $("#slotCompany").value.trim();
+    const dateVal = $("#slotDate").value;
+
+    const amount = slots * price;
+    const vatIncluded = Math.ceil(amount * 1.1);
+    const oneSlotPrice = price * 10;
+
+    let dateLabel = "";
+    if(dateVal){
+      const d   = new Date(dateVal);
+      const dow = ["일","월","화","수","목","금","토"][d.getDay()];
+      dateLabel = `${d.getMonth()+1}/${d.getDate()}(${dow}) `;
+    }
+
+    $("#summary1").textContent =
+`※ ${dateLabel}쇼핑 유입플 접수건(${company || "-"})
+
+* 1슬롯(10일 기준, 일 150타) : ${fmt(oneSlotPrice)}원(vat별도)
+* 1슬롯 1일을 슬롯 1로 책정됩니다.
+
+- 총 ${fmt(slots)}슬롯 (${fmt(slots)}슬롯 x ${fmt(price)}원 = ${fmt(amount)}원)
+- vat별도: ${fmt(amount)}원
+- vat포함: ${fmt(vatIncluded)}원
+  ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ
+- 은행명: 기업은행
+- 계좌번호: 666-045450-04-013
+- 예금주: 주식회사 하이어애드
+- 입금액: ${fmt(vatIncluded)}원
+
+확인 후 입금 부탁드립니다.`;
+  }
+
+  /* ══════════════════════════════
      이벤트 바인딩
   ══════════════════════════════ */
-  $("#trafficPrice").oninput = () => {
+  $("#unitPrice").oninput = () => {
     // 단가 바뀌면 환불 행 결과도 갱신
     $$("#refundBlocks .refund-row").forEach(b => updateRefundRow(b));
     recalcRefund();
   };
 
+  ["slotDate","slotCompany","slotCount"].forEach(id => { $("#"+id).oninput = recalc; });
+
+  $("#modeBtn1").onclick = () => switchMode(1);
+  $("#modeBtn2").onclick = () => switchMode(2);
+
   $("#resetAll").onclick = () => {
-    $("#blocks").innerHTML = "";
-    $("#blocks").appendChild(makeBlk());
+    if(mode === 1){
+      $("#blocks").innerHTML = "";
+      $("#blocks").appendChild(makeBlk());
+    } else {
+      $("#slotDate").value = "";
+      $("#slotCompany").value = "";
+      $("#slotCount").value = "";
+    }
     recalc();
   };
 
