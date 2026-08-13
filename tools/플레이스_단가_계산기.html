@@ -50,14 +50,6 @@ input[type=number]{-moz-appearance:textfield}
 .seg-btn.active{background:var(--accent);color:#fff;box-shadow:0 3px 8px -3px rgba(37,99,235,.5)}
 .seg-btn:not(.active):hover{color:var(--text)}
 
-/* 견적 블록 */
-.blk{border:1.5px solid var(--line);border-radius:12px;padding:14px;background:#fff;margin-bottom:10px}
-.blk:last-child{margin-bottom:0}
-.blk-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
-.blk-head span{font-size:12px;font-weight:700;color:var(--muted)}
-.blk-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.blk-mini{font-size:12px;color:var(--muted);margin-top:10px;padding-top:10px;border-top:1px dashed var(--line)}
-
 /* 안내문구 */
 .summary-box{background:var(--line2);border:1.5px dashed var(--line);border-radius:12px;padding:16px;font-size:14px;line-height:2;white-space:pre-line;min-height:240px;color:var(--text);font-family:inherit}
 .copy-btn{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:7px 13px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;transition:background .15s}
@@ -77,7 +69,6 @@ input[type=number]{-moz-appearance:textfield}
 .r-detail{font-size:11px;color:var(--muted)}
 
 @media(max-width:600px){
-  .blk-grid{grid-template-columns:1fr}
   .refund-row-grid{grid-template-columns:1fr}
   .row{flex-direction:column}
 }
@@ -86,10 +77,10 @@ input[type=number]{-moz-appearance:textfield}
 <body>
 <div class="wrap">
 
-<!-- ① 단가 설정 -->
+<!-- 단가 및 수량 입력 -->
 <div class="card">
   <div class="card-top">
-    <div class="card-title"><div class="ic" style="background:#eff4ff;color:var(--accent)">💰</div>단가 설정</div>
+    <div class="card-title"><div class="ic" style="background:#eff4ff;color:var(--accent)">💰</div>단가 및 수량 입력</div>
     <div class="seg">
       <button class="seg-btn active" id="modeBtn1">트래픽</button>
       <button class="seg-btn" id="modeBtn2">슬롯</button>
@@ -97,25 +88,14 @@ input[type=number]{-moz-appearance:textfield}
   </div>
   <div class="row">
     <div class="col field"><label id="priceLabel">트래픽 단가 (원)</label><input id="unitPrice" type="number" placeholder="0"/></div>
-    <div class="col field"><label>부가세 (%)</label><input id="vatRate" type="number" value="10" readonly/></div>
+    <div class="col field" id="campField"><label>캠페인 수</label><input type="number" id="campCount" placeholder="1" min="1"/></div>
+    <div class="col field" id="goalField"><label>트래픽 전체 목표</label><input type="number" id="trafficGoal" placeholder="0"/></div>
+    <div class="col field" id="dateField" style="display:none"><label>접수 날짜</label><input type="date" id="slotDate"/></div>
+    <div class="col field" id="slotCountField" style="display:none"><label>슬롯 수</label><input type="number" id="slotCount" placeholder="0"/></div>
   </div>
-</div>
-
-<!-- ② 견적 블록 -->
-<div class="card">
-  <div class="card-top" style="margin-bottom:14px">
-    <div class="card-title"><div class="ic" style="background:#eff4ff;color:var(--accent)">📝</div>수량 입력</div>
-    <div style="display:flex;gap:8px;align-items:center">
-      <button class="btn btn-ghost btn-sm" id="resetAll">초기화</button>
-      <button class="btn btn-ghost btn-sm" id="openRefundModal" style="color:var(--error);border-color:#fecaca">↩️ 환불 계산</button>
-    </div>
-  </div>
-  <div id="blocks"></div>
-  <div id="slotForm" style="display:none">
-    <div class="row">
-      <div class="col field"><label>접수 날짜</label><input type="date" id="slotDate"/></div>
-      <div class="col field"><label>슬롯 수</label><input type="number" id="slotCount" placeholder="0"/></div>
-    </div>
+  <div style="display:flex;gap:8px;align-items:center;justify-content:flex-end;margin-top:14px">
+    <button class="btn btn-ghost btn-sm" id="resetAll">초기화</button>
+    <button class="btn btn-ghost btn-sm" id="openRefundModal" style="color:var(--error);border-color:#fecaca">↩️ 환불 계산</button>
   </div>
 </div>
 
@@ -179,8 +159,10 @@ input[type=number]{-moz-appearance:textfield}
     $("#modeBtn1").classList.toggle("active", m === 1);
     $("#modeBtn2").classList.toggle("active", m === 2);
     $("#priceLabel").textContent = m === 1 ? "트래픽 단가 (원)" : "슬롯 단가 (원)";
-    $("#blocks").style.display   = m === 1 ? "" : "none";
-    $("#slotForm").style.display = m === 2 ? "" : "none";
+    $("#campField").style.display       = m === 1 ? "" : "none";
+    $("#goalField").style.display       = m === 1 ? "" : "none";
+    $("#dateField").style.display       = m === 2 ? "" : "none";
+    $("#slotCountField").style.display  = m === 2 ? "" : "none";
     $("#openRefundModal").style.display = m === 1 ? "" : "none";
     $("#unitPrice").value = priceByMode[m];
     recalc();
@@ -193,23 +175,6 @@ input[type=number]{-moz-appearance:textfield}
     const end   = new Date(endDateVal); end.setHours(0,0,0,0);
     const diff  = Math.round((end - today) / 86400000) + 1; // 오늘 포함
     return diff > 0 ? diff : 0;
-  }
-
-  /* ══════════════════════════════
-     견적 블록 (캠페인 수 추가)
-  ══════════════════════════════ */
-  function makeBlk(){
-    const el = document.createElement("div");
-    el.className = "blk";
-    el.innerHTML = `
-      <div class="blk-head"><span>📌 견적 항목</span></div>
-      <div class="blk-grid">
-        <div class="field"><label>캠페인 수</label><input type="number" class="b-camp" placeholder="1" min="1"/></div>
-        <div class="field"><label>트래픽 전체 목표</label><input type="number" class="t-per" placeholder="0"/></div>
-      </div>
-      <div class="blk-mini" data-mini>결과: -</div>`;
-    el.oninput = recalc;
-    return el;
   }
 
   /* ══════════════════════════════
@@ -324,16 +289,10 @@ input[type=number]{-moz-appearance:textfield}
     if(mode === 2){ recalcSlot(); return; }
 
     const tp  = num($("#unitPrice").value);
-    const vat = num($("#vatRate").value);
+    const vat = 10; // 부가세 고정
 
-    let totalCamp = 0, T = 0;
-    $$("#blocks .blk").forEach(b => {
-      const c = num($(".b-camp",b).value);
-      const t = num($(".t-per",b).value);
-      totalCamp += c || 1;
-      T += t;
-      $("[data-mini]",b).textContent = `캠페인 ${c||1}건 · 목표 ${fmt(t)}개`;
-    });
+    const totalCamp = num($("#campCount").value) || 1;
+    const T = num($("#trafficGoal").value);
 
     const baseAmt = T * tp;
     const dep     = Math.ceil(baseAmt*(100+vat)/100);
@@ -417,15 +376,15 @@ input[type=number]{-moz-appearance:textfield}
     recalcRefund();
   };
 
-  ["slotDate","slotCount"].forEach(id => { $("#"+id).oninput = recalc; });
+  ["campCount","trafficGoal","slotDate","slotCount"].forEach(id => { $("#"+id).oninput = recalc; });
 
   $("#modeBtn1").onclick = () => switchMode(1);
   $("#modeBtn2").onclick = () => switchMode(2);
 
   $("#resetAll").onclick = () => {
     if(mode === 1){
-      $("#blocks").innerHTML = "";
-      $("#blocks").appendChild(makeBlk());
+      $("#campCount").value = "";
+      $("#trafficGoal").value = "";
     } else {
       $("#slotDate").value = "";
       $("#slotCount").value = "";
@@ -457,8 +416,6 @@ input[type=number]{-moz-appearance:textfield}
     });
   };
 
-  // 초기 블록
-  $("#blocks").appendChild(makeBlk());
   recalc();
 
 })();
