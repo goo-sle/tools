@@ -215,8 +215,6 @@ let tab     = 'hidden';                       // 'hidden' | 'top'
 let entries = { hidden: [], top: [] };        // hidden: [{name, mid}], top: [{mid, keyword}]
 let results = { hidden: {}, top: {} };         // hidden: {mid:{name,status,keywords,error}}, top: {mid:{status,items,error}}
 
-function midToUrl(mid) { return `https://m.place.naver.com/place/${mid}`; }
-
 function save() { if (window.fbSave) window.fbSave(entries); }
 
 function switchTab(t) {
@@ -440,7 +438,7 @@ async function runHidden() {
     setProgress((i / list.length) * 100, `${i+1}/${list.length}`);
 
     try {
-      const data = await streamFetch('step1-stream', { name, url: midToUrl(mid) },
+      const data = await streamFetch('step1-stream', { name, url: mid },
         msg => addLog(`  ${msg}`, logType(msg))
       );
       if (data.success) {
@@ -479,7 +477,7 @@ async function runTop() {
     setProgress((i / mids.length) * 100, `${i+1}/${mids.length}`);
 
     try {
-      const data = await streamFetch('step2-stream', { url: midToUrl(mid), keywords },
+      const data = await streamFetch('step2-stream', { url: mid, keywords },
         msg => addLog(`  ${msg}`, logType(msg)),
         420000
       );
