@@ -60,7 +60,7 @@ input[type=number]{-moz-appearance:textfield}
 .refund-row{border:1.5px solid #fecaca;border-radius:12px;padding:14px;background:#fff}
 .refund-row-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
 .refund-row-num{font-size:13px;font-weight:800;color:var(--error)}
-.refund-row-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.refund-row-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px}
 .refund-result{font-size:12px;margin-top:10px;padding-top:10px;border-top:1px dashed #fecaca;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .r-tag{color:var(--muted)}
 .r-days{background:#fef2f2;color:var(--error);font-weight:700;padding:2px 7px;border-radius:999px;font-size:11px}
@@ -148,8 +148,6 @@ input[type=number]{-moz-appearance:textfield}
   const fmt = n => Math.round(n).toLocaleString();
   const won = n => fmt(n)+"원";
 
-  const todayStr = () => new Date().toISOString().split("T")[0];
-
   let mode = 1; // 1: 트래픽 견적, 2: 쇼핑 유입플 슬롯 견적
   const priceByMode = { 1: "", 2: "1300" }; // 모드별 단가 입력값 별도 보관
 
@@ -195,12 +193,13 @@ input[type=number]{-moz-appearance:textfield}
       <div class="refund-row-grid">
         <div class="field">
           <label>종료일</label>
-          <input type="date" class="r-stop" value="${todayStr()}"/>
+          <input type="date" class="r-stop"/>
         </div>
         <div class="field">
           <label>종료 예정일</label>
           <input type="date" class="r-end"/>
         </div>
+        <div class="field"><label>트래픽 단가 (원)</label><input type="number" class="r-price" placeholder="0"/></div>
         <div class="field"><label>트래픽 수량</label><input type="number" class="r-qty" placeholder="0"/></div>
       </div>
       <div class="refund-result" data-result>
@@ -224,7 +223,7 @@ input[type=number]{-moz-appearance:textfield}
     const stopVal = el.querySelector(".r-stop").value;
     const endVal  = el.querySelector(".r-end").value;
     const qty     = num(el.querySelector(".r-qty").value);
-    const tp      = num($("#unitPrice").value);
+    const tp      = num(el.querySelector(".r-price").value);
     const res     = el.querySelector("[data-result]");
 
     if(!stopVal || !endVal){
@@ -272,10 +271,10 @@ input[type=number]{-moz-appearance:textfield}
 
     empty.style.display = "none";
 
-    const tp = num($("#unitPrice").value);
     let sum = 0;
 
     rows.forEach(b => {
+      const tp   = num(b.querySelector(".r-price").value);
       const days = calcRefundDays(b.querySelector(".r-stop").value, b.querySelector(".r-end").value);
       if(days > 0) sum += num(b.querySelector(".r-qty").value) * tp * days;
     });
@@ -305,8 +304,9 @@ input[type=number]{-moz-appearance:textfield}
     // 환불 합계
     let refundTotal = 0;
     $$("#refundBlocks .refund-row").forEach(b => {
+      const rp   = num(b.querySelector(".r-price").value);
       const days = calcRefundDays(b.querySelector(".r-stop").value, b.querySelector(".r-end").value);
-      if(days > 0) refundTotal += num(b.querySelector(".r-qty").value) * tp * days;
+      if(days > 0) refundTotal += num(b.querySelector(".r-qty").value) * rp * days;
     });
 
     // 캠페인/목표/단가 라인
@@ -375,11 +375,7 @@ input[type=number]{-moz-appearance:textfield}
   /* ══════════════════════════════
      이벤트 바인딩
   ══════════════════════════════ */
-  $("#unitPrice").oninput = () => {
-    // 단가 바뀌면 환불 행 결과도 갱신
-    $$("#refundBlocks .refund-row").forEach(b => updateRefundRow(b));
-    recalcRefund();
-  };
+  $("#unitPrice").oninput = recalc;
 
   ["campCount","trafficGoal","slotDate","slotCount"].forEach(id => { $("#"+id).oninput = recalc; });
 
@@ -406,6 +402,7 @@ input[type=number]{-moz-appearance:textfield}
   $("#resetRefund").onclick = () => {
     $("#refundBlocks").innerHTML = "";
     refundSeq = 0;
+    $("#refundBlocks").appendChild(makeRefundRow());
     recalcRefund();
   };
 
@@ -421,7 +418,8 @@ input[type=number]{-moz-appearance:textfield}
     });
   };
 
-  recalc();
+  $("#refundBlocks").appendChild(makeRefundRow());
+  recalcRefund();
 
 })();
 
