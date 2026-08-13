@@ -49,7 +49,7 @@ input[type=number]{-moz-appearance:textfield}
 .blk:last-child{margin-bottom:0}
 .blk-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
 .blk-head span{font-size:12px;font-weight:700;color:var(--muted)}
-.blk-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.blk-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .blk-mini{font-size:12px;color:var(--muted);margin-top:10px;padding-top:10px;border-top:1px dashed var(--line)}
 
 /* 안내문구 */
@@ -57,14 +57,12 @@ input[type=number]{-moz-appearance:textfield}
 .copy-btn{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:7px 13px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;transition:background .15s}
 .copy-btn:hover{background:#1d4ed8}
 .copy-btn.ok{background:var(--ok)}
-.filter-row{display:flex;gap:10px;flex-wrap:wrap}
-.filter-row label{font-size:12px;font-weight:600;color:var(--text);margin:0;display:flex;align-items:center;gap:4px;cursor:pointer}
 
 /* 환불 모달 항목 */
 .refund-row{border:1.5px solid #fecaca;border-radius:12px;padding:14px;background:#fff}
 .refund-row-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
 .refund-row-num{font-size:13px;font-weight:800;color:var(--error)}
-.refund-row-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.refund-row-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .refund-result{font-size:12px;margin-top:10px;padding-top:10px;border-top:1px dashed #fecaca;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .r-tag{color:var(--muted)}
 .r-days{background:#fef2f2;color:var(--error);font-weight:700;padding:2px 7px;border-radius:999px;font-size:11px}
@@ -89,7 +87,6 @@ input[type=number]{-moz-appearance:textfield}
   </div>
   <div class="row">
     <div class="col field"><label>트래픽 단가 (원)</label><input id="trafficPrice" type="number" placeholder="0"/></div>
-    <div class="col field"><label>길찾기 단가 (원)</label><input id="routePrice" type="number" placeholder="0"/></div>
     <div class="col field"><label>부가세 (%)</label><input id="vatRate" type="number" value="10" readonly/></div>
   </div>
 </div>
@@ -111,12 +108,7 @@ input[type=number]{-moz-appearance:textfield}
   <div class="card-top">
     <div class="card-title"><div class="ic" style="background:#f0fdfa;color:var(--ok)">📋</div>안내 문구</div>
   </div>
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
-    <div class="filter-row">
-      <label><input type="checkbox" id="showTraffic1" checked/> 트래픽</label>
-      <label><input type="checkbox" id="showRoute1" checked/> 길찾기</label>
-      <label style="color:var(--accent)"><input type="checkbox" id="combine1" checked/> 합산(+)</label>
-    </div>
+  <div style="display:flex;justify-content:flex-end;align-items:center;margin-bottom:10px">
     <button class="copy-btn" id="copy1">복사</button>
   </div>
   <div class="summary-box" id="summary1"></div>
@@ -182,7 +174,6 @@ input[type=number]{-moz-appearance:textfield}
       <div class="blk-grid">
         <div class="field"><label>캠페인 수</label><input type="number" class="b-camp" placeholder="1" min="1"/></div>
         <div class="field"><label>트래픽 전체 목표</label><input type="number" class="t-per" placeholder="0"/></div>
-        <div class="field"><label>길찾기 전체 목표</label><input type="number" class="r-per" placeholder="0"/></div>
       </div>
       <div class="blk-mini" data-mini>결과: -</div>`;
     el.oninput = recalc;
@@ -209,8 +200,7 @@ input[type=number]{-moz-appearance:textfield}
           <label>종료 예정일</label>
           <input type="date" class="r-end" min="${todayStr()}"/>
         </div>
-        <div class="field"><label>트래픽 수량</label><input type="number" class="r-t-qty" placeholder="0"/></div>
-        <div class="field"><label>길찾기 수량</label><input type="number" class="r-r-qty" placeholder="0"/></div>
+        <div class="field"><label>트래픽 수량</label><input type="number" class="r-qty" placeholder="0"/></div>
       </div>
       <div class="refund-result" data-result>
         <span class="r-tag">종료 예정일을 선택하고 수량을 입력해주세요</span>
@@ -231,10 +221,8 @@ input[type=number]{-moz-appearance:textfield}
 
   function updateRefundRow(el){
     const endVal = el.querySelector(".r-end").value;
-    const tQty   = num(el.querySelector(".r-t-qty").value);
-    const rQty   = num(el.querySelector(".r-r-qty").value);
+    const qty    = num(el.querySelector(".r-qty").value);
     const tp     = num($("#trafficPrice").value);
-    const rp     = num($("#routePrice").value);
     const res    = el.querySelector("[data-result]");
 
     if(!endVal){
@@ -242,10 +230,8 @@ input[type=number]{-moz-appearance:textfield}
       return;
     }
 
-    const days   = calcRefundDays(endVal);
-    const tAmt   = tQty * tp * days;
-    const rAmt   = rQty * rp * days;
-    const total  = tAmt + rAmt;
+    const days  = calcRefundDays(endVal);
+    const total = qty * tp * days;
 
     if(days === 0){
       res.innerHTML =
@@ -255,7 +241,7 @@ input[type=number]{-moz-appearance:textfield}
       return;
     }
 
-    if(tQty === 0 && rQty === 0){
+    if(qty === 0){
       res.innerHTML =
         `<span class="r-days">${days}일 잔여</span>` +
         `<span class="r-arrow">→</span>` +
@@ -263,15 +249,11 @@ input[type=number]{-moz-appearance:textfield}
       return;
     }
 
-    const parts = [];
-    if(tAmt > 0) parts.push(`트래픽 ${fmt(tQty)}개 × ${fmt(tp)}원 × ${days}일 = -${won(tAmt)}`);
-    if(rAmt > 0) parts.push(`길찾기 ${fmt(rQty)}개 × ${fmt(rp)}원 × ${days}일 = -${won(rAmt)}`);
-
     res.innerHTML =
       `<span class="r-days">${days}일 잔여</span>` +
       `<span class="r-arrow">→</span>` +
       `<span class="r-total">-${won(total)}</span>` +
-      `<span class="r-detail">(${parts.join(" / ")})</span>`;
+      `<span class="r-detail">(${fmt(qty)}개 × ${fmt(tp)}원 × ${days}일)</span>`;
   }
 
   /* 환불 합계 재계산 */
@@ -289,25 +271,16 @@ input[type=number]{-moz-appearance:textfield}
     empty.style.display = "none";
 
     const tp = num($("#trafficPrice").value);
-    const rp = num($("#routePrice").value);
-    let sumT = 0, sumR = 0;
+    let sum = 0;
 
     rows.forEach(b => {
       const days = calcRefundDays(b.querySelector(".r-end").value);
-      if(days > 0){
-        sumT += num(b.querySelector(".r-t-qty").value) * tp * days;
-        sumR += num(b.querySelector(".r-r-qty").value) * rp * days;
-      }
+      if(days > 0) sum += num(b.querySelector(".r-qty").value) * tp * days;
     });
 
-    const grand = sumT + sumR;
     totalBox.style.display = "flex";
-    $("#ref_total_amt").textContent = grand > 0 ? `-${won(grand)}` : "0원";
-
-    const parts = [];
-    if(sumT > 0) parts.push(`트래픽 -${won(sumT)}`);
-    if(sumR > 0) parts.push(`길찾기 -${won(sumR)}`);
-    $("#ref_total_detail").textContent = parts.join("  +  ");
+    $("#ref_total_amt").textContent = sum > 0 ? `-${won(sum)}` : "0원";
+    $("#ref_total_detail").textContent = "";
 
     recalc();
   }
@@ -317,52 +290,32 @@ input[type=number]{-moz-appearance:textfield}
   ══════════════════════════════ */
   function recalc(){
     const tp  = num($("#trafficPrice").value);
-    const rp  = num($("#routePrice").value);
     const vat = num($("#vatRate").value);
 
-    let totalCamp = 0, T = 0, R = 0;
+    let totalCamp = 0, T = 0;
     $$("#blocks .blk").forEach(b => {
       const c = num($(".b-camp",b).value);
       const t = num($(".t-per",b).value);
-      const r = num($(".r-per",b).value);
       totalCamp += c || 1;
-      T += t; R += r;
-      $("[data-mini]",b).textContent = `캠페인 ${c||1}건 · 트래픽 ${fmt(t)}개 · 길찾기 ${fmt(r)}개`;
+      T += t;
+      $("[data-mini]",b).textContent = `캠페인 ${c||1}건 · 목표 ${fmt(t)}개`;
     });
 
-    const sT = $("#showTraffic1").checked;
-    const sR = $("#showRoute1").checked;
-    const cb = $("#combine1").checked;
-
-    const totalGoal = (sT?T:0) + (sR?R:0);
-    const unitP     = (sT?tp:0) + (sR?rp:0);
-    const baseAmt   = (sT?T*tp:0) + (sR?R*rp:0);
-    const dep       = Math.ceil(baseAmt*(100+vat)/100);
+    const baseAmt = T * tp;
+    const dep     = Math.ceil(baseAmt*(100+vat)/100);
 
     // 환불 합계
     let refundTotal = 0;
     $$("#refundBlocks .refund-row").forEach(b => {
       const days = calcRefundDays(b.querySelector(".r-end").value);
-      if(days > 0){
-        refundTotal +=
-          num(b.querySelector(".r-t-qty").value) * tp * days +
-          num(b.querySelector(".r-r-qty").value) * rp * days;
-      }
+      if(days > 0) refundTotal += num(b.querySelector(".r-qty").value) * tp * days;
     });
 
     // 캠페인/목표/단가 라인
-    let countLine;
-    if(cb){
-      countLine =
-        `• 캠페인 수: ${totalCamp}건\n` +
-        `• 전체 목표: ${fmt(totalGoal)}개\n\n` +
-        `• 단가: ${fmt(unitP)}원`;
-    } else {
-      const p = [];
-      if(sT) p.push(`• 트래픽: ${fmt(T)}개 (건당 ${fmt(tp)}원)`);
-      if(sR) p.push(`• 길찾기: ${fmt(R)}개 (건당 ${fmt(rp)}원)`);
-      countLine = p.join("\n");
-    }
+    const countLine =
+      `• 캠페인 수: ${totalCamp}건\n` +
+      `• 전체 목표: ${fmt(T)}개\n\n` +
+      `• 단가: ${fmt(tp)}원`;
 
     // 금액 라인
     let amtLines;
@@ -387,16 +340,11 @@ input[type=number]{-moz-appearance:textfield}
   /* ══════════════════════════════
      이벤트 바인딩
   ══════════════════════════════ */
-  ["trafficPrice","routePrice"].forEach(id => {
-    $("#"+id).oninput = () => {
-      // 단가 바뀌면 환불 행 결과도 갱신
-      $$("#refundBlocks .refund-row").forEach(b => updateRefundRow(b));
-      recalcRefund();
-    };
-  });
-  ["showTraffic1","showRoute1","combine1"].forEach(id => {
-    $("#"+id).onchange = recalc;
-  });
+  $("#trafficPrice").oninput = () => {
+    // 단가 바뀌면 환불 행 결과도 갱신
+    $$("#refundBlocks .refund-row").forEach(b => updateRefundRow(b));
+    recalcRefund();
+  };
 
   $("#resetAll").onclick = () => {
     $("#blocks").innerHTML = "";
