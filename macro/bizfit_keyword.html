@@ -161,7 +161,7 @@
         <div class="excel-upload-area" id="excel-drop-zone" onclick="document.getElementById('excel-file-input').click()">
           <div class="upload-icon">📊</div>
           <div class="upload-text">클릭 또는 드래그 업로드</div>
-          <div class="upload-hint">Pcode 또는 MID / 키워드 / 메모(선택)</div>
+          <div class="upload-hint">Pcode 또는 MID / 키워드</div>
         </div>
         <input type="file" id="excel-file-input" accept=".xlsx,.xls" onchange="handleExcelFile(this.files[0])">
       </div>
@@ -194,12 +194,11 @@
               <th>타입</th>
               <th>Pcode / MID</th>
               <th>키워드</th>
-              <th>메모</th>
               <th style="width:72px;">상태</th>
             </tr>
           </thead>
           <tbody id="entry-tbody">
-            <tr><td colspan="6">
+            <tr><td colspan="5">
               <div class="empty-state"><div class="empty-icon">📋</div><div>등록된 항목이 없습니다.<br>좌측에서 엑셀로 등록해주세요.</div></div>
             </td></tr>
           </tbody>
@@ -300,7 +299,7 @@ function renderList() {
   document.getElementById('entry-count').textContent = entries.length;
 
   if (!entries.length) {
-    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">📋</div><div>등록된 항목이 없습니다.</div></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="empty-icon">📋</div><div>등록된 항목이 없습니다.</div></div></td></tr>`;
     syncAll(); return;
   }
 
@@ -309,7 +308,7 @@ function renderList() {
     : entries;
 
   if (!filtered.length) {
-    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">🔍</div><div>검색 결과가 없습니다.</div></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="empty-icon">🔍</div><div>검색 결과가 없습니다.</div></div></td></tr>`;
     syncAll(); return;
   }
 
@@ -329,7 +328,6 @@ function renderList() {
         ${e.result?`<div style="font-size:10.5px;color:#718096;margin-top:2px;">${esc(e.result)}</div>`:''}
       </td>
       <td><div class="td-keywords" title="${esc(e.keywords)}">${esc(e.keywords)}</div></td>
-      <td><div class="td-keywords" title="${esc(e.memo||'')}">${esc(e.memo||'') || '<span style="color:#c0c8d4;font-size:10.5px;">오늘 날짜</span>'}</div></td>
       <td><span class="status-badge ${sc[e.status]||'s-ready'}">${st[e.status]||'대기'}</span></td>
     </tr>`;
   }).join('');
@@ -365,7 +363,7 @@ async function startProcess() {
   document.getElementById('btn-run').disabled = true;
   document.getElementById('progress-wrap').style.display = 'block';
 
-  const payload = selected.map(e => ({ id: e.id, id_type: e.id_type, keywords: e.keywords, memo: e.memo || '', distribute }));
+  const payload = selected.map(e => ({ id: e.id, id_type: e.id_type, keywords: e.keywords, distribute }));
   selected.forEach(e => { e.status = 'running'; e.result = ''; });
   renderList();
 
@@ -466,11 +464,10 @@ function handleExcelFile(file) {
       for (let r = start; r < rows.length; r++) {
         const id       = String(rows[r][0] || '').trim();
         const keywords = String(rows[r][1] || '').trim();
-        const memo     = String(rows[r][2] || '').trim();
         if (!id || !keywords) { skipped++; continue; }
         if (entries.some(e => e.id === id)) { skipped++; continue; }
         const id_type = detectIdType(id);
-        entries.push({ id, id_type, keywords, memo, status: 'ready', result: '' });
+        entries.push({ id, id_type, keywords, status: 'ready', result: '' });
         added++;
       }
 
@@ -539,7 +536,6 @@ renderList();
         ...e,
         id:      e.id      || e.pcode || '',
         id_type: e.id_type || (e.pcode ? 'pcode' : 'mid'),
-        memo:    e.memo    || '',
         status:  'ready',
         result:  '',
         checked: e.checked ?? false,
