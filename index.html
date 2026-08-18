@@ -469,19 +469,22 @@
     }
     .main-cols > .greet { grid-column: 1; grid-row: 1; margin-bottom: 0; }
     .main-cols > .quick-links { grid-column: 1; grid-row: 2; margin-top: 0; }
-    .main-cols > .notice-board { grid-column: 2; grid-row: 2; align-self: start; }
+    .main-cols > .notice-board { grid-column: 2; grid-row: 2; }
     @media (max-width: 1300px) {
       .main-cols { grid-template-columns: minmax(0,620px); justify-items: center; }
-      .main-cols > .notice-board { grid-column: 1; grid-row: 3; }
+      /* 세로로 쌓이면 "퀵링크와 같은 높이"라는 기준 자체가 없어지므로 고정 높이로 되돌림 */
+      .main-cols > .notice-board { grid-column: 1; grid-row: 3; height: auto; }
+      .nb-list { max-height: 320px; }
     }
 
     /* ── 네이버 공지 모아보기 ── */
     .notice-board {
-      width: 100%; background: #fff;
+      width: 100%; height: 100%; background: #fff;
       border: 1px solid var(--border-color); border-radius: 16px; box-shadow: var(--shadow);
       overflow: hidden; text-align: left;
+      display: flex; flex-direction: column;
     }
-    .nb-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 14px 18px 12px; border-bottom: 1px solid var(--tint-border); }
+    .nb-head { flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 14px 18px 12px; border-bottom: 1px solid var(--tint-border); }
     .nb-title-wrap { display: flex; align-items: center; gap: 8px; min-width: 0; }
     .nb-title-wrap .material-symbols-outlined { font-size: 19px; color: var(--primary-color); flex-shrink: 0; }
     .nb-title { font-size: 14px; font-weight: 700; color: var(--text-main); }
@@ -489,7 +492,9 @@
     .nb-head-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
     .nb-updated { font-family: var(--font-mono); font-size: 10.5px; color: var(--text-sub); white-space: nowrap; }
 
-    .nb-list { display: flex; flex-direction: column; max-height: 320px; overflow-y: auto; }
+    /* 카드 전체 높이(퀵링크 칼럼과 같은 높이로 그리드가 늘려줌)를 리스트가 꽉 채우도록
+       flex:1 — min-height:0 없으면 flex 아이템이 콘텐츠만큼 넘쳐서 overflow-y가 안 먹음. */
+    .nb-list { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow-y: auto; }
     .nb-empty { padding: 24px 18px; font-size: 12.5px; color: var(--text-sub); text-align: center; }
     .nb-item {
       display: flex; align-items: center; gap: 10px;
