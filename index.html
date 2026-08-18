@@ -460,6 +460,68 @@
       padding: 2px 6px; letter-spacing: 0.3px;
     }
 
+    /* ── 좌(환영합니다+도구) / 우(네이버 공지) 가로 배치 ── */
+    .main-cols { display: flex; align-items: flex-start; gap: 18px; width: 100%; max-width: 1260px; }
+    .col-left { flex: 1 1 620px; max-width: 620px; display: flex; flex-direction: column; }
+    .col-right { flex: 1 1 620px; max-width: 620px; }
+    @media (max-width: 1300px) {
+      .main-cols { flex-direction: column; align-items: center; }
+      .col-left, .col-right { max-width: 620px; width: 100%; }
+    }
+
+    /* ── 네이버 공지 모아보기 ── */
+    .notice-board {
+      width: 100%; background: #fff;
+      border: 1px solid var(--border-color); border-radius: 16px; box-shadow: var(--shadow);
+      overflow: hidden; text-align: left;
+    }
+    .nb-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 14px 18px 12px; border-bottom: 1px solid var(--tint-border); }
+    .nb-title-wrap { display: flex; align-items: center; gap: 8px; min-width: 0; }
+    .nb-title-wrap .material-symbols-outlined { font-size: 19px; color: var(--primary-color); flex-shrink: 0; }
+    .nb-title { font-size: 14px; font-weight: 700; color: var(--text-main); }
+    .nb-sub { font-size: 11px; color: var(--text-sub); margin-top: 2px; }
+    .nb-head-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .nb-updated { font-family: var(--font-mono); font-size: 10.5px; color: var(--text-sub); white-space: nowrap; }
+
+    .nb-list { display: flex; flex-direction: column; max-height: 320px; overflow-y: auto; }
+    .nb-empty { padding: 24px 18px; font-size: 12.5px; color: var(--text-sub); text-align: center; }
+    .nb-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 18px; text-decoration: none; color: inherit;
+      border-bottom: 1px solid #f2f4f8; transition: background 0.15s;
+    }
+    .nb-item:last-child { border-bottom: none; }
+    .nb-item:hover { background: var(--tint); }
+
+    .nb-src {
+      flex-shrink: 0; font-size: 10.5px; font-weight: 700; padding: 3px 8px;
+      border-radius: 5px; letter-spacing: 0.2px; white-space: nowrap;
+    }
+    .nb-src.searchad { color: var(--accent); background: rgba(242,97,28,0.1); }
+    .nb-src.blog     { color: var(--teal);   background: rgba(15,157,143,0.1); }
+    .nb-src.wwwpc    { color: var(--primary-color); background: rgba(22,35,79,0.08); }
+
+    .nb-title-text { flex: 1; min-width: 0; font-size: 13px; color: var(--text-main); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .nb-new { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+    .nb-date { flex-shrink: 0; font-family: var(--font-mono); font-size: 11px; color: var(--text-sub); }
+
+    .nb-refresh-btn {
+      display: flex; align-items: center; justify-content: center;
+      width: 24px; height: 24px; padding: 0; border-radius: 6px;
+      border: 1px solid var(--tint-border); background: #fff; color: var(--text-sub);
+      cursor: pointer; transition: all 0.15s;
+    }
+    .nb-refresh-btn:hover { background: var(--primary-color); color: #fff; border-color: var(--primary-color); }
+    .nb-refresh-btn:disabled { opacity: 0.6; cursor: default; }
+    .nb-refresh-btn .material-symbols-outlined { font-size: 15px; }
+    .nb-refresh-btn.spinning .material-symbols-outlined { animation: nb-spin 0.6s linear; }
+    @keyframes nb-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+    @media (max-width: 480px) {
+      .nb-title-text { font-size: 12.5px; }
+      .nb-src { font-size: 9.5px; padding: 2px 6px; }
+    }
+
     .page-footer {
       display: none; align-self: stretch; align-items: center; justify-content: flex-end;
       gap: 10px; margin-top: 28px; padding: 12px 4px 0; border-top: 1px solid var(--border-color);
@@ -597,6 +659,8 @@
         </div>
 
         <div class="welcome-inner">
+        <div class="main-cols">
+        <div class="col-left">
         <div class="greet">
           <h2>🍀 환영합니다!</h2>
           <div class="console-clock">
@@ -665,6 +729,32 @@
           </div>
 
         </div>
+        </div><!-- /.col-left -->
+
+        <div class="col-right">
+        <div class="notice-board">
+          <div class="nb-head">
+            <div class="nb-title-wrap">
+              <span class="material-symbols-outlined">campaign</span>
+              <div>
+                <div class="nb-title">네이버 공지 모아보기</div>
+                <div class="nb-sub">검색광고 · 블로그 · 네이버 메인 자동 수집</div>
+              </div>
+            </div>
+            <div class="nb-head-right">
+              <span class="nb-updated" id="nbUpdatedTime">–</span>
+              <button class="nb-refresh-btn" id="nbRefreshBtn" title="새로고침" onclick="refreshNaverNotices()">
+                <span class="material-symbols-outlined">refresh</span>
+              </button>
+            </div>
+          </div>
+          <div class="nb-list" id="nbList">
+            <div class="nb-empty">불러오는 중…</div>
+          </div>
+        </div>
+        </div><!-- /.col-right -->
+
+        </div><!-- /.main-cols -->
 
         <div class="page-footer">
           <span class="display-user"></span>
@@ -688,6 +778,7 @@
     updateClock();
     setInterval(updateClock, 1000);
     initNoticeTicker();
+    initNaverNoticeBoard();
 
     if (currentUserId) {
       document.querySelectorAll('.display-user').forEach(el => el.textContent = currentUserId + "님"); // 이름 로드 후 교체됨
@@ -732,6 +823,65 @@
       setupDragAndDrop();
       setupTabDragAndDrop();
     }
+
+    // 2b. 네이버 공지 모아보기 — naver-notice-bot(Cloud Run)이 매일 09:00 KST에
+    // Firebase에 써두는 데이터를 실시간 구독. 새로고침 버튼은 같은 Cloud Run
+    // 엔드포인트를 직접 호출해 즉시 응답을 받고, 그 결과가 Firebase에도 반영되며 구독 갱신됨.
+    const NAVER_NOTICE_REFRESH_URL = 'https://naver-notice-bot-938928195180.asia-northeast3.run.app/refresh';
+
+    function fmtNbUpdated(iso) {
+      if (!iso) return '–';
+      const d = new Date(iso);
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      const hh = String(d.getHours()).padStart(2, '0');
+      const mi = String(d.getMinutes()).padStart(2, '0');
+      return `${mm}.${dd} ${hh}:${mi} 갱신`;
+    }
+
+    function renderNaverNotices(payload) {
+      const list = document.getElementById('nbList');
+      const updated = document.getElementById('nbUpdatedTime');
+      if (!list) return;
+      updated.textContent = fmtNbUpdated(payload && payload.updatedAt);
+
+      const items = (payload && payload.items) || [];
+      if (items.length === 0) {
+        list.innerHTML = '<div class="nb-empty">불러온 공지가 없습니다</div>';
+        return;
+      }
+      const now = Date.now();
+      list.innerHTML = items.map(it => {
+        const isNew = (now - new Date(it.date).getTime()) / 86400000 <= 2;
+        return `<a href="${it.url}" target="_blank" rel="noopener" class="nb-item">
+          <span class="nb-src ${it.source}">${it.sourceLabel}</span>
+          <span class="nb-title-text">${it.title.replace(/</g, '&lt;')}</span>
+          ${isNew ? '<span class="nb-new"></span>' : ''}
+          <span class="nb-date">${it.date.slice(5).replace('-', '.')}</span>
+        </a>`;
+      }).join('');
+    }
+
+    function initNaverNoticeBoard() {
+      onValue(ref(db, 'naver_notices'), (snapshot) => {
+        renderNaverNotices(snapshot.val());
+      });
+    }
+
+    window.refreshNaverNotices = async function() {
+      const btn = document.getElementById('nbRefreshBtn');
+      btn.disabled = true;
+      btn.classList.remove('spinning'); void btn.offsetWidth; btn.classList.add('spinning');
+      try {
+        const res = await fetch(NAVER_NOTICE_REFRESH_URL);
+        const data = await res.json();
+        renderNaverNotices(data);
+      } catch (e) {
+        console.error('네이버 공지 새로고침 실패', e);
+      } finally {
+        btn.disabled = false;
+      }
+    };
 
     // 3. 서버에 상태 저장 함수
     window.saveStateToServer = function(state) {
