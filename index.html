@@ -865,8 +865,21 @@
     }
 
     function initNaverNoticeBoard() {
+      let firstLoad = true;
       onValue(ref(db, 'naver_notices'), (snapshot) => {
+        // Firebase에 아직 한 번도 안 쌓여있으면(첫 배포 직후 등) "불러오는 중"에 멈춰있지
+        // 않도록 최초 1회 자동으로 새로고침을 걸어서 채운다.
+        if (firstLoad && !snapshot.exists()) {
+          firstLoad = false;
+          window.refreshNaverNotices();
+          return;
+        }
+        firstLoad = false;
         renderNaverNotices(snapshot.val());
+      }, (err) => {
+        console.error('네이버 공지 구독 실패', err);
+        const list = document.getElementById('nbList');
+        if (list) list.innerHTML = '<div class="nb-empty">공지를 불러오지 못했습니다</div>';
       });
     }
 
