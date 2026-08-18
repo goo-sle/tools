@@ -397,10 +397,24 @@ async function runStream(url, payload, onResult) {
 // 비즈핏(_bizOk/_bizMsg)과 유입플(_yupflOk/_yupflMsg) 결과를 합쳐 행 하나의 상태/메시지로 정리.
 // 해당 항목에 실제로 적용됐던 매크로들이 전부 성공해야 최종 success.
 function finalizeEntry(entry) {
+  const needsBiz   = !!entry.keywords;
+  const needsYupfl = entry.id_type === 'mid' && !!entry.yupflKeywords;
+  const bizDone    = !needsBiz   || entry._bizOk   !== undefined;
+  const yupflDone  = !needsYupfl || entry._yupflOk !== undefined;
+  // 둘 다 대상인 항목은 비즈핏이 먼저 끝나도(유입플은 그 뒤 스트림에서 처리) 아직
+  // 전체가 끝난 게 아니므로 성공/실패로 확정 짓지 않고 진행중으로 유지한다.
+  if (!bizDone || !yupflDone) {
+    const parts = [];
+    if (entry._bizOk   !== undefined) parts.push(`비즈핏: ${entry._bizMsg}`);
+    if (entry._yupflOk !== undefined) parts.push(`유입플: ${entry._yupflMsg}`);
+    entry.status = 'running';
+    entry.result = parts.join(' / ');
+    return;
+  }
   const parts = [];
   let allOk = true;
-  if (entry._bizOk !== undefined)   { parts.push(`비즈핏: ${entry._bizMsg}`);   allOk = allOk && entry._bizOk; }
-  if (entry._yupflOk !== undefined) { parts.push(`유입플: ${entry._yupflMsg}`); allOk = allOk && entry._yupflOk; }
+  if (needsBiz)   { parts.push(`비즈핏: ${entry._bizMsg}`);   allOk = allOk && entry._bizOk; }
+  if (needsYupfl) { parts.push(`유입플: ${entry._yupflMsg}`); allOk = allOk && entry._yupflOk; }
   entry.status = allOk ? 'success' : 'fail';
   entry.result = parts.join(' / ');
 }
@@ -453,45 +467,52 @@ async function startProcess() {
     document.getElementById('progress-text').textContent = `${processed} / ${totalOps} 처리 중...`;
   }
 
-  try {
-    if (bizTargets.length) {
-      const payload = bizTargets.map(e => ({ id: e.id, id_type: e.id_type, keywords: e.keywords, distribute }));
-      await runStream(`${SERVER}/process-stream`, payload, r => {
-        const entry = entries.find(e => e.id === r.id);
+  // 매크로 하나가 서버 오류로 죽어도 다른 매크로(비즈핏/유입플)는 계속 진행되도록
+  // 에러를 여기서 흡수하고, 그 매크로가 담당하던 항목들만 실패 처리한다.
+  async function runMacroBatch(url, targets, payload, matchFn, okField, msgField, label) {
+    try {
+      await runStream(url, payload, r => {
+        const entry = matchFn(r);
         if (entry) {
-          entry._bizOk = r.success; entry._bizMsg = r.message;
+          entry[okField] = r.success; entry[msgField] = r.message;
           finalizeEntry(entry);
-          addLog(`${r.success?'✅':'❌'} [비즈핏/${(r.id_type||'').toUpperCase()}] ${r.id} — ${r.message}`, r.success?'success':'fail');
+          addLog(`${r.success?'✅':'❌'} [${label}] ${r.id||r.mid} — ${r.message}`, r.success?'success':'fail');
         }
         bumpProgress(); renderList();
       });
-    }
-    if (yupflTargets.length) {
-      const payload = yupflTargets.map(e => ({ mid: e.id, keywords: e.yupflKeywords }));
-      // ponytail: 부분 실패 후 재실행하면 이미 성공한 쪽(비즈핏 또는 유입플)도 다시 시도됨 —
-      // 필요해지면 _bizOk/_yupflOk별로 재실행 대상을 나눠서 스킵 추가.
-      await runStream(`${SERVER}/yupfl-process-stream`, payload, r => {
-        const entry = entries.find(e => e.id === r.mid);
-        if (entry) {
-          entry._yupflOk = r.success; entry._yupflMsg = r.message;
+    } catch (e) {
+      targets.forEach(entry => {
+        if (entry[okField] === undefined) {
+          entry[okField] = false; entry[msgField] = e.message;
           finalizeEntry(entry);
-          addLog(`${r.success?'✅':'❌'} [유입플] ${r.mid} — ${r.message}`, r.success?'success':'fail');
         }
-        bumpProgress(); renderList();
       });
+      addLog(`❌ ${label} 서버 오류: ${e.message}`, 'fail');
+      renderList();
     }
-
-    const successCnt = runTargets.filter(e => e.status === 'success').length;
-    const failCnt     = runTargets.filter(e => e.status === 'fail').length;
-    document.getElementById('progress-bar').style.width = '100%';
-    document.getElementById('progress-text').textContent = `완료 — 성공: ${successCnt}  실패: ${failCnt}`;
-    addLog(`━━ 완료 — 성공: ${successCnt}  실패: ${failCnt}`, successCnt===runTargets.length?'success':'warn');
-
-  } catch(e) {
-    runTargets.forEach(entry => { if (entry.status === 'running') { entry.status = 'fail'; entry.result = e.message; } });
-    addLog(`❌ 서버 오류: ${e.message}`, 'fail');
-    document.getElementById('progress-text').textContent = '오류 발생';
   }
+
+  // 비즈핏/유입플을 동시에 실행 — 순서대로 돌리면 사이트 로그인이 두 번 직렬로 걸려 느려짐
+  const tasks = [];
+  if (bizTargets.length) {
+    const payload = bizTargets.map(e => ({ id: e.id, id_type: e.id_type, keywords: e.keywords, distribute }));
+    tasks.push(runMacroBatch(`${SERVER}/process-stream`, bizTargets, payload,
+      r => entries.find(e => e.id === r.id), '_bizOk', '_bizMsg', '비즈핏'));
+  }
+  if (yupflTargets.length) {
+    const payload = yupflTargets.map(e => ({ mid: e.id, keywords: e.yupflKeywords }));
+    // ponytail: 부분 실패 후 재실행하면 이미 성공한 쪽(비즈핏 또는 유입플)도 다시 시도됨 —
+    // 필요해지면 _bizOk/_yupflOk별로 재실행 대상을 나눠서 스킵 추가.
+    tasks.push(runMacroBatch(`${SERVER}/yupfl-process-stream`, yupflTargets, payload,
+      r => entries.find(e => e.id === r.mid), '_yupflOk', '_yupflMsg', '유입플'));
+  }
+  await Promise.all(tasks);
+
+  const successCnt = runTargets.filter(e => e.status === 'success').length;
+  const failCnt     = runTargets.filter(e => e.status === 'fail').length;
+  document.getElementById('progress-bar').style.width = '100%';
+  document.getElementById('progress-text').textContent = `완료 — 성공: ${successCnt}  실패: ${failCnt}`;
+  addLog(`━━ 완료 — 성공: ${successCnt}  실패: ${failCnt}`, successCnt===runTargets.length?'success':'warn');
 
   save(); renderList();
   document.getElementById('btn-run').disabled = false;
