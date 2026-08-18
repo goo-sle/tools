@@ -460,13 +460,19 @@
       padding: 2px 6px; letter-spacing: 0.3px;
     }
 
-    /* ── 좌(환영합니다+도구) / 우(네이버 공지) 가로 배치 ── */
-    .main-cols { display: flex; align-items: flex-start; gap: 18px; width: 100%; max-width: 1260px; }
-    .col-left { flex: 1 1 620px; max-width: 620px; display: flex; flex-direction: column; }
-    .col-right { flex: 1 1 620px; max-width: 620px; }
+    /* ── 좌(환영합니다+도구) / 우(네이버 공지) 가로 배치 ──
+       그리드 행을 명시적으로 나눠서, 오른쪽 칼럼의 notice-board가 왼쪽 칼럼의
+       quick-links와 "같은 행"에서 시작하도록 한다(높이를 손으로 맞출 필요 없음). */
+    .main-cols {
+      display: grid; grid-template-columns: minmax(0,620px) minmax(0,620px);
+      column-gap: 18px; row-gap: 8px; width: 100%; max-width: 1260px; justify-content: center;
+    }
+    .main-cols > .greet { grid-column: 1; grid-row: 1; margin-bottom: 0; }
+    .main-cols > .quick-links { grid-column: 1; grid-row: 2; margin-top: 0; }
+    .main-cols > .notice-board { grid-column: 2; grid-row: 2; }
     @media (max-width: 1300px) {
-      .main-cols { flex-direction: column; align-items: center; }
-      .col-left, .col-right { max-width: 620px; width: 100%; }
+      .main-cols { grid-template-columns: minmax(0,620px); justify-items: center; }
+      .main-cols > .notice-board { grid-column: 1; grid-row: 3; }
     }
 
     /* ── 네이버 공지 모아보기 ── */
@@ -660,7 +666,6 @@
 
         <div class="welcome-inner">
         <div class="main-cols">
-        <div class="col-left">
         <div class="greet">
           <h2>🍀 환영합니다!</h2>
           <div class="console-clock">
@@ -729,9 +734,7 @@
           </div>
 
         </div>
-        </div><!-- /.col-left -->
 
-        <div class="col-right">
         <div class="notice-board">
           <div class="nb-head">
             <div class="nb-title-wrap">
@@ -752,7 +755,6 @@
             <div class="nb-empty">불러오는 중…</div>
           </div>
         </div>
-        </div><!-- /.col-right -->
 
         </div><!-- /.main-cols -->
 
