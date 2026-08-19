@@ -465,6 +465,7 @@
        quick-links와 "같은 행"에서 시작하도록 한다(높이를 손으로 맞출 필요 없음). */
     .main-cols {
       display: grid; grid-template-columns: minmax(0,620px) minmax(0,620px);
+      align-items: start;
       column-gap: 18px; row-gap: 8px; width: 100%; max-width: 1260px; justify-content: center;
     }
     .main-cols > .greet { grid-column: 1; grid-row: 1; margin-bottom: 0; }
