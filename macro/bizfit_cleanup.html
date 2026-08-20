@@ -155,6 +155,7 @@
 
   .badge { display: inline-block; padding: 2px 8px; border-radius: 100px; font-size: 11px; font-weight: 700; }
   .badge-purple { background: #faf5ff; color: #6b21a8; border: 1px solid #e9d5ff; }
+  .badge-teal { background: #e0f2f1; color: #00695c; border: 1px solid #b2dfdb; }
 
   .summary-row {
     display: grid;
@@ -315,6 +316,7 @@
     <div class="card">
       <div class="card-header">
         <span class="card-title">⚡ 실행</span>
+        <span class="badge badge-teal" id="server-status">연결 확인 중...</span>
       </div>
       <div class="card-body">
         <div class="summary-row">
@@ -679,15 +681,15 @@ function handleExcelFile(file) {
 renderList();
 
 (async function checkServer() {
-  addLog('⏳ 서버 연결 확인 중...', 'info');
+  const badge = document.getElementById('server-status');
   let attempt = 0;
   while (true) {
     try {
       const res = await fetch(`${SERVER}/health`, { signal: AbortSignal.timeout(5000) });
-      if (res.ok) { addLog('✅ 서버 연결됨', 'success'); return; }
+      if (res.ok) { badge.textContent = '✅ 서버 연결됨'; return; }
     } catch(_) {}
     attempt++;
-    if (attempt === 1 || attempt % 10 === 0) addLog(`↻ 서버 연결 실패 — ${attempt}번째 재시도 중...`, 'warn');
+    badge.textContent = `⚠️ 재연결 시도 중 (${attempt})`;
     await new Promise(r => setTimeout(r, 5000));
   }
 })();

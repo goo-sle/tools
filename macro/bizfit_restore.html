@@ -167,7 +167,7 @@
 <div class="container">
 
   <div class="top-bar">
-    <h1>💰 캐시복구</h1>
+    <h1>💰 캐시복구 <span class="badge badge-teal" id="server-status">연결 확인 중...</span></h1>
     <div class="mid-input-wrap">
       <label>MID</label>
       <input type="text" id="inp-mid" placeholder="비우면 전체 조회" inputmode="numeric" onkeydown="if(event.key==='Enter')loadList()" />
@@ -636,14 +636,15 @@ async function doRestore(item) {
 }
 
 (async function checkServer() {
+  const badge = document.getElementById('server-status');
   for (let i = 0; i < 5; i++) {
     if (i > 0) await new Promise(r => setTimeout(r, 3000));
     try {
       const res = await fetch(`${SERVER}/ping`, { signal: AbortSignal.timeout(5000) });
-      if (res.ok) { addLog('✅ 서버 연결됨', 'success'); return; }
+      if (res.ok) { badge.textContent = '✅ 서버 연결됨'; return; }
     } catch(_) {}
   }
-  addLog('⚠️  서버 연결 실패 — 잠시 후 다시 시도해주세요.', 'warn');
+  badge.textContent = '⚠️ 연결 실패';
 })();
 </script>
 
