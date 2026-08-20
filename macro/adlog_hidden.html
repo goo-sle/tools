@@ -117,6 +117,7 @@
 
   .badge { display: inline-block; padding: 2px 7px; border-radius: 100px; font-size: 11px; font-weight: 700; }
   .badge-blue { background: #dbeafe; color: #1d4ed8; }
+  .badge-teal { background: #e0f2f1; color: #00695c; border: 1px solid #b2dfdb; }
 
   /* 엑셀 업로드 */
   .excel-zone {
@@ -184,7 +185,7 @@
   <!-- 우측: 실행 -->
   <div class="right-panel">
     <div class="card">
-      <div class="card-header"><span class="card-title">⚡ 실행</span></div>
+      <div class="card-header"><span class="card-title">⚡ 실행</span><span class="badge badge-teal" id="server-status">연결 확인 중...</span></div>
       <div class="card-body">
         <div class="summary-grid">
           <div class="sum-item"><div class="sum-label">등록 수</div><div class="sum-value blue" id="sum-count">0</div></div>
@@ -566,14 +567,15 @@ function handleExcel(file) {
 renderEntries();
 
 (async function checkServer() {
+  const badge = document.getElementById('server-status');
   for (let i = 0; i < 5; i++) {
     if (i > 0) await new Promise(r => setTimeout(r, 3000));
     try {
       const res = await fetch(`${SERVER}/ping`, { signal: AbortSignal.timeout(5000) });
-      if (res.ok) { addLog('✅ 서버 연결됨', 'success'); return; }
+      if (res.ok) { badge.textContent = '✅ 서버 연결됨'; return; }
     } catch(_) {}
   }
-  addLog('⚠️  서버 연결 실패 — 잠시 후 다시 시도해주세요.', 'warn');
+  badge.textContent = '⚠️ 연결 실패';
 })();
 </script>
 
