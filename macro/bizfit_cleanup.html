@@ -678,6 +678,20 @@ function handleExcelFile(file) {
 
 // ── 초기화 ──
 renderList();
+
+(async function checkServer() {
+  addLog('⏳ 서버 연결 확인 중...', 'info');
+  let attempt = 0;
+  while (true) {
+    try {
+      const res = await fetch(`${SERVER}/ping`, { signal: AbortSignal.timeout(5000) });
+      if (res.ok) { addLog('✅ 서버 연결됨', 'success'); return; }
+    } catch(_) {}
+    attempt++;
+    if (attempt === 1 || attempt % 10 === 0) addLog(`↻ 서버 연결 실패 — ${attempt}번째 재시도 중...`, 'warn');
+    await new Promise(r => setTimeout(r, 5000));
+  }
+})();
 </script>
 
 <script type="module">
