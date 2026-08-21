@@ -5,7 +5,7 @@
   { "file": "macro/adlog_reward.html",   "label": "경쟁사 데이터",     "addedAt": "2026-06-11" },
   { "file": "macro/bizfit_restore.html", "label": "캐시복구",        "addedAt": "2026-06-26" },
   { "file": "macro/bizfit_keyword.html", "label": "키워드 변경",      "addedAt": "2026-06-02", "updatedAt": "2026-07-16" },
-  { "file": "macro/bizfit_stop.html",         "label": "임시중단/강제종료", "addedAt": "2026-06-11", "updatedAt": "2026-08-05" },
+  { "file": "macro/bizfit_stop.html",         "label": "임시중단/강제종료", "addedAt": "2026-06-11", "updatedAt": "2026-08-21" },
   { "file": "macro/bizfit_branch_price.html", "label": "지사 단가 관리", "addedAt": "2026-07-06", "updatedAt": "2026-07-07" },
   { "file": "macro/bizfit_price_policy.html", "label": "영업점 단가 정책", "addedAt": "2026-07-06", "updatedAt": "2026-07-07" },
   { "file": "macro/bizfit_cleanup.html",      "label": "캠페인 취소/삭제",  "addedAt": "2026-08-20" }

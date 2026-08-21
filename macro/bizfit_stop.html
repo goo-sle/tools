@@ -136,7 +136,6 @@
   }
   .ab-pause { background: #fef9c3; color: #b7791f; }
   .ab-force { background: #fed7d7; color: #c53030; }
-  .ab-memo  { background: #e9d8fd; color: #6b21a8; }
 
   .status-badge {
     display: inline-block;
@@ -278,7 +277,7 @@
         <div class="excel-upload-area" id="excel-drop-zone" onclick="document.getElementById('excel-file-input').click()">
           <div class="upload-icon">📊</div>
           <div class="upload-text">클릭 또는 드래그 업로드</div>
-          <div class="upload-hint">MID / Pcode(선택) / 임시중단B(O) / 강제종료(O) / 메모</div>
+          <div class="upload-hint">MID / Pcode(필수) / 임시중단B(O) / 강제종료(O)</div>
         </div>
         <input type="file" id="excel-file-input" accept=".xlsx,.xls" onchange="handleExcelFile(this.files[0])">
       </div>
@@ -408,7 +407,7 @@ function syncAll() {
 }
 function updateSummary() {
   const sel   = entries.filter(e => e.checked);
-  const noAct = sel.filter(e => !e.do_pause && !e.do_force && !e.memo).length;
+  const noAct = sel.filter(e => !e.do_pause && !e.do_force).length;
   document.getElementById('sum-count').textContent = sel.length;
   document.getElementById('sum-noact').textContent = noAct;
   document.getElementById('btn-run').disabled = sel.length === 0 || noAct > 0;
@@ -454,7 +453,6 @@ function renderList() {
       <td>
         ${e.do_pause ? '<span class="action-badge ab-pause">임시중단B</span>' : ''}
         ${e.do_force ? '<span class="action-badge ab-force">강제종료</span>' : ''}
-        ${(!e.do_pause && !e.do_force) ? '<span class="action-badge ab-memo">메모만</span>' : ''}
       </td>
       <td><span class="status-badge ${sc[e.status]||'s-ready'}">${st[e.status]||'대기'}</span></td>
     </tr>`;
@@ -488,7 +486,7 @@ async function startProcess() {
   if (!selected.length) { alert('선택한 항목이 모두 완료 상태입니다. (이미 완료된 항목은 재실행 시 자동으로 건너뜁니다)'); return; }
 
   const summary = selected.map(e => {
-    const acts = [e.do_pause?'임시중단B':'', e.do_force?'강제종료':''].filter(Boolean).join('+') || '메모만';
+    const acts = [e.do_pause?'임시중단B':'', e.do_force?'강제종료':''].filter(Boolean).join('+');
     return `  · ${e.mid || e.pcode}: ${acts}`;
   }).join('\n');
   if (!confirm(`아래 항목을 처리하시겠습니까?\n\n${summary}\n\n총 ${selected.length}건${skipped ? ` (완료된 ${skipped}건은 건너뜀)` : ''}`)) return;
@@ -497,7 +495,7 @@ async function startProcess() {
   document.getElementById('progress-wrap').style.display = 'block';
 
   const payload = selected.map(e => ({
-    mid: e.mid, pcode: e.pcode || '', memo: e.memo || '', do_pause: e.do_pause, do_force: e.do_force
+    mid: e.mid, pcode: e.pcode || '', do_pause: e.do_pause, do_force: e.do_force
   }));
 
   selected.forEach(e => { e.status = 'running'; e.result = ''; });
@@ -606,7 +604,6 @@ function handleExcelFile(file) {
       const pcodeCol = hasHdr ? hdr.findIndex(h => /pcode/i.test(h)) : -1;
       const pauseCol = hasHdr ? hdr.findIndex(h => /임시중단/i.test(h)) : 1;
       const forceCol = hasHdr ? hdr.findIndex(h => /강제종료/i.test(h)) : 2;
-      const memoCol  = hasHdr ? hdr.findIndex(h => /메모/i.test(h))     : 3;
       const start    = hasHdr ? 1 : 0;
       let added = 0, skipped = 0;
 
@@ -616,13 +613,12 @@ function handleExcelFile(file) {
         const pcodeRaw = pcodeCol >= 0 ? String(row[pcodeCol]||'').trim() : '';
         const do_pause = pauseCol >= 0 && String(row[pauseCol] || '').trim().toUpperCase() === 'O';
         const do_force = forceCol >= 0 && String(row[forceCol] || '').trim().toUpperCase() === 'O';
-        const memo     = memoCol  >= 0 ? String(row[memoCol]  || '').trim() : '';
-        if (!mid || (!do_pause && !do_force && !memo)) { skipped++; continue; }
+        if (!mid || !pcodeRaw || (!do_pause && !do_force)) { skipped++; continue; }
         // Pcode 칸에 콤마로 여러 개가 들어있으면(순위표에서 그대로 복사) 각각 별도 항목으로 펼침
-        const pcodes = pcodeRaw ? pcodeRaw.split(',').map(p => p.trim()).filter(Boolean) : [''];
+        const pcodes = pcodeRaw.split(',').map(p => p.trim()).filter(Boolean);
         for (const pcode of pcodes) {
           if (entries.some(e => e.mid === mid && (e.pcode||'') === pcode)) { skipped++; continue; }
-          entries.push({ mid, pcode, memo, do_pause, do_force, status:'ready', result:'' });
+          entries.push({ mid, pcode, do_pause, do_force, status:'ready', result:'' });
           added++;
         }
       }
@@ -630,7 +626,7 @@ function handleExcelFile(file) {
       save(); renderList();
       document.getElementById('excel-file-input').value = '';
       if (added > 0) addLog(`📊 엑셀 가져오기: ${added}개 추가${skipped?', '+skipped+'개 건너뜀':''}`, 'info');
-      else           addLog('⚠️ 추가된 항목 없음 — MID가 비어있거나 작업/메모 모두 없음', 'warn');
+      else           addLog('⚠️ 추가된 항목 없음 — MID·Pcode·처리 작업 중 비어있거나 중복', 'warn');
     } catch(err) {
       addLog(`❌ 엑셀 읽기 실패: ${err.message}`, 'fail');
     }
