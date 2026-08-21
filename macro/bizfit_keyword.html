@@ -62,8 +62,8 @@
   .type-badge {
     display: inline-block; padding: 2px 7px; border-radius: 100px; font-size: 10px; font-weight: 700; white-space: nowrap;
   }
-  .type-pcode { background: #e9d8fd; color: #553c9a; }
-  .type-mid   { background: #feebc8; color: #c05621; }
+  .type-pcode  { background: #e9d8fd; color: #553c9a; }
+  .type-agency { background: #dbeafe; color: #1e40af; }
 
   .table-wrap { overflow-x: auto; }
   .kw-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
@@ -162,7 +162,7 @@
         <div class="excel-upload-area" id="excel-drop-zone" onclick="document.getElementById('excel-file-input').click()">
           <div class="upload-icon">📊</div>
           <div class="upload-text">클릭 또는 드래그 업로드</div>
-          <div class="upload-hint">Pcode 또는 MID / 비즈핏 키워드 / 유입플 키워드</div>
+          <div class="upload-hint">영업점 / MID / Pcode / 비즈핏 키워드 / 유입플 키워드</div>
         </div>
         <input type="file" id="excel-file-input" accept=".xlsx,.xls" onchange="handleExcelFile(this.files[0])">
       </div>
@@ -176,7 +176,7 @@
         <span class="card-title">📋 처리 목록 <span class="badge badge-blue" id="entry-count">0</span></span>
         <div class="search-wrap">
           <span style="font-size:12px;">🔍</span>
-          <input type="text" id="inp-search" placeholder="Pcode / MID 검색" oninput="filterList(this.value)" lang="ko" inputmode="text" />
+          <input type="text" id="inp-search" placeholder="MID / Pcode 검색" oninput="filterList(this.value)" lang="ko" inputmode="text" />
         </div>
       </div>
       <div class="select-all-row">
@@ -192,15 +192,14 @@
           <thead>
             <tr>
               <th style="width:36px;"></th>
-              <th>타입</th>
-              <th>Pcode / MID</th>
+              <th>MID</th>
               <th>비즈핏 키워드</th>
               <th>유입플 키워드</th>
               <th style="width:72px;">상태</th>
             </tr>
           </thead>
           <tbody id="entry-tbody">
-            <tr><td colspan="6">
+            <tr><td colspan="5">
               <div class="empty-state"><div class="empty-icon">📋</div><div>등록된 항목이 없습니다.<br>좌측에서 엑셀로 등록해주세요.</div></div>
             </td></tr>
           </tbody>
@@ -256,11 +255,6 @@ let entries = [];
 
 function save() { if (window.fbSave) window.fbSave(entries); }
 
-function detectIdType(value) {
-  // P로 시작하는 영숫자 → pcode, 그 외(숫자 등) → mid
-  return /^P[A-Z0-9]{10,}/i.test(value) ? 'pcode' : 'mid';
-}
-
 function removeAll() {
   if (!entries.length) { alert('삭제할 항목이 없습니다.'); return; }
   if (!confirm(`전체 ${entries.length}개 항목을 삭제하시겠습니까?`)) return;
@@ -284,7 +278,7 @@ function syncAll() {
   document.getElementById('selected-count-small').textContent = `${checked}개 선택됨`;
   updateSummary();
 }
-function isRunnable(e) { return !!e.keywords || (e.id_type === 'mid' && !!e.yupflKeywords); }
+function isRunnable(e) { return !!e.keywords || !!e.yupflKeywords; }
 
 function updateSummary() {
   const sel  = entries.filter(e => e.checked);
@@ -308,11 +302,11 @@ function renderList() {
   }
 
   const filtered = searchQuery
-    ? entries.filter(e => e.id.toLowerCase().includes(searchQuery))
+    ? entries.filter(e => e.mid.includes(searchQuery) || (e.pcode||'').toLowerCase().includes(searchQuery))
     : entries;
 
   if (!filtered.length) {
-    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">🔍</div><div>검색 결과가 없습니다.</div></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="empty-icon">🔍</div><div>검색 결과가 없습니다.</div></div></td></tr>`;
     syncAll(); return;
   }
 
@@ -321,14 +315,12 @@ function renderList() {
 
   tbody.innerHTML = filtered.map(e => {
     const i = entries.indexOf(e);
-    const typeCls  = e.id_type === 'pcode' ? 'type-pcode' : 'type-mid';
-    const typeText = e.id_type === 'pcode' ? 'Pcode' : 'MID';
     return `
     <tr id="row-${i}" class="${e.checked?'checked':''}">
       <td><input type="checkbox" ${e.checked?'checked':''} onchange="toggleItem(${i},this)" style="width:15px;height:15px;accent-color:#0277bd;cursor:pointer;"></td>
-      <td><span class="type-badge ${typeCls}">${typeText}</span></td>
       <td>
-        <div class="td-id">${esc(e.id)}</div>
+        <div class="td-id">${esc(e.mid)}</div>
+        ${e.pcode?`<div style="margin-top:2px;"><span class="type-badge type-pcode" title="${esc(e.pcode)}" style="cursor:default;">Pcode</span>${e.agency?` <span class="type-badge type-agency" title="${esc(e.agency)}" style="cursor:default;">영업점</span>`:''}</div>`:''}
         ${e.result?`<div style="font-size:10.5px;color:#718096;margin-top:2px;">${esc(e.result)}</div>`:''}
       </td>
       <td><div class="td-keywords" title="${esc(e.keywords)}">${esc(e.keywords)}</div></td>
@@ -342,10 +334,8 @@ function renderList() {
 
 function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-// 유입플은 MID로만 검색되는 사이트라 Pcode 타입 항목엔 애초에 적용 대상이 없음 —
-// 그런 행은 배지 대신 "-"만 표시한다. 키워드는 나열하지 않고 개수만, 전체 목록은 title 툴팁으로.
+// 키워드는 나열하지 않고 개수만, 전체 목록은 title 툴팁으로.
 function yupflBadge(e) {
-  if (e.id_type !== 'mid') return '<span style="color:#cbd5e0;font-size:11px;">-</span>';
   const list = String(e.yupflKeywords||'').split(',').map(k=>k.trim()).filter(Boolean);
   if (!list.length) return '<span style="color:#cbd5e0;font-size:11px;">-</span>';
   return `<span title="${esc(list.join(', '))}" class="badge badge-blue" style="cursor:default;">${list.length}개</span>`;
@@ -398,7 +388,7 @@ async function runStream(url, payload, onResult) {
 // 해당 항목에 실제로 적용됐던 매크로들이 전부 성공해야 최종 success.
 function finalizeEntry(entry) {
   const needsBiz   = !!entry.keywords;
-  const needsYupfl = entry.id_type === 'mid' && !!entry.yupflKeywords;
+  const needsYupfl = !!entry.yupflKeywords;
   const bizDone    = !needsBiz   || entry._bizOk   !== undefined;
   const yupflDone  = !needsYupfl || entry._yupflOk !== undefined;
   // 둘 다 대상인 항목은 비즈핏이 먼저 끝나도(유입플은 그 뒤 스트림에서 처리) 아직
@@ -426,7 +416,7 @@ async function startProcess() {
   const notDone     = checked.filter(e => e.status !== 'success');
   const doneSkipped = checked.length - notDone.length;
   const bizTargets   = notDone.filter(e => e.keywords);
-  const yupflTargets = notDone.filter(e => e.id_type === 'mid' && e.yupflKeywords);
+  const yupflTargets = notDone.filter(e => e.yupflKeywords);
   const runTargets   = [...new Set([...bizTargets, ...yupflTargets])];
 
   if (!runTargets.length) {
@@ -440,8 +430,8 @@ async function startProcess() {
   const summary = runTargets.map(e => {
     const tags = [];
     if (e.keywords) tags.push('비즈핏');
-    if (e.id_type === 'mid' && e.yupflKeywords) tags.push('유입플');
-    return `  · [${e.id_type.toUpperCase()}] ${e.id} (${tags.join('+')})`;
+    if (e.yupflKeywords) tags.push('유입플');
+    return `  · ${e.mid}${e.pcode?' / '+e.pcode:''} (${tags.join('+')})`;
   }).join('\n');
   if (!confirm(`아래 캠페인의 키워드를 변경하시겠습니까?${distribute ? '\n(배분 모드 ON — MID 캠페인 수만큼 키워드 균등 배분, 비즈핏에만 적용)' : ''}\n\n${summary}\n\n총 ${runTargets.length}건${doneSkipped ? ` (완료된 ${doneSkipped}건은 건너뜀)` : ''}`)) return;
 
@@ -476,7 +466,7 @@ async function startProcess() {
         if (entry) {
           entry[okField] = r.success; entry[msgField] = r.message;
           finalizeEntry(entry);
-          addLog(`${r.success?'✅':'❌'} [${label}] ${r.id||r.mid} — ${r.message}`, r.success?'success':'fail');
+          addLog(`${r.success?'✅':'❌'} [${label}] ${r.mid}${r.pcode?' / '+r.pcode:''} — ${r.message}`, r.success?'success':'fail');
         }
         bumpProgress(); renderList();
       });
@@ -495,16 +485,16 @@ async function startProcess() {
   // 비즈핏/유입플을 동시에 실행 — 순서대로 돌리면 사이트 로그인이 두 번 직렬로 걸려 느려짐
   const tasks = [];
   if (bizTargets.length) {
-    const payload = bizTargets.map(e => ({ id: e.id, id_type: e.id_type, keywords: e.keywords, distribute }));
+    const payload = bizTargets.map(e => ({ mid: e.mid, pcode: e.pcode||'', agency: e.agency||'', keywords: e.keywords, distribute }));
     tasks.push(runMacroBatch(`${SERVER}/process-stream`, bizTargets, payload,
-      r => entries.find(e => e.id === r.id), '_bizOk', '_bizMsg', '비즈핏'));
+      r => entries.find(e => e.mid === r.mid && (e.pcode||'') === (r.pcode||'')), '_bizOk', '_bizMsg', '비즈핏'));
   }
   if (yupflTargets.length) {
-    const payload = yupflTargets.map(e => ({ mid: e.id, keywords: e.yupflKeywords }));
+    const payload = yupflTargets.map(e => ({ mid: e.mid, keywords: e.yupflKeywords }));
     // ponytail: 부분 실패 후 재실행하면 이미 성공한 쪽(비즈핏 또는 유입플)도 다시 시도됨 —
     // 필요해지면 _bizOk/_yupflOk별로 재실행 대상을 나눠서 스킵 추가.
     tasks.push(runMacroBatch(`${SERVER}/yupfl-process-stream`, yupflTargets, payload,
-      r => entries.find(e => e.id === r.mid), '_yupflOk', '_yupflMsg', '유입플'));
+      r => entries.find(e => e.mid === r.mid), '_yupflOk', '_yupflMsg', '유입플'));
   }
   await Promise.all(tasks);
 
@@ -533,24 +523,37 @@ function handleExcelFile(file) {
     try {
       const wb   = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
       const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header:1, defval:'' });
-      const start = (rows.length > 0 && isNaN(rows[0][0])) ? 1 : 0;
+      if (!rows.length) { addLog('⚠️ 빈 파일입니다.', 'warn'); return; }
+      const hdr       = rows[0].map(h => String(h||'').trim());
+      const hasHdr    = isNaN(Number(hdr[0]));
+      const agencyCol = hasHdr ? hdr.findIndex(h => /영업점/i.test(h)) : 0;
+      const midCol    = hasHdr ? Math.max(hdr.findIndex(h => /mid/i.test(h)), 0) : 1;
+      const pcodeCol  = hasHdr ? hdr.findIndex(h => /pcode/i.test(h)) : 2;
+      const yupflCol  = hasHdr ? hdr.findIndex(h => /유입플/.test(h)) : 4;
+      // "유입플키워드" 헤더도 /키워드/에 걸리므로 그 열은 제외하고 찾는다
+      const kwCol     = hasHdr ? hdr.findIndex((h, i) => /키워드/i.test(h) && i !== yupflCol) : 3;
+      const start     = hasHdr ? 1 : 0;
       let added = 0, skipped = 0;
 
       for (let r = start; r < rows.length; r++) {
-        const id            = String(rows[r][0] || '').trim();
-        const keywords      = String(rows[r][1] || '').trim();
-        const yupflKeywords = String(rows[r][2] || '').trim();
-        if (!id || (!keywords && !yupflKeywords)) { skipped++; continue; }
-        if (entries.some(e => e.id === id)) { skipped++; continue; }
-        const id_type = detectIdType(id);
-        entries.push({ id, id_type, keywords, yupflKeywords, status: 'ready', result: '' });
+        const row           = rows[r];
+        const agency        = agencyCol >= 0 ? String(row[agencyCol]||'').trim() : '';
+        const mid           = String(row[midCol]   || '').trim();
+        const pcode         = pcodeCol >= 0 ? String(row[pcodeCol]||'').trim() : '';
+        const keywords      = kwCol    >= 0 ? String(row[kwCol]   ||'').trim() : '';
+        const yupflKeywords = yupflCol >= 0 ? String(row[yupflCol]||'').trim() : '';
+        if (!mid || (!keywords && !yupflKeywords)) { skipped++; continue; }
+        // 비즈핏 키워드 변경은 pcode 기반이라 영업점·pcode 둘 다 필수 — 유입플만 쓰는 행은 면제
+        if (keywords && (!pcode || !agency)) { skipped++; continue; }
+        if (entries.some(e => e.mid === mid && (e.pcode||'') === pcode)) { skipped++; continue; }
+        entries.push({ mid, pcode, agency, keywords, yupflKeywords, status: 'ready', result: '' });
         added++;
       }
 
       save(); renderList();
       document.getElementById('excel-file-input').value = '';
       if (added > 0) addLog(`📊 엑셀 가져오기: ${added}개 추가${skipped?', '+skipped+'개 건너뜀':''}`, 'info');
-      else           addLog('⚠️ 추가된 항목 없음 — Pcode/MID 또는 키워드가 비어있거나 중복', 'warn');
+      else           addLog('⚠️ 추가된 항목 없음 — MID·키워드가 비어있거나 중복, 또는 비즈핏 키워드 행에 영업점/Pcode 누락', 'warn');
     } catch(err) { addLog(`❌ 엑셀 읽기 실패: ${err.message}`, 'fail'); }
   };
   reader.readAsArrayBuffer(file);
@@ -609,10 +612,12 @@ renderList();
   onValue(dataRef, (snap) => {
     const data = snap.val();
     if (Array.isArray(data) && data.length > 0) {
+      // 예전 버전(id/id_type 단일 필드)으로 저장된 목록과의 호환 — id_type이 mid면 mid로, 아니면 pcode로 이관
       entries = data.map(e => ({
         ...e,
-        id:      e.id      || e.pcode || '',
-        id_type: e.id_type || (e.pcode ? 'pcode' : 'mid'),
+        mid:     e.mid    || (e.id_type === 'mid' ? e.id : '') || '',
+        pcode:   e.pcode  || (e.id_type === 'pcode' ? e.id : '') || '',
+        agency:  e.agency || '',
         status:  'ready',
         result:  '',
         checked: e.checked ?? false,
