@@ -123,8 +123,8 @@
   .td-mid  { font-weight: 700; color: #2d3748; font-family: monospace; font-size: 12px; }
 
   .type-badge { display: inline-block; padding: 1px 7px; border-radius: 100px; font-size: 9.5px; font-weight: 700; white-space: nowrap; margin-left: 5px; }
-  .type-pcode { background: #e9d8fd; color: #553c9a; }
-  .type-mid   { background: #feebc8; color: #c05621; }
+  .type-pcode  { background: #e9d8fd; color: #553c9a; }
+  .type-agency { background: #dbeafe; color: #1e40af; }
 
   .action-badge {
     display: inline-block;
@@ -277,7 +277,7 @@
         <div class="excel-upload-area" id="excel-drop-zone" onclick="document.getElementById('excel-file-input').click()">
           <div class="upload-icon">📊</div>
           <div class="upload-text">클릭 또는 드래그 업로드</div>
-          <div class="upload-hint">MID / Pcode(필수) / 임시중단B(O) / 강제종료(O)</div>
+          <div class="upload-hint">영업점 / MID / Pcode / 임시중단B(O) / 강제종료(O)</div>
         </div>
         <input type="file" id="excel-file-input" accept=".xlsx,.xls" onchange="handleExcelFile(this.files[0])">
       </div>
@@ -441,13 +441,11 @@ function renderList() {
 
   tbody.innerHTML = filtered.map(e => {
     const i = entries.indexOf(e);
-    const idVal  = e.mid || e.pcode;
-    const idType = e.pcode ? 'pcode' : 'mid';
     return `
     <tr id="row-${i}" class="${e.checked ? 'checked' : ''}">
       <td><input type="checkbox" ${e.checked?'checked':''} onchange="toggleItem(${i},this)" style="width:15px;height:15px;accent-color:#7b1fa2;cursor:pointer;"></td>
       <td>
-        <div class="td-mid">${esc(idVal)}<span class="type-badge ${idType==='pcode'?'type-pcode':'type-mid'}">${idType==='pcode'?'Pcode':'MID'}</span></div>
+        <div class="td-mid">${esc(e.mid)}${e.pcode?` <span class="type-badge type-pcode">${esc(e.pcode)}</span>`:''}${e.agency?` <span class="type-badge type-agency">${esc(e.agency)}</span>`:''}</div>
         ${e.result ? `<div style="font-size:10.5px;color:#718096;margin-top:2px;">${esc(e.result)}</div>` : ''}
       </td>
       <td>
@@ -495,7 +493,7 @@ async function startProcess() {
   document.getElementById('progress-wrap').style.display = 'block';
 
   const payload = selected.map(e => ({
-    mid: e.mid, pcode: e.pcode || '', do_pause: e.do_pause, do_force: e.do_force
+    mid: e.mid, pcode: e.pcode || '', agency: e.agency || '', do_pause: e.do_pause, do_force: e.do_force
   }));
 
   selected.forEach(e => { e.status = 'running'; e.result = ''; });
@@ -598,27 +596,29 @@ function handleExcelFile(file) {
       const wb    = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
       const rows  = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header:1, defval:'' });
       if (!rows.length) { addLog('⚠️ 빈 파일입니다.', 'warn'); return; }
-      const hdr      = rows[0].map(h => String(h||'').trim());
-      const hasHdr   = isNaN(Number(hdr[0]));
-      const midCol   = hasHdr ? Math.max(hdr.findIndex(h => /mid/i.test(h)), 0) : 0;
-      const pcodeCol = hasHdr ? hdr.findIndex(h => /pcode/i.test(h)) : -1;
-      const pauseCol = hasHdr ? hdr.findIndex(h => /임시중단/i.test(h)) : 1;
-      const forceCol = hasHdr ? hdr.findIndex(h => /강제종료/i.test(h)) : 2;
-      const start    = hasHdr ? 1 : 0;
+      const hdr       = rows[0].map(h => String(h||'').trim());
+      const hasHdr    = isNaN(Number(hdr[0]));
+      const agencyCol = hasHdr ? hdr.findIndex(h => /영업점/i.test(h)) : -1;
+      const midCol    = hasHdr ? Math.max(hdr.findIndex(h => /mid/i.test(h)), 0) : 1;
+      const pcodeCol  = hasHdr ? hdr.findIndex(h => /pcode/i.test(h)) : -1;
+      const pauseCol  = hasHdr ? hdr.findIndex(h => /임시중단/i.test(h)) : 3;
+      const forceCol  = hasHdr ? hdr.findIndex(h => /강제종료/i.test(h)) : 4;
+      const start     = hasHdr ? 1 : 0;
       let added = 0, skipped = 0;
 
       for (let r = start; r < rows.length; r++) {
         const row      = rows[r];
+        const agency   = agencyCol >= 0 ? String(row[agencyCol]||'').trim() : '';
         const mid      = String(row[midCol]   || '').trim();
         const pcodeRaw = pcodeCol >= 0 ? String(row[pcodeCol]||'').trim() : '';
         const do_pause = pauseCol >= 0 && String(row[pauseCol] || '').trim().toUpperCase() === 'O';
         const do_force = forceCol >= 0 && String(row[forceCol] || '').trim().toUpperCase() === 'O';
-        if (!mid || !pcodeRaw || (!do_pause && !do_force)) { skipped++; continue; }
+        if (!agency || !mid || !pcodeRaw || (!do_pause && !do_force)) { skipped++; continue; }
         // Pcode 칸에 콤마로 여러 개가 들어있으면(순위표에서 그대로 복사) 각각 별도 항목으로 펼침
         const pcodes = pcodeRaw.split(',').map(p => p.trim()).filter(Boolean);
         for (const pcode of pcodes) {
           if (entries.some(e => e.mid === mid && (e.pcode||'') === pcode)) { skipped++; continue; }
-          entries.push({ mid, pcode, do_pause, do_force, status:'ready', result:'' });
+          entries.push({ mid, pcode, agency, do_pause, do_force, status:'ready', result:'' });
           added++;
         }
       }
@@ -626,7 +626,7 @@ function handleExcelFile(file) {
       save(); renderList();
       document.getElementById('excel-file-input').value = '';
       if (added > 0) addLog(`📊 엑셀 가져오기: ${added}개 추가${skipped?', '+skipped+'개 건너뜀':''}`, 'info');
-      else           addLog('⚠️ 추가된 항목 없음 — MID·Pcode·처리 작업 중 비어있거나 중복', 'warn');
+      else           addLog('⚠️ 추가된 항목 없음 — 영업점·MID·Pcode·처리 작업 중 비어있거나 중복', 'warn');
     } catch(err) {
       addLog(`❌ 엑셀 읽기 실패: ${err.message}`, 'fail');
     }
