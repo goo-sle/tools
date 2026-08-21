@@ -59,31 +59,6 @@
 
     .shell { flex: 1; display: flex; overflow: hidden; min-height: 0; }
 
-    #authOverlay {
-      position: fixed; top:0; left:0; width:100%; height:100%;
-      background: rgba(10,15,30,0.82);
-      display: none; justify-content: center; align-items: center; z-index: 1000;
-    }
-    .auth-card {
-      background: white; padding: 35px; border-radius: 16px; width: 340px;
-      text-align: center; box-shadow: 0 10px 30px rgba(22,35,79,0.18);
-      border-top: 4px solid var(--primary-color);
-    }
-    .auth-card h3 { margin-top: 0; color: var(--primary-color); font-size: 17px; }
-    .auth-card input {
-      width: 100%; padding: 11px 14px; margin: 7px 0;
-      border: 1px solid var(--tint-border); border-radius: 8px; outline: none;
-      font-size: 14px; transition: border-color 0.2s;
-    }
-    .auth-card input:focus { border-color: var(--primary-color); }
-    .auth-btn {
-      width: 100%; padding: 12px; background: var(--primary-color); color: white;
-      border: none; border-radius: 8px; cursor: pointer; margin-top: 10px;
-      font-weight: bold; font-size: 14px; transition: background 0.2s;
-    }
-    .auth-btn:hover { background: var(--primary-dark); }
-    .auth-footer { font-size: 13px; color: #888; margin-top: 18px; cursor: pointer; text-decoration: underline; }
-
     #sidebar {
       width: 220px; min-width: 220px;
       background: #fff;
@@ -585,24 +560,6 @@
       document.body.classList.add('auth-ok');
     }
   </script>
-
-  <div id="authOverlay">
-    <div class="auth-card" id="loginBox">
-      <h3>🔐 하이어애드 통합 도구</h3>
-      <input type="text" id="userId" placeholder="아이디">
-      <input type="password" id="userPw" placeholder="비밀번호">
-      <button class="auth-btn" onclick="handleLogin()">로그인</button>
-      <p class="auth-footer" onclick="toggleAuth(true)">계정이 없으신가요? 회원가입</p>
-    </div>
-    <div class="auth-card" id="regBox" style="display: none;">
-      <h3>📝 신규 가입</h3>
-      <input type="text" id="regId" placeholder="아이디">
-      <input type="password" id="regPw" placeholder="비밀번호 (6자 이상)">
-      <input type="password" id="regPwConfirm" placeholder="비밀번호 확인">
-      <button class="auth-btn" style="background: #444;" onclick="handleRegister()">가입하기</button>
-      <p class="auth-footer" onclick="toggleAuth(false)">이미 계정이 있습니다</p>
-    </div>
-  </div>
 
   <div class="status-strip">
     <div class="left">
