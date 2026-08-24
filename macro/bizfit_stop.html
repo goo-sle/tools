@@ -607,6 +607,16 @@ function handleExcelFile(file) {
       const pauseCol  = hasHdr ? hdr.findIndex(h => /임시중단/i.test(h)) : 3;
       const forceCol  = hasHdr ? hdr.findIndex(h => /강제종료/i.test(h)) : 4;
       const start     = hasHdr ? 1 : 0;
+      // 필수 컬럼을 헤더에서 못 찾으면 데이터 문제가 아니라 양식 자체가 다른 것 — 정식 양식 재요청 안내
+      const missingCols = [];
+      if (agencyCol < 0) missingCols.push('영업점');
+      if (pcodeCol  < 0) missingCols.push('Pcode');
+      if (pauseCol  < 0) missingCols.push('임시중단B');
+      if (forceCol  < 0) missingCols.push('강제종료');
+      if (hasHdr && missingCols.length) {
+        addLog(`⚠️ 양식이 맞지 않습니다 — ${missingCols.join('/')} 컬럼을 찾을 수 없습니다. 정식 양식(임시중단_강제종료_양식.xlsx)을 다시 받아 확인해주세요.`, 'warn');
+        return;
+      }
       let added = 0, skipped = 0;
 
       for (let r = start; r < rows.length; r++) {
