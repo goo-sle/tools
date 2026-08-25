@@ -344,7 +344,7 @@ input[type=number]{-moz-appearance:textfield}
     const dateVal = $("#slotDate").value;
 
     const amount = slots * price;
-    const vatIncluded = Math.ceil(amount * 1.1);
+    const vatIncluded = Math.ceil(amount * 110 / 100);
     const oneSlotPrice = price * 10;
 
     let dateLabel = "";
