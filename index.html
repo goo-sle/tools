@@ -484,7 +484,7 @@
       flex-shrink: 0; font-size: 10.5px; font-weight: 700; padding: 3px 8px;
       border-radius: 5px; letter-spacing: 0.2px; white-space: nowrap;
     }
-    .nb-src.searchad { color: var(--accent); background: rgba(242,97,28,0.1); }
+    .nb-src.srch { color: var(--accent); background: rgba(242,97,28,0.1); }
     .nb-src.blog     { color: var(--teal);   background: rgba(15,157,143,0.1); }
     .nb-src.wwwpc    { color: var(--primary-color); background: rgba(22,35,79,0.08); }
     .nb-src.smartplace { color: #2db400; background: rgba(45,180,0,0.1); }
@@ -819,10 +819,13 @@
         return;
       }
       const now = Date.now();
+      // 'searchad' 클래스명을 그대로 쓰면 문자열에 포함된 "ad"가 광고 차단 확장 프로그램의
+      // 범용 규칙에 걸려 배지 자체가 렌더링되지 않는 사례가 있어, 클래스명만 별도로 매핑.
+      const badgeClassOf = (src) => src === 'searchad' ? 'srch' : src;
       list.innerHTML = items.map(it => {
         const isNew = (now - new Date(it.date).getTime()) / 86400000 <= 2;
         return `<a href="${it.url}" target="_blank" rel="noopener" class="nb-item">
-          <span class="nb-src ${it.source}">${it.sourceLabel}</span>
+          <span class="nb-src ${badgeClassOf(it.source)}">${it.sourceLabel}</span>
           <span class="nb-title-text">${it.title.replace(/</g, '&lt;')}</span>
           ${isNew ? '<span class="nb-new"></span>' : ''}
           <span class="nb-date">${it.date.slice(5).replace('-', '.')}</span>
