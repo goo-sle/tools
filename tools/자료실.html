@@ -355,7 +355,7 @@
   const existingApps = getApps();
   const app  = existingApps.length ? existingApps[0] : initializeApp(firebaseConfig);
   const db   = getDatabase(app);
-  // RTDB 규칙이 users/resource_hub read/write에 auth != null을 요구함(2026-08-05) — getAuth()를
+  // RTDB 규칙이 users/resource_hub read/write에 auth != null을 요구함 — getAuth()를
   // 호출해야 Database SDK가 로그인 세션(tools/login.html에서 만든 커스텀 토큰 세션)을 붙여서 요청함.
   const authReady = getAuth(app).authStateReady();
 
