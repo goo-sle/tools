@@ -450,6 +450,32 @@ function esc(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
+// NDJSON 스트림(줄마다 JSON 한 개)을 읽으며 {type:"log"}는 onLog로 즉시 흘려보내고,
+// 마지막 {type:"result", success, results|message} 한 줄을 반환한다.
+async function fetchStream(url, body, onLog) {
+  const res = await fetch(url, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+  });
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buf = '', final = null;
+  const consume = line => {
+    if (!line.trim()) return;
+    const evt = JSON.parse(line);
+    if (evt.type === 'log') onLog(evt.msg); else final = evt;
+  };
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += decoder.decode(value, { stream: true });
+    const lines = buf.split('\n');
+    buf = lines.pop();
+    lines.forEach(consume);
+  }
+  if (buf) consume(buf);
+  return final || { success: false, message: '서버 응답 없음' };
+}
+
 // ── 로그 ──
 function addLog(msg, type='') {
   const area = document.getElementById('log-area');
@@ -501,11 +527,9 @@ async function startProcess() {
     const groupEntries = bizfitRows.filter(e => e.id === g.id && e.pw === g.pw && e._bizfitOk === null);
 
     try {
-      const res  = await fetch(`${SERVER}/cleanup-cancel`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ loginId: g.id, pwd: g.pw, mids: [...g.mids] }),
-      });
-      const data = await res.json();
+      const data = await fetchStream(`${SERVER}/cleanup-cancel`,
+        { loginId: g.id, pwd: g.pw, mids: [...g.mids] },
+        msg => addLog(`  [비즈핏] ${msg}`, 'info'));
 
       if (!data.success) {
         groupEntries.forEach(e => { e._bizfitOk = false; e._bizfitMsg = data.message || '서버 오류'; });
