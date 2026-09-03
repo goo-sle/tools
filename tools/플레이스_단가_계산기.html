@@ -89,12 +89,17 @@ input[type=number]{-moz-appearance:textfield}
       <button class="seg-btn" id="modeBtn2">슬롯</button>
     </div>
   </div>
+  <div class="row" id="slotNameRow" style="display:none">
+    <div class="col field"><label>슬롯명</label><input type="text" id="slotName" placeholder="비전"/></div>
+  </div>
   <div class="row">
     <div class="col field"><label id="priceLabel">트래픽 단가 (원)</label><input id="unitPrice" type="number" placeholder="0"/></div>
     <div class="col field" id="campField"><label>캠페인 수</label><input type="number" id="campCount" placeholder="1" min="1"/></div>
     <div class="col field" id="goalField"><label>트래픽 전체 목표</label><input type="number" id="trafficGoal" placeholder="0"/></div>
     <div class="col field" id="dateField" style="display:none"><label>접수 날짜</label><input type="date" id="slotDate"/></div>
     <div class="col field" id="slotCountField" style="display:none"><label>슬롯 수</label><input type="number" id="slotCount" placeholder="0"/></div>
+    <div class="col field" id="slotDaysField" style="display:none"><label>일 수</label><input type="number" id="slotDays" placeholder="10"/></div>
+    <div class="col field" id="slotTypingField" style="display:none"><label>일 타수</label><input type="number" id="slotTyping" placeholder="150"/></div>
   </div>
   <div style="display:flex;align-items:center;justify-content:flex-end;margin-top:14px">
     <button class="btn btn-ghost btn-sm" id="resetAll">초기화</button>
@@ -161,6 +166,9 @@ input[type=number]{-moz-appearance:textfield}
     $("#goalField").style.display       = m === 1 ? "" : "none";
     $("#dateField").style.display       = m === 2 ? "" : "none";
     $("#slotCountField").style.display  = m === 2 ? "" : "none";
+    $("#slotNameRow").style.display     = m === 2 ? "" : "none";
+    $("#slotDaysField").style.display   = m === 2 ? "" : "none";
+    $("#slotTypingField").style.display = m === 2 ? "" : "none";
     $("#openRefundModal").style.display = m === 1 ? "" : "none";
     $("#unitPrice").value = priceByMode[m];
     recalc();
@@ -342,10 +350,13 @@ input[type=number]{-moz-appearance:textfield}
     const price   = num($("#unitPrice").value) || 1300;
     const slots   = num($("#slotCount").value);
     const dateVal = $("#slotDate").value;
+    const name    = $("#slotName").value.trim() || "비전";
+    const days    = num($("#slotDays").value) || 10;
+    const typing  = num($("#slotTyping").value) || 150;
 
     const amount = slots * price;
     const vatIncluded = Math.ceil(amount * 110 / 100);
-    const oneSlotPrice = price * 10;
+    const oneSlotPrice = price * days;
 
     let dateLabel = "";
     if(dateVal){
@@ -355,9 +366,9 @@ input[type=number]{-moz-appearance:textfield}
     }
 
     $("#summary1").textContent =
-`※ ${dateLabel}쇼핑 유입플 접수건(비전)
+`※ ${dateLabel}쇼핑 유입플 접수건(${name})
 
-* 1슬롯(10일 기준, 일 150타) : ${fmt(oneSlotPrice)}원(vat별도)
+* 1슬롯(${days}일 기준, 일 ${typing}타) : ${fmt(oneSlotPrice)}원(vat별도)
 * 1슬롯 1일을 슬롯 1로 책정됩니다.
 
 - 총 ${fmt(slots)}슬롯 (${fmt(slots)}슬롯 x ${fmt(price)}원 = ${fmt(amount)}원)
@@ -377,7 +388,7 @@ input[type=number]{-moz-appearance:textfield}
   ══════════════════════════════ */
   $("#unitPrice").oninput = recalc;
 
-  ["campCount","trafficGoal","slotDate","slotCount"].forEach(id => { $("#"+id).oninput = recalc; });
+  ["campCount","trafficGoal","slotDate","slotCount","slotName","slotDays","slotTyping"].forEach(id => { $("#"+id).oninput = recalc; });
 
   $("#modeBtn1").onclick = () => switchMode(1);
   $("#modeBtn2").onclick = () => switchMode(2);
@@ -389,6 +400,9 @@ input[type=number]{-moz-appearance:textfield}
     } else {
       $("#slotDate").value = "";
       $("#slotCount").value = "";
+      $("#slotName").value = "";
+      $("#slotDays").value = "";
+      $("#slotTyping").value = "";
     }
     recalc();
   };
