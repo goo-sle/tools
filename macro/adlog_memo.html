@@ -143,10 +143,11 @@
   <!-- 좌측: 설정 + 엑셀 등록 -->
   <div style="display:flex;flex-direction:column;gap:14px;">
 
-    <!-- 구글 시트 불러오기 -->
+    <!-- 구글 시트 연동 -->
     <div class="card">
       <div class="card-header"><span class="card-title">📋 구글 시트 연동</span></div>
       <div class="card-body">
+        <div style="font-size:11px;color:#718096;margin-bottom:10px;line-height:1.5;">아래 시트의 MID 목록을 불러오되, BizFit 캠페인관리 → 영업점 '단독' + 진행중에 아직 남아있는(현재도 단독으로 활성인) MID는 제외합니다.</div>
         <label>Spreadsheet ID</label>
         <input type="text" id="gs-id" placeholder="14j9wwFed..." value="14j9wwFedE-kwAebFSnBWjgCYcoCUW2L0hDdBmtGqAf8" />
         <div class="sheet-row">
@@ -280,7 +281,7 @@ async function fetchMids() {
   if (!sid || !sheet) { alert('Spreadsheet ID와 시트명을 입력해주세요.'); return; }
 
   document.getElementById('btn-fetch').disabled = true;
-  addLog(`구글 시트 불러오는 중...`, 'info');
+  addLog(`구글 시트 조회 중... (BizFit 단독 진행중 제외 필터링)`, 'info');
 
   try {
     const res  = await fetch(`${SERVER}/fetch-mids`, {
@@ -299,7 +300,7 @@ async function fetchMids() {
       }
     });
     save(); renderTable();
-    addLog(`✅ ${data.count}개 중 ${added}개 추가됨 (중복 ${data.count - added}개 스킵)`, 'success');
+    addLog(`✅ 시트 MID ${data.total}건 — BizFit 단독 진행중 ${data.skipped}건 제외, ${data.count}건 중 ${added}개 추가됨${data.count - added ? ` (테이블 중복 ${data.count - added}개 스킵)` : ''}`, 'success');
   } catch(e) {
     addLog(`❌ 불러오기 실패: ${e.message}`, 'fail');
   } finally {
