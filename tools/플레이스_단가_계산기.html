@@ -35,6 +35,7 @@ input[type=number]{-moz-appearance:textfield}
 .row{display:flex;gap:10px;flex-wrap:wrap}
 .col{flex:1 1 130px;min-width:0}
 .row.grid3{display:grid;grid-template-columns:repeat(3,1fr)}
+#fieldsDivider{grid-column:1/-1;border-top:1px dashed var(--line);margin:2px 0}
 
 .btn{border:none;border-radius:9px;padding:8px 14px;font-weight:700;cursor:pointer;font-size:13px;font-family:inherit;display:inline-flex;align-items:center;gap:5px;transition:all .15s;white-space:nowrap}
 .btn:active{transform:translateY(1px)}
@@ -92,14 +93,15 @@ input[type=number]{-moz-appearance:textfield}
     </div>
   </div>
   <div class="row" id="fieldsRow">
+    <div class="col field" id="slotNameField" style="display:none"><label>슬롯명</label><select id="slotName"><option value="비전">비전</option><option value="포스">포스</option></select></div>
+    <div class="col field" id="slotDaysField" style="display:none"><label>일 수</label><input type="number" id="slotDays" placeholder="10"/></div>
+    <div class="col field" id="slotTypingField" style="display:none"><label>일 타수</label><input type="number" id="slotTyping" placeholder="150"/></div>
+    <div id="fieldsDivider" style="display:none"></div>
     <div class="col field"><label id="priceLabel">트래픽 단가 (원)</label><input id="unitPrice" type="number" placeholder="0"/></div>
     <div class="col field" id="campField"><label>캠페인 수</label><input type="number" id="campCount" placeholder="1" min="1"/></div>
     <div class="col field" id="goalField"><label>트래픽 전체 목표</label><input type="number" id="trafficGoal" placeholder="0"/></div>
     <div class="col field" id="dateField" style="display:none"><label>접수 날짜</label><input type="date" id="slotDate"/></div>
     <div class="col field" id="slotCountField" style="display:none"><label>슬롯 수</label><input type="number" id="slotCount" placeholder="0"/></div>
-    <div class="col field" id="slotNameField" style="display:none"><label>슬롯명</label><select id="slotName"><option value="비전">비전</option><option value="포스">포스</option></select></div>
-    <div class="col field" id="slotDaysField" style="display:none"><label>일 수</label><input type="number" id="slotDays" placeholder="10"/></div>
-    <div class="col field" id="slotTypingField" style="display:none"><label>일 타수</label><input type="number" id="slotTyping" placeholder="150"/></div>
   </div>
   <div style="display:flex;align-items:center;justify-content:flex-end;margin-top:14px">
     <button class="btn btn-ghost btn-sm" id="resetAll">초기화</button>
@@ -171,6 +173,7 @@ input[type=number]{-moz-appearance:textfield}
     $("#slotTypingField").style.display = m === 2 ? "" : "none";
     $("#openRefundModal").style.display = m === 1 ? "" : "none";
     $("#fieldsRow").classList.toggle("grid3", m === 2);
+    $("#fieldsDivider").style.display  = m === 2 ? "" : "none";
     $("#unitPrice").value = priceByMode[m];
     recalc();
   }
