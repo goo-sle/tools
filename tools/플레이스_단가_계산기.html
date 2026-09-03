@@ -22,7 +22,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 .ic{width:26px;height:26px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
 
 .field label{display:block;font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.4px;text-transform:uppercase;margin-bottom:5px}
-input[type=number],input[type=text],input[type=date]{
+input[type=number],input[type=text],input[type=date],select{
   width:100%;height:42px;padding:0 12px;border:1.5px solid var(--line);
   border-radius:10px;font-size:14px;font-family:inherit;background:var(--line2);
   color:var(--text);transition:border .15s,background .15s
@@ -97,7 +97,7 @@ input[type=number]{-moz-appearance:textfield}
     <div class="col field" id="goalField"><label>트래픽 전체 목표</label><input type="number" id="trafficGoal" placeholder="0"/></div>
     <div class="col field" id="dateField" style="display:none"><label>접수 날짜</label><input type="date" id="slotDate"/></div>
     <div class="col field" id="slotCountField" style="display:none"><label>슬롯 수</label><input type="number" id="slotCount" placeholder="0"/></div>
-    <div class="col field" id="slotNameField" style="display:none"><label>슬롯명</label><input type="text" id="slotName" placeholder="비전"/></div>
+    <div class="col field" id="slotNameField" style="display:none"><label>슬롯명</label><select id="slotName"><option value="비전">비전</option><option value="포스">포스</option></select></div>
     <div class="col field" id="slotDaysField" style="display:none"><label>일 수</label><input type="number" id="slotDays" placeholder="10"/></div>
     <div class="col field" id="slotTypingField" style="display:none"><label>일 타수</label><input type="number" id="slotTyping" placeholder="150"/></div>
   </div>
@@ -389,7 +389,14 @@ input[type=number]{-moz-appearance:textfield}
   ══════════════════════════════ */
   $("#unitPrice").oninput = recalc;
 
-  ["campCount","trafficGoal","slotDate","slotCount","slotName","slotDays","slotTyping"].forEach(id => { $("#"+id).oninput = recalc; });
+  ["campCount","trafficGoal","slotDate","slotCount","slotDays","slotTyping"].forEach(id => { $("#"+id).oninput = recalc; });
+
+  const slotPresets = { "비전": { days: 10, typing: 150 }, "포스": { days: 10, typing: 100 } };
+  $("#slotName").onchange = () => {
+    const p = slotPresets[$("#slotName").value];
+    if(p){ $("#slotDays").value = p.days; $("#slotTyping").value = p.typing; }
+    recalc();
+  };
 
   $("#modeBtn1").onclick = () => switchMode(1);
   $("#modeBtn2").onclick = () => switchMode(2);
@@ -401,7 +408,7 @@ input[type=number]{-moz-appearance:textfield}
     } else {
       $("#slotDate").value = "";
       $("#slotCount").value = "";
-      $("#slotName").value = "";
+      $("#slotName").value = "비전";
       $("#slotDays").value = "";
       $("#slotTyping").value = "";
     }
